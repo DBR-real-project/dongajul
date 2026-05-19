@@ -1,0 +1,159 @@
+<svg viewBox="0 0 910 1010" xmlns="http://www.w3.org/2000/svg" font-family="'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif">
+  <title>동아줄 프로젝트 전체 구조도</title>
+
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+
+  <!-- 배경 -->
+  <rect width="900" height="1000" fill="#f8fafc" rx="12"/>
+
+  <!-- 제목 -->
+  <text x="450" y="36" text-anchor="middle" font-size="18" font-weight="700" fill="#1B2B4B">동아줄 프로젝트 전체 구조도</text>
+
+  <!-- 0. 기획하기 -->
+  <rect x="320" y="52" width="260" height="44" rx="8" fill="#1B2B4B"/>
+  <text x="450" y="70" text-anchor="middle" font-size="12" fill="white" font-weight="700">0. 기획하기</text>
+  <text x="450" y="86" text-anchor="middle" font-size="11" fill="#94c6ff">기획서 · ERD · 테이블명세서 · WBS</text>
+
+  <!-- 화살표 0 → DATA -->
+  <line x1="450" y1="96" x2="450" y2="114" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- DATA 섹션 컨테이너 -->
+  <rect x="60" y="116" width="780" height="168" rx="10" fill="#EDF2F7" stroke="#CBD5E0" stroke-width="1"/>
+  <rect x="60" y="116" width="780" height="26" rx="10" fill="#334155"/>
+  <rect x="60" y="130" width="780" height="12" fill="#334155"/>
+  <text x="90" y="133" font-size="12" font-weight="700" fill="white">DATA</text>
+
+  <!-- 1. 크롤링 -->
+  <rect x="80" y="154" width="310" height="110" rx="8" fill="white" stroke="#CBD5E0" stroke-width="1"/>
+  <text x="96" y="173" font-size="12" font-weight="700" fill="#1B2B4B">1. 크롤링</text>
+  <rect x="96" y="180" width="120" height="26" rx="6" fill="#dbeafe"/>
+  <text x="156" y="197" text-anchor="middle" font-size="11" fill="#1e40af" font-weight="600">DBR (한국어)</text>
+  <rect x="226" y="180" width="120" height="26" rx="6" fill="#ede9fe"/>
+  <text x="286" y="197" text-anchor="middle" font-size="11" fill="#6d28d9" font-weight="600">HBR (영어)</text>
+  <text x="96" y="226" font-size="10" fill="#64748b">Selenium + BeautifulSoup</text>
+  <text x="96" y="241" font-size="10" fill="#64748b">DBR 11,273건 · HBR 2,062건 · Naver API (예정)</text>
+  <text x="96" y="255" font-size="10" fill="#64748b">URL 기준 중복 제거 → MySQL 적재</text>
+
+  <!-- 화살표 크롤링→ML파이프라인 -->
+  <line x1="390" y1="209" x2="408" y2="209" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- 2. 데이터처리 ML 파이프라인 -->
+  <rect x="410" y="154" width="410" height="110" rx="8" fill="white" stroke="#CBD5E0" stroke-width="1"/>
+  <text x="426" y="173" font-size="12" font-weight="700" fill="#1B2B4B">2. 데이터처리 (ML 파이프라인)</text>
+  <rect x="426" y="180" width="170" height="26" rx="6" fill="#dcfce7"/>
+  <text x="511" y="197" text-anchor="middle" font-size="11" fill="#166534" font-weight="600">Kiwi 형태소분석 · 라벨링</text>
+  <rect x="606" y="180" width="180" height="26" rx="6" fill="#fef9c3"/>
+  <text x="696" y="197" text-anchor="middle" font-size="11" fill="#854d0e" font-weight="600">SBERT · FAISS · LogReg</text>
+  <text x="426" y="226" font-size="10" fill="#64748b">① 전처리 → ② 라벨링 (성공/실패/중립 자동 부여)</text>
+  <text x="426" y="241" font-size="10" fill="#64748b">③ SBERT 384차원 임베딩 + FAISS IndexFlatIP</text>
+  <text x="426" y="255" font-size="10" fill="#64748b">④ 리스크 모델 P(failure) → ⑤ UMAP 2D · 12클러스터</text>
+
+  <!-- 화살표 DATA → EDA -->
+  <line x1="450" y1="284" x2="450" y2="302" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- EDA -->
+  <rect x="220" y="304" width="460" height="58" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+  <text x="450" y="326" text-anchor="middle" font-size="13" font-weight="700" fill="#166534">EDA (탐색적 데이터 분석)</text>
+  <text x="450" y="346" text-anchor="middle" font-size="10" fill="#64748b">클래스 분포 확인 · 키워드 분석 · 임베딩 시각화 · 모델 전략 확정</text>
+
+  <!-- EDA → 병렬 분기 -->
+  <line x1="450" y1="362" x2="450" y2="374" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="450" y="371" text-anchor="middle" font-size="9" fill="#94a3b8">병렬 진행</text>
+  <line x1="170" y1="374" x2="730" y2="374" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,2"/>
+  <line x1="170" y1="370" x2="170" y2="392" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="450" y1="370" x2="450" y2="392" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="730" y1="370" x2="730" y2="392" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- 프론트엔드 -->
+  <rect x="60" y="394" width="220" height="186" rx="10" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.5"/>
+  <rect x="60" y="394" width="220" height="26" rx="10" fill="#2563eb"/>
+  <rect x="60" y="408" width="220" height="12" fill="#2563eb"/>
+  <text x="90" y="411" font-size="12" font-weight="700" fill="white">프론트엔드</text>
+  <text x="75" y="438" font-size="11" font-weight="700" fill="#1e40af">3. 웹페이지 구현</text>
+  <text x="75" y="456" font-size="10" fill="#3b82f6">React.js + Tailwind CSS + Axios</text>
+  <text x="75" y="473" font-size="10" fill="#64748b">· 메인 / 전략 입력 UI</text>
+  <text x="75" y="489" font-size="10" fill="#64748b">· 리스크 진단 결과 화면</text>
+  <text x="75" y="505" font-size="10" fill="#64748b">· 시맨틱 맵 (D3.js / Recharts)</text>
+  <text x="75" y="521" font-size="10" fill="#64748b">· 로그인 / 회원가입</text>
+  <text x="75" y="537" font-size="10" fill="#64748b">· 유사 아티클 카드뷰</text>
+  <text x="75" y="553" font-size="10" fill="#64748b">· Axios API 연동</text>
+
+  <!-- 백엔드 &amp; DB -->
+  <rect x="300" y="394" width="240" height="186" rx="10" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1.5"/>
+  <rect x="300" y="394" width="240" height="26" rx="10" fill="#16a34a"/>
+  <rect x="300" y="408" width="240" height="12" fill="#16a34a"/>
+  <text x="330" y="411" font-size="12" font-weight="700" fill="white">백엔드 &amp; DB</text>
+  <text x="315" y="438" font-size="11" font-weight="700" fill="#166534">4. 기능구현 + DB 설계</text>
+  <text x="315" y="456" font-size="10" fill="#16a34a">Node.js / Express + MySQL</text>
+  <text x="315" y="473" font-size="10" fill="#64748b">· REST API 설계</text>
+  <text x="315" y="489" font-size="10" fill="#64748b">· JWT 인증·인가</text>
+  <text x="315" y="505" font-size="10" fill="#64748b">· Kakao / Naver / Google OAuth</text>
+  <text x="315" y="521" font-size="10" fill="#64748b">· DB 스키마 설계·적재 (14테이블)</text>
+  <text x="315" y="537" font-size="10" fill="#64748b">· AI Server 연동 프록시</text>
+
+  <!-- AI Server -->
+  <rect x="560" y="394" width="280" height="186" rx="10" fill="#fdf4ff" stroke="#e9d5ff" stroke-width="1.5"/>
+  <rect x="560" y="394" width="280" height="26" rx="10" fill="#9333ea"/>
+  <rect x="560" y="408" width="280" height="12" fill="#9333ea"/>
+  <text x="590" y="411" font-size="12" font-weight="700" fill="white">AI Server (FastAPI)</text>
+  <text x="575" y="438" font-size="11" font-weight="700" fill="#7e22ce">5. 유사 사례 검색</text>
+  <text x="575" y="454" font-size="10" fill="#64748b">  SBERT + FAISS · POST /diagnose</text>
+  <text x="575" y="471" font-size="11" font-weight="700" fill="#7e22ce">6. 시맨틱 맵</text>
+  <text x="575" y="487" font-size="10" fill="#64748b">  UMAP 2D 좌표 · GET /clusters</text>
+  <text x="575" y="504" font-size="11" font-weight="700" fill="#7e22ce">7. 리스크 스코어링</text>
+  <text x="575" y="520" font-size="10" fill="#64748b">  LogReg P(failure) · risk_score 0~1</text>
+  <text x="575" y="537" font-size="11" font-weight="700" fill="#7e22ce">8. AI 진단 리포트</text>
+  <text x="575" y="553" font-size="10" fill="#64748b">  GPT API + LangChain · 개선 제언</text>
+
+  <!-- AI Server 의존 표시 -->
+  <rect x="565" y="564" width="270" height="18" rx="4" fill="#f3e8ff"/>
+  <text x="700" y="576" text-anchor="middle" font-size="9" fill="#7e22ce">5 완료 후 6·7·8 진행 · 임베딩 파이프라인 공유</text>
+
+  <!-- 하단 화살표 → 통합 테스트 -->
+  <line x1="170" y1="580" x2="170" y2="630" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="420" y1="580" x2="420" y2="630" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="700" y1="584" x2="700" y2="630" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="170" y1="630" x2="700" y2="630" stroke="#94a3b8" stroke-width="1"/>
+  <line x1="450" y1="630" x2="450" y2="646" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- 통합 테스트 -->
+  <rect x="240" y="648" width="420" height="58" rx="8" fill="#fff7ed" stroke="#fed7aa" stroke-width="1.5"/>
+  <text x="450" y="672" text-anchor="middle" font-size="13" font-weight="700" fill="#c2410c">통합 테스트</text>
+  <text x="450" y="690" text-anchor="middle" font-size="10" fill="#64748b">프론트 ↔ Node.js 백엔드 ↔ FastAPI AI Server 연결 검증</text>
+  <line x1="450" y1="706" x2="450" y2="724" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- QA + 발표 준비 -->
+  <rect x="240" y="726" width="420" height="58" rx="8" fill="#fef2f2" stroke="#fecaca" stroke-width="1.5"/>
+  <text x="450" y="750" text-anchor="middle" font-size="13" font-weight="700" fill="#b91c1c">QA · 버그 수정 · 발표 준비</text>
+  <text x="450" y="768" text-anchor="middle" font-size="10" fill="#64748b">UI 폴리싱 · 데모 시나리오 · 발표 자료</text>
+  <line x1="450" y1="784" x2="450" y2="802" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- 최종 발표 -->
+  <rect x="300" y="804" width="300" height="52" rx="10" fill="#1B2B4B"/>
+  <text x="450" y="828" text-anchor="middle" font-size="14" font-weight="700" fill="white">최종 발표</text>
+  <text x="450" y="846" text-anchor="middle" font-size="11" fill="#C9A84C">2026. 06. 30.</text>
+
+  <!-- 범례 -->
+  <rect x="60" y="874" width="780" height="110" rx="8" fill="white" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="80" y="894" font-size="11" font-weight="700" fill="#475569">범례</text>
+  <rect x="80" y="904" width="12" height="12" rx="2" fill="#2563eb"/>
+  <text x="98" y="915" font-size="10" fill="#475569">프론트엔드</text>
+  <rect x="190" y="904" width="12" height="12" rx="2" fill="#16a34a"/>
+  <text x="208" y="915" font-size="10" fill="#475569">백엔드·DB</text>
+  <rect x="290" y="904" width="12" height="12" rx="2" fill="#9333ea"/>
+  <text x="308" y="915" font-size="10" fill="#475569">AI Server</text>
+  <rect x="400" y="904" width="12" height="12" rx="2" fill="#334155"/>
+  <text x="418" y="915" font-size="10" fill="#475569">데이터</text>
+  <rect x="490" y="904" width="12" height="12" rx="2" fill="#16a34a" opacity="0.3"/>
+  <text x="508" y="915" font-size="10" fill="#475569">EDA</text>
+  <line x1="80" y1="932" x2="120" y2="932" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4,2"/>
+  <text x="128" y="936" fill="#475569" font-size="10">병렬 진행</text>
+  <line x1="240" y1="932" x2="280" y2="932" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="288" y="936" fill="#475569" font-size="10">순차 진행 (의존관계)</text>
+  <text x="80" y="958" font-size="10" fill="#94a3b8">* 프론트 · 백엔드&amp;DB · AI Server는 EDA 완료 후 병렬 진행</text>
+  <text x="80" y="974" font-size="10" fill="#94a3b8">* AI Server 5(임베딩) 완료 후 6(시맨틱맵) · 7(리스크) · 8(GPT 리포트) 진행</text>
+</svg>

@@ -1,0 +1,16 @@
+불용어 220개 로드
+Kiwi 초기화 완료
+
+[DBR] 로드: C:\Users\smhrd\Documents\Claude\Projects\실전프로젝트\크롤링\DBR_articles.csv
+[DBR] 텍스트 정제 11273건 ...
+[DBR] Kiwi 형태소 분석 ... (13.8s 경과)
+[DBR] 토큰 부족 문서 제거: 11273 → 11273 (평균 토큰 1138, 155.8s)
+[DBR] 저장 완료 → C:\Users\smhrd\Documents\Claude\Projects\실전프로젝트\NLP\output\DBR_preprocessed.parquet  (11273건)
+
+[HBR] 로드: C:\Users\smhrd\Documents\Claude\Projects\실전프로젝트\크롤링\HBR_articles.csv
+[HBR] 텍스트 정제 2062건 ...
+[HBR] Kiwi 형태소 분석 ... (2.3s 경과)
+[HBR] 토큰 부족 문서 제거: 2062 → 2062 (평균 토큰 1070, 25.3s)
+[HBR] 저장 완료 → C:\Users\smhrd\Documents\Claude\Projects\실전프로젝트\NLP\output\HBR_preprocessed.parquet  (2062건)
+
+① 전처리 완료
