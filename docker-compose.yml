@@ -59,7 +59,7 @@ services:
   # Dockerfile 준비되면 아래 주석 해제
   # frontend:
   #   build:
-  #     context: "./DBR 기사 시각화 서비스"
+  #     context: ./frontend
   #   container_name: dongajul_frontend
   #   restart: unless-stopped
   #   ports:
