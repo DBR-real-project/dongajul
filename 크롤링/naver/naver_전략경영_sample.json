@@ -1,0 +1,43 @@
+{
+  "lastBuildDate": "Mon, 19 May 2026 12:00:00 +0900",
+  "total": 5,
+  "start": 1,
+  "display": 5,
+  "items": [
+    {
+      "title": "삼성전자, 반도체 위기 속 &quot;초격차&quot; <b>전략</b> 재정비",
+      "originallink": "https://www.example.com/article/001",
+      "link": "https://news.naver.com/article/001",
+      "description": "삼성전자가 반도체 불황 속에서도 기술 초격차 전략을 고수하며 위기 극복에 나섰다. 경쟁사 대비 R&amp;D 투자를 확대하고 차세대 HBM 개발에 집중하는 방향으로 전략을 재편했다.",
+      "pubDate": "Mon, 19 May 2026 09:00:00 +0900"
+    },
+    {
+      "title": "스타트업 <b>실패</b> 사례 분석: 시장 오판이 가장 큰 원인",
+      "originallink": "https://www.example.com/article/002",
+      "link": "https://news.naver.com/article/002",
+      "description": "국내 스타트업 300개사를 분석한 결과 창업 3년 내 폐업한 기업의 43%가 시장 수요 예측 실패를 주된 원인으로 꼽았다. 자금 부족보다 전략적 판단 오류가 더 치명적이라는 분석이다.",
+      "pubDate": "Sun, 18 May 2026 14:30:00 +0900"
+    },
+    {
+      "title": "카카오 &quot;AI 전환&quot; 선언…수익 모델 다변화로 성장 노린다",
+      "originallink": "https://www.example.com/article/003",
+      "link": "https://news.naver.com/article/003",
+      "description": "카카오가 AI 기술을 핵심 성장 동력으로 선정하고 전사 조직 개편을 단행했다. 구독 기반 AI 서비스 확대와 B2B 솔루션 강화를 통해 광고 의존도를 낮추겠다는 계획이다.",
+      "pubDate": "Sat, 17 May 2026 11:00:00 +0900"
+    },
+    {
+      "title": "쿠팡, 적자 지속에도 <b>물류 인프라</b> 투자 확대 왜?",
+      "originallink": "https://www.example.com/article/004",
+      "link": "https://news.naver.com/article/004",
+      "description": "쿠팡이 수년간 영업손실을 기록하면서도 물류센터 확장과 로켓배송 고도화에 대규모 투자를 지속하고 있다. 단기 손실을 감수하고 장기 경쟁우위를 확보하려는 전략적 선택이라는 분석이 나온다.",
+      "pubDate": "Fri, 16 May 2026 16:00:00 +0900"
+    },
+    {
+      "title": "위기의 롯데, 구조조정과 혁신 사이에서 갈림길",
+      "originallink": "https://www.example.com/article/005",
+      "link": "https://news.naver.com/article/005",
+      "description": "롯데그룹이 유통 부문 부진과 화학 계열사 적자 확대로 경영 위기에 직면했다. 계열사 매각과 인력 감축 등 강도 높은 구조조정을 추진 중이나 근본적 사업 포트폴리오 재편 없이는 한계라는 지적이 나온다.",
+      "pubDate": "Thu, 15 May 2026 10:00:00 +0900"
+    }
+  ]
+}
