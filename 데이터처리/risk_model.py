@@ -44,9 +44,23 @@ def main() -> None:
 
     # ── 데이터 로드 ──────────────────────────────────────────────────────
     print("데이터 로드...")
+
+    # DBR + HBR 임베딩 & 라벨
     embeddings = np.load(str(OUT_DIR / "embeddings.npy")).astype(np.float32)
     meta = pd.read_parquet(OUT_DIR / "articles_meta.parquet")
-    print(f"임베딩: {embeddings.shape}  메타: {len(meta)}건")
+    print(f"[DBR+HBR] 임베딩: {embeddings.shape}  메타: {len(meta)}건")
+
+    # NAVER 임베딩 & 라벨 (있을 때만 합산 — 학습 전용, FAISS 미포함)
+    naver_emb_path    = OUT_DIR / "NAVER_embeddings.npy"
+    naver_label_path  = OUT_DIR / "NAVER_labeled.parquet"
+    if naver_emb_path.exists() and naver_label_path.exists():
+        naver_emb    = np.load(str(naver_emb_path)).astype(np.float32)
+        naver_meta   = pd.read_parquet(naver_label_path)[["label"]]
+        embeddings   = np.vstack([embeddings, naver_emb])
+        meta         = pd.concat([meta, naver_meta], ignore_index=True)
+        print(f"[NAVER] 임베딩: {naver_emb.shape} 합산 → 전체: {embeddings.shape}")
+    else:
+        print("[NAVER] 임베딩 없음 — DBR+HBR만으로 학습합니다.")
 
     labels = meta["label"].values  # 0=failure, 1=success, 2=neutral
 
