@@ -26,6 +26,7 @@ DBR 성공/실패 사례 대조분석 기반 전략 리스크 진단 서비스.
 |------|------|------|
 | DBR_articles.csv | 11,273건 | 크롤링/DBR_articles.csv |
 | HBR_articles.csv | 2,062건 | 크롤링/HBR_articles.csv |
+| NAVER JSON (final_news_*.json) | 55,465건 | 크롤링/naver/ (gitignore됨, 모델학습 전용) |
 
 컬럼: title, content, url, category, published_date, source, summary
 
@@ -126,25 +127,33 @@ DBR 성공/실패 사례 대조분석 기반 전략 리스크 진단 서비스.
 │   ├── DBR_articles.csv
 │   ├── HBR_articles.csv
 │   └── naver/                  ← 네이버 API JSON 파일 위치 (친구 데이터 수령 후 여기에)
-│       └── naver_전략경영_sample.json  ← 테스트용 샘플 (실제 데이터 오면 삭제)
+│       ├── final_news_2023.json  ← NAVER 크롤링 데이터 (gitignore, 모델학습 전용)
+│       ├── final_news_2024.json
+│       ├── final_news_2025.json
+│       ├── final_news_2026.json
+│       ├── crawling1.py          ← 크롤링 스크립트
+│       └── check_count.py
 └── 데이터처리/
     ├── preprocess.py            ← ① DBR/HBR 전처리
-    ├── preprocess_naver.py      ← ① 네이버 전처리 (데이터 도착 시 실행)
-    ├── label.py                 ← ② 라벨링 (완료)
+    ├── preprocess_naver.py      ← ① 네이버 전처리 (완료)
+    ├── embed_naver.py           ← NAVER 전용 SBERT 임베딩 (완료, 모델학습 전용)
+    ├── label.py                 ← ② 라벨링 DBR/HBR/NAVER (완료)
     ├── stopwords_ko.txt
     └── output/
         ├── DBR_preprocessed.parquet
         ├── HBR_preprocessed.parquet
+        ├── NAVER_preprocessed.parquet  ← 55,465건
         ├── DBR_labeled.parquet
         ├── HBR_labeled.parquet
-        ├── embeddings.npy              ← ③ 13,335건 384차원 임베딩
+        ├── NAVER_labeled.parquet       ← success 65.7% / failure 6.0% / neutral 28.2%
+        ├── embeddings.npy              ← ③ 13,335건 384차원 임베딩 (DBR+HBR, FAISS용)
+        ├── NAVER_embeddings.npy        ← 55,465건 임베딩 (모델학습 전용, FAISS 미포함)
         ├── faiss.index                 ← ③ FAISS IndexFlatIP
         ├── articles_meta.parquet       ← ③ 검색 결과용 메타데이터
         ├── risk_model.pkl              ← ④ LogisticRegression (risk_score)
         ├── risk_model_report.txt       ← ④ 성능 리포트
         ├── umap_coords.parquet         ← ⑤ umap_x, umap_y, cluster_id
-        ├── cluster_info.parquet        ← ⑤ clusters 테이블용
-        └── NAVER_preprocessed.parquet  ← 데이터 도착 후 생성됨
+        └── cluster_info.parquet        ← ⑤ clusters 테이블용
 ai_server/
     ├── __init__.py
     ├── main.py              ← FastAPI 앱 (POST /diagnose, GET /health, GET /clusters)
@@ -170,14 +179,29 @@ ai_server/
 
 ---
 
-## 현재 상태 (2026-05-19)
+## 현재 상태 (2026-05-26)
 
 **NLP 파이프라인 전체 완료**: ① 전처리 → ② 라벨링 → ③ 임베딩+FAISS → ④ 리스크 모델 → ⑤ UMAP+K-means
 **FastAPI ML 서비스 완료**: POST /diagnose, GET /health, GET /clusters (테스트 통과)
+**네이버 데이터 파이프라인 완료**: 55,465건 전처리→라벨링→임베딩 (모델학습 전용, FAISS 미포함)
+**risk_model.py 재학습 필요**: NAVER_embeddings.npy 생성 완료, risk_model.py 업데이트됨
+  → `python 데이터처리/risk_model.py` 실행하면 NAVER 포함 3종 데이터로 재학습됨
 
-**네이버 데이터 수령 시**: 크롤링/naver/ 폴더에 JSON 파일 넣고 아래 두 단계 실행
-1. `python 데이터처리/preprocess_naver.py` → NAVER_preprocessed.parquet
-2. 필요시 label.py / embed.py 재실행 (NAVER 포함 통합)
+**네이버 데이터 파이프라인 실행 순서** (이미 완료됨):
+1. `python 데이터처리/preprocess_naver.py` → NAVER_preprocessed.parquet (55,465건)
+2. `python 데이터처리/label.py` → NAVER_labeled.parquet
+3. `python 데이터처리/embed_naver.py` → NAVER_embeddings.npy (FAISS 미포함)
+4. `python 데이터처리/risk_model.py` → risk_model.pkl (재학습 미완료, 실행 필요)
+
+**Git 현황** (develop 브랜치):
+- 커밋 완료, 2 commits ahead of origin (push 미완료)
+- 크롤링/naver/*.json은 .gitignore 처리됨 (대용량 데이터)
+
+**개발 환경 현황**:
+- Node.js v24.13.1 ✅ 설치됨
+- Docker Desktop ❌ 미설치 (PDF 가이드 참고하여 설치 필요)
+- MySQL 8.0 ✅ 설치됨 (Start Database 앱 존재)
+- Git ✅
 
 **다음 할 일**: MySQL DB 연동
 - MySQL에 articles / article_labels / article_vectors / clusters 테이블 INSERT
