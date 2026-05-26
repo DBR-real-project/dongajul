@@ -107,7 +107,10 @@ def load_json_files(folder: Path) -> pd.DataFrame:
         print("       JSON 파일을 크롤링/naver/ 폴더에 넣어주세요.")
         return pd.DataFrame()
 
-    files = sorted(folder.glob("*.json"))
+    # sample 파일 제외, final_news_*.json 우선 / 없으면 전체 json
+    all_files = sorted(folder.glob("*.json"))
+    final_files = [f for f in all_files if f.name.startswith("final_news_")]
+    files = final_files if final_files else [f for f in all_files if "sample" not in f.name.lower()]
     if not files:
         print(f"[경고] JSON 파일 없음: {folder}")
         return pd.DataFrame()
@@ -125,20 +128,30 @@ def load_json_files(folder: Path) -> pd.DataFrame:
         items = data.get("items", data) if isinstance(data, dict) else data
 
         for item in items:
-            title       = clean_html(item.get("title", ""))
-            description = clean_html(item.get("description", ""))
-            url         = item.get("originallink") or item.get("link", "")
-            pub_raw     = item.get("pubDate", "")
-            pub_date    = parse_pubdate(pub_raw) if pub_raw else None
+            title    = clean_html(item.get("title", ""))
+            content  = clean_html(item.get("content", "") or item.get("description", ""))
+            summary  = clean_html(item.get("summary", "")) or content[:200]
+            url      = item.get("url", "") or item.get("originallink") or item.get("link", "")
+            source   = item.get("source", "NAVER")
+            category = item.get("category", cat)
+
+            # published_at: 'YYYY-MM-DD HH:MM:SS' 또는 RFC 2822(pubDate) 모두 처리
+            pub_raw  = item.get("published_at", "") or item.get("pubDate", "")
+            if pub_raw and len(pub_raw) >= 10 and pub_raw[4] == "-":
+                pub_date = pub_raw[:10]          # 이미 YYYY-MM-DD 형식
+            elif pub_raw:
+                pub_date = parse_pubdate(pub_raw)  # RFC 2822 파싱
+            else:
+                pub_date = None
 
             rows.append({
                 "title":          title,
-                "content":        description,   # 미리보기 → content 겸용
+                "content":        content,
                 "url":            url,
-                "category":       cat,
+                "category":       category,
                 "published_date": pub_date,
-                "source":         "NAVER",
-                "summary":        description,
+                "source":         source,
+                "summary":        summary,
             })
 
     df = pd.DataFrame(rows)

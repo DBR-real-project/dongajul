@@ -202,7 +202,7 @@ def process_file(name: str) -> pd.DataFrame:
 
 def main() -> None:
     results = {}
-    for name in ("DBR", "HBR"):
+    for name in ("DBR", "HBR", "NAVER"):
         df = process_file(name)
         out = OUT_DIR / f"{name}_labeled.parquet"
         df.to_parquet(out, index=False)
