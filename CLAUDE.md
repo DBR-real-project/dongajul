@@ -84,8 +84,8 @@ DBR 성공/실패 사례 대조분석 기반 전략 리스크 진단 서비스.
 ## ④ 리스크 스코어링 결과 (완료)
 
 - 모델: LogisticRegression (C=1.0, class_weight='balanced', max_iter=1000)
-- 학습: 12,351건 (neutral 984건 제외), 5-fold stratified CV
-- **성능**: CV ROC-AUC=0.8705±0.0093 / Test ROC-AUC=0.9998 / Failure Recall=0.82
+- 학습: 52,160건 (DBR+HBR+NAVER, neutral 16,640건 제외), 5-fold stratified CV
+- **성능**: CV ROC-AUC=0.9353±0.0051 / Test ROC-AUC=0.9382 / Failure Recall=0.86
 - risk_score = P(failure|embedding), 높을수록 실패 유사 사례와 가까운 전략
 - 스크립트: 데이터처리/risk_model.py
 
@@ -184,14 +184,14 @@ ai_server/
 **NLP 파이프라인 전체 완료**: ① 전처리 → ② 라벨링 → ③ 임베딩+FAISS → ④ 리스크 모델 → ⑤ UMAP+K-means
 **FastAPI ML 서비스 완료**: POST /diagnose, GET /health, GET /clusters (테스트 통과)
 **네이버 데이터 파이프라인 완료**: 55,465건 전처리→라벨링→임베딩 (모델학습 전용, FAISS 미포함)
-**risk_model.py 재학습 필요**: NAVER_embeddings.npy 생성 완료, risk_model.py 업데이트됨
-  → `python 데이터처리/risk_model.py` 실행하면 NAVER 포함 3종 데이터로 재학습됨
+**risk_model.py 재학습 완료**: DBR+HBR+NAVER 68,800건으로 재학습
+  → CV ROC-AUC=0.9353 / Test ROC-AUC=0.9382 / Failure Recall=0.86
 
 **네이버 데이터 파이프라인 실행 순서** (이미 완료됨):
 1. `python 데이터처리/preprocess_naver.py` → NAVER_preprocessed.parquet (55,465건)
 2. `python 데이터처리/label.py` → NAVER_labeled.parquet
 3. `python 데이터처리/embed_naver.py` → NAVER_embeddings.npy (FAISS 미포함)
-4. `python 데이터처리/risk_model.py` → risk_model.pkl (재학습 미완료, 실행 필요)
+4. `python 데이터처리/risk_model.py` → risk_model.pkl ✅ 재학습 완료
 
 **Git 현황** (develop 브랜치):
 - 커밋 완료, 2 commits ahead of origin (push 미완료)
