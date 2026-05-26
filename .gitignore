@@ -27,6 +27,7 @@ build/
 크롤링/*.csv
 크롤링/*.xlsx
 크롤링/*.xls
+크롤링/naver/*.json
 데이터처리/output/*.parquet
 데이터처리/output/*.npy
 데이터처리/output/*.pkl
