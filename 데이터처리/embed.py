@@ -1,19 +1,17 @@
 """
 ③ Sentence-BERT 임베딩 + FAISS 인덱스 구축 (동아줄)
 
-입력 : NLP/output/{DBR,HBR}_labeled.parquet
-출력 : NLP/output/embeddings.npy      ← 전체 임베딩 행렬 (N x 384)
-       NLP/output/faiss.index          ← FAISS IndexFlatIP (내적 기반 코사인)
-       NLP/output/articles_meta.parquet ← 검색 결과용 메타데이터
+입력 : 데이터처리/output/{DBR,HBR}_labeled.parquet
+출력 : 데이터처리/output/embeddings.npy          ← 전체 임베딩 행렬 (N x 768)
+       데이터처리/output/{DBR,HBR}_embeddings.npy ← 소스별 임베딩 (label.py Stage2용)
+       데이터처리/output/faiss.index              ← FAISS IndexFlatIP (코사인)
+       데이터처리/output/articles_meta.parquet    ← 검색 결과용 메타데이터
 
-사용 모델: paraphrase-multilingual-MiniLM-L12-v2
-  - 50개 언어 지원 (한국어 포함), 384차원
-  - 속도/성능 균형 최적 (약 120MB)
+사용 모델: jhgan/ko-sroberta-multitask
+  - 한국어 특화 SBERT (klue/roberta-base 기반), 768차원
+  - 기존 multilingual-MiniLM(384차원) 대비 한국어 이해력 대폭 향상
 
-임베딩 대상: title + ". " + summary (요약이 없으면 content 앞 500자)
-  → 전문보다 핵심 정보만 담아 검색 품질 향상
-
-실행: python NLP/embed.py
+실행: python 데이터처리/embed.py
 """
 from __future__ import annotations
 
@@ -31,8 +29,8 @@ sys.stdout.reconfigure(encoding="utf-8")
 ROOT    = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "데이터처리" / "output"
 
-MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"
-BATCH_SIZE = 128
+MODEL_NAME = "jhgan/ko-sroberta-multitask"   # 한국어 특화 (768차원)
+BATCH_SIZE = 64                               # RoBERTa-base는 MiniLM보다 메모리 큼
 
 
 def build_embed_text(df: pd.DataFrame) -> list[str]:
@@ -106,6 +104,16 @@ def main() -> None:
                  "source", "label", "label_name", "confidence"]
     meta_cols = [c for c in meta_cols if c in df_all.columns]
     df_all[meta_cols].to_parquet(meta_path, index=False)
+
+    # ── 소스별 임베딩 저장 (label.py Stage2 SBERT 재분류용) ───────────────
+    offset = 0
+    for name, df_src in zip(("DBR", "HBR"), dfs):
+        n = len(df_src)
+        src_emb = embeddings[offset:offset + n]
+        src_path = OUT_DIR / f"{name}_embeddings.npy"
+        np.save(str(src_path), src_emb)
+        print(f"  {src_path.name}  ({n}건, shape={src_emb.shape})")
+        offset += n
 
     print(f"\n저장 완료:")
     print(f"  {emb_path}  ({emb_path.stat().st_size//1024//1024}MB)")
