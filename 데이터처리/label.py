@@ -96,18 +96,92 @@ def keyword_label(success: int, failure: int) -> tuple[int, str, float]:
     return 2, "neutral", round(abs(ratio - 0.5) * 2, 4)
 
 
+def sbert_relabel(
+    df: pd.DataFrame,
+    name: str,
+    sim_threshold: float = 0.20,
+) -> pd.DataFrame:
+    """Stage 2: SBERT 임베딩 센트로이드 기반 모호 문서 재분류.
+
+    TF-IDF 대비 장점:
+      - 의미 기반 유사도 (sparse bag-of-words 한계 극복)
+      - '실패를 극복한 성공' 같은 애매한 문서를 의미 공간에서 더 정확히 분류
+      - 정규화된 768차원 벡터 → 내적 = 코사인 유사도
+    """
+    emb_path = OUT_DIR / f"{name}_embeddings.npy"
+    if not emb_path.exists():
+        print(f"  [{name}] SBERT 임베딩 없음 → TF-IDF fallback 사용")
+        return tfidf_relabel(df, sim_threshold=0.15)
+
+    print(f"  [{name}] SBERT 임베딩 기반 재분류 (threshold={sim_threshold}) ...")
+    t0 = time.time()
+    embeddings = np.load(str(emb_path)).astype(np.float32)
+
+    # 이미 normalize_embeddings=True로 저장됐으므로 단위벡터
+    # 혹시 모르니 재정규화
+    norms = np.linalg.norm(embeddings, axis=1, keepdims=True) + 1e-9
+    embeddings = embeddings / norms
+
+    confirmed   = df[df["label_stage"] == "keyword"]
+    neutral_idx = df[df["label_stage"] == "neutral"].index
+
+    if len(neutral_idx) == 0:
+        return df
+
+    success_pos = confirmed[confirmed["label"] == 1].index.tolist()
+    failure_pos = confirmed[confirmed["label"] == 0].index.tolist()
+
+    if not success_pos or not failure_pos:
+        print(f"  [{name}] 확정 라벨 부족 → TF-IDF fallback")
+        return tfidf_relabel(df, sim_threshold=0.15)
+
+    # 클래스 센트로이드 (정규화된 임베딩 평균 → 재정규화)
+    centroid_s = embeddings[success_pos].mean(axis=0)
+    centroid_f = embeddings[failure_pos].mean(axis=0)
+    centroid_s /= (np.linalg.norm(centroid_s) + 1e-9)
+    centroid_f /= (np.linalg.norm(centroid_f) + 1e-9)
+
+    # 모호 문서와 센트로이드 코사인 유사도 (= 내적, 정규화 후)
+    amb_embs = embeddings[neutral_idx]   # (M, 768)
+    sim_s = amb_embs @ centroid_s        # (M,)
+    sim_f = amb_embs @ centroid_f        # (M,)
+
+    new_labels     = df["label"].copy()
+    new_stages     = df["label_stage"].copy()
+    new_confidence = df["confidence"].copy()
+
+    reassigned = 0
+    for i, idx in enumerate(neutral_idx):
+        if sim_s[i] >= sim_threshold or sim_f[i] >= sim_threshold:
+            if sim_s[i] >= sim_f[i]:
+                new_labels[idx]     = 1
+                new_confidence[idx] = round(float(sim_s[i]), 4)
+            else:
+                new_labels[idx]     = 0
+                new_confidence[idx] = round(float(sim_f[i]), 4)
+            new_stages[idx] = "sbert"
+            reassigned += 1
+
+    df = df.copy()
+    df["label"]       = new_labels
+    df["label_stage"] = new_stages
+    df["confidence"]  = new_confidence
+    print(f"  SBERT 재분류 완료: {reassigned}/{len(neutral_idx)}건 중립→재분류 "
+          f"({time.time()-t0:.1f}s)")
+    return df
+
+
 def tfidf_relabel(
     df: pd.DataFrame,
     sim_threshold: float = 0.10,
 ) -> pd.DataFrame:
-    """Stage 2: TF-IDF 센트로이드 기반 모호 문서 재분류."""
+    """Stage 2 fallback: TF-IDF 센트로이드 기반 모호 문서 재분류."""
     confirmed = df[df["label_stage"] == "keyword"].copy()
     neutral_idx = df[df["label_stage"] == "neutral"].index
 
     if len(neutral_idx) == 0:
         return df
 
-    # TF-IDF 행렬 (전체 문서)
     print(f"  TF-IDF 벡터화 ({len(df)}건) ...")
     t0 = time.time()
     vec = TfidfVectorizer(
@@ -120,7 +194,6 @@ def tfidf_relabel(
     tfidf_matrix = vec.fit_transform(df["token_str"])
     print(f"  벡터화 완료 {time.time()-t0:.1f}s, shape={tfidf_matrix.shape}")
 
-    # 클래스별 센트로이드
     for label_val in (0, 1):
         idx = confirmed[confirmed["label"] == label_val].index
         if len(idx) == 0:
@@ -132,7 +205,6 @@ def tfidf_relabel(
     centroid_s = np.asarray(tfidf_matrix[success_idx].mean(axis=0))
     centroid_f = np.asarray(tfidf_matrix[failure_idx].mean(axis=0))
 
-    # 모호 문서 유사도
     amb_matrix = tfidf_matrix[neutral_idx]
     sim_s = cosine_similarity(amb_matrix, centroid_s).flatten()
     sim_f = cosine_similarity(amb_matrix, centroid_f).flatten()
@@ -152,9 +224,9 @@ def tfidf_relabel(
             new_stages[idx] = "tfidf"
 
     df = df.copy()
-    df["label"]      = new_labels
+    df["label"]       = new_labels
     df["label_stage"] = new_stages
-    df["confidence"] = new_confidence
+    df["confidence"]  = new_confidence
     return df
 
 
@@ -182,9 +254,9 @@ def process_file(name: str) -> pd.DataFrame:
           f"성공={(df['label']==1).sum()} / 실패={(df['label']==0).sum()} / "
           f"모호={(df['label']==2).sum()}")
 
-    # Stage 2: TF-IDF 재분류
-    print(f"[{name}] Stage 2 TF-IDF 재분류 ...")
-    df = tfidf_relabel(df, sim_threshold=0.15)
+    # Stage 2: SBERT 임베딩 재분류 (임베딩 없으면 TF-IDF fallback)
+    print(f"[{name}] Stage 2 SBERT 재분류 ...")
+    df = sbert_relabel(df, name, sim_threshold=0.20)
 
     final = {
         "성공": (df["label"] == 1).sum(),
@@ -214,10 +286,30 @@ def main() -> None:
     for name, df in results.items():
         vc = df["label_name"].value_counts()
         total = len(df)
+        stage_vc = df["label_stage"].value_counts().to_dict()
         print(f"[{name}] 총 {total}건 | "
               f"성공 {vc.get('success',0)} ({vc.get('success',0)/total*100:.1f}%) | "
               f"실패 {vc.get('failure',0)} ({vc.get('failure',0)/total*100:.1f}%) | "
-              f"모호 {vc.get('neutral',0)} ({vc.get('neutral',0)/total*100:.1f}%)")
+              f"모호 {vc.get('neutral',0)} ({vc.get('neutral',0)/total*100:.1f}%) | "
+              f"출처: {stage_vc}")
+
+    # ── articles_meta.parquet 라벨 업데이트 ──────────────────────────────
+    meta_path = OUT_DIR / "articles_meta.parquet"
+    if meta_path.exists():
+        meta = pd.read_parquet(meta_path)
+        # DBR+HBR 라벨을 meta에 반영 (순서 동일하게 유지됨)
+        dbr_hbr = pd.concat(
+            [results["DBR"][["label", "label_name"]],
+             results["HBR"][["label", "label_name"]]],
+            ignore_index=True,
+        )
+        if len(meta) == len(dbr_hbr):
+            meta["label"]      = dbr_hbr["label"].values
+            meta["label_name"] = dbr_hbr["label_name"].values
+            meta.to_parquet(meta_path, index=False)
+            print(f"\narticles_meta.parquet 라벨 업데이트 완료 ({len(meta)}건)")
+        else:
+            print(f"\n[경고] meta({len(meta)}) ≠ DBR+HBR({len(dbr_hbr)}) — meta 업데이트 스킵")
 
     print("\n② 라벨링 완료")
 

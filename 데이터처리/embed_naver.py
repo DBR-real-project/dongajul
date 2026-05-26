@@ -24,8 +24,8 @@ sys.stdout.reconfigure(encoding="utf-8")
 ROOT    = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "데이터처리" / "output"
 
-MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"
-BATCH_SIZE = 128
+MODEL_NAME = "jhgan/ko-sroberta-multitask"   # 한국어 특화 (768차원)
+BATCH_SIZE = 64
 
 
 def build_embed_text(df: pd.DataFrame) -> list[str]:
