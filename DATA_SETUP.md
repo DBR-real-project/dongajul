@@ -4,6 +4,27 @@ git clone만 하면 **코드만 있고 데이터가 없음** — 아래 순서�
 
 ---
 
+## 0. Docker Desktop 설치 (처음 한 번만)
+
+> Docker는 백엔드/프론트엔드 통합 실행 시 필요. AI 서버만 실행할 거면 스킵 가능.
+
+**어떤 버전 받아야 해?**
+- Intel / AMD CPU → **AMD64** 버전
+- Qualcomm 스냅드래곤 CPU → ARM64 버전
+- 일반 Windows 노트북/데스크탑은 **거의 다 AMD64**
+
+👉 https://docs.docker.com/desktop/setup/install/windows-install/  
+→ `Docker Desktop Installer.exe` 다운로드 후 실행  
+→ 설치 중 **"Use WSL 2 instead of Hyper-V"** 선택 (WSL 2 방식 권장)
+
+내 CPU 확인하려면 PowerShell에서:
+```powershell
+(Get-WmiObject Win32_Processor).Name
+```
+Intel / AMD 이름 나오면 → AMD64 설치.
+
+---
+
 ## 1. Python 환경 세팅
 
 ```bash
