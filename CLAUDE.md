@@ -81,11 +81,15 @@ DBR 성공/실패 사례 대조분석 기반 전략 리스크 진단 서비스.
 
 ---
 
-## ④ 리스크 스코어링 결과 (완료)
+## ④ 리스크 스코어링 결과 (완료 — 개선됨)
 
-- 모델: LogisticRegression (C=1.0, class_weight='balanced', max_iter=1000)
-- 학습: 52,160건 (DBR+HBR+NAVER, neutral 16,640건 제외), 5-fold stratified CV
-- **성능**: CV ROC-AUC=0.9353±0.0051 / Test ROC-AUC=0.9382 / Failure Recall=0.86
+- 임베딩: jhgan/ko-sroberta-multitask (768차원, 한국어 특화)
+- 라벨링: SBERT 센트로이드 기반 Stage2 재분류 (TF-IDF → SBERT)
+- 모델 비교 결과: MLP > LightGBM > XGBoost > LR
+- **채택 모델: MLP (hidden=512x128, threshold=0.33)**
+- 학습: 68,800건 (DBR+HBR+NAVER), neutral 제외 → 5-fold stratified CV
+- **성능**: Test ROC-AUC=0.9771 / Failure Precision=0.71 / Failure Recall=0.87 / F1=0.78
+- 이전 대비: Precision 0.36→0.71 (2배), AUC 0.9382→0.9771
 - risk_score = P(failure|embedding), 높을수록 실패 유사 사례와 가까운 전략
 - 스크립트: 데이터처리/risk_model.py
 
@@ -184,8 +188,11 @@ ai_server/
 **NLP 파이프라인 전체 완료**: ① 전처리 → ② 라벨링 → ③ 임베딩+FAISS → ④ 리스크 모델 → ⑤ UMAP+K-means
 **FastAPI ML 서비스 완료**: POST /diagnose, GET /health, GET /clusters (테스트 통과)
 **네이버 데이터 파이프라인 완료**: 55,465건 전처리→라벨링→임베딩 (모델학습 전용, FAISS 미포함)
-**risk_model.py 재학습 완료**: DBR+HBR+NAVER 68,800건으로 재학습
-  → CV ROC-AUC=0.9353 / Test ROC-AUC=0.9382 / Failure Recall=0.86
+**모델 성능 개선 완료** (2026-05-27):
+  → 임베딩: multilingual-MiniLM(384) → ko-sroberta-multitask(768)
+  → 라벨링: TF-IDF Stage2 → SBERT 센트로이드 재분류 (failure DBR 4.7%→12.2%)
+  → 분류기: LR → MLP (LR/LightGBM/XGBoost/MLP/Ensemble 비교 후 채택)
+  → Test ROC-AUC=0.9771 / Failure Precision=0.71(↑) / Recall=0.87 / F1=0.78
 
 **네이버 데이터 파이프라인 실행 순서** (이미 완료됨):
 1. `python 데이터처리/preprocess_naver.py` → NAVER_preprocessed.parquet (55,465건)
