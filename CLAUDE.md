@@ -183,30 +183,36 @@ ai_server/
 
 ---
 
-## 현재 상태 (2026-05-26)
+## 현재 상태 (2026-05-27)
 
 **NLP 파이프라인 전체 완료**: ① 전처리 → ② 라벨링 → ③ 임베딩+FAISS → ④ 리스크 모델 → ⑤ UMAP+K-means
 **FastAPI ML 서비스 완료**: POST /diagnose, GET /health, GET /clusters (테스트 통과)
 **네이버 데이터 파이프라인 완료**: 55,465건 전처리→라벨링→임베딩 (모델학습 전용, FAISS 미포함)
+
 **모델 성능 개선 완료** (2026-05-27):
   → 임베딩: multilingual-MiniLM(384) → ko-sroberta-multitask(768)
   → 라벨링: TF-IDF Stage2 → SBERT 센트로이드 재분류 (failure DBR 4.7%→12.2%)
   → 분류기: LR → MLP (LR/LightGBM/XGBoost/MLP/Ensemble 비교 후 채택)
-  → Test ROC-AUC=0.9771 / Failure Precision=0.71(↑) / Recall=0.87 / F1=0.78
+  → Test ROC-AUC=0.9784 / Failure Precision=0.71 / Recall=0.88 / F1=0.78
 
-**네이버 데이터 파이프라인 실행 순서** (이미 완료됨):
-1. `python 데이터처리/preprocess_naver.py` → NAVER_preprocessed.parquet (55,465건)
-2. `python 데이터처리/label.py` → NAVER_labeled.parquet
-3. `python 데이터처리/embed_naver.py` → NAVER_embeddings.npy (FAISS 미포함)
-4. `python 데이터처리/risk_model.py` → risk_model.pkl ✅ 재학습 완료
+**자동 라벨 검수 완료** (2026-05-27):
+  → MLP P(failure)<0.20 기준으로 failure→neutral 자동 교정
+  → DBR 187건 + HBR 9건 = 196건 교정
+  → 라벨 교정 후 재학습: AUC 0.9771→0.9784 (↑)
+  → 스크립트: 데이터처리/label_verify.py
 
-**Git 현황** (develop 브랜치):
-- 커밋 완료, 2 commits ahead of origin (push 미완료)
-- 크롤링/naver/*.json은 .gitignore 처리됨 (대용량 데이터)
+**UMAP+K-means 재실행 완료** (2026-05-27, 768차원 기준):
+  → 12개 클러스터 재구성 (AI/디지털, HR/리더십, 마케팅/브랜드, ESG/위기 등)
+  → umap_coords.parquet, cluster_info.parquet 갱신
+
+**Git/GitHub 현황**:
+  → Organization: DBR-real-project (github.com/DBR-real-project)
+  → 레포: https://github.com/DBR-real-project/dongajul (Public)
+  → develop 브랜치 push 완료
 
 **개발 환경 현황**:
 - Node.js v24.13.1 ✅ 설치됨
-- Docker Desktop ❌ 미설치 (PDF 가이드 참고하여 설치 필요)
+- Docker Desktop ❌ 미설치 (PDF 가이드 v1.1 참고하여 설치 필요)
 - MySQL 8.0 ✅ 설치됨 (Start Database 앱 존재)
 - Git ✅
 
