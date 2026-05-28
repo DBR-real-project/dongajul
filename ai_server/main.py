@@ -40,12 +40,13 @@ ROOT    = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "데이터처리" / "output"
 
 # ── 전역 모델 객체 ──────────────────────────────────────────────────────────
-_sbert:      SentenceTransformer | None = None
-_faiss_index: Any                       = None
-_risk_model:  Any                       = None
-_meta:        pd.DataFrame | None       = None
-_umap:        pd.DataFrame | None       = None
-_clusters:    pd.DataFrame | None       = None
+_sbert_faiss: SentenceTransformer | None = None  # 384차원 — FAISS 검색용
+_sbert_risk:  SentenceTransformer | None = None  # 768차원 — 리스크 스코어용
+_faiss_index: Any                        = None
+_risk_model:  Any                        = None
+_meta:        pd.DataFrame | None        = None
+_umap:        pd.DataFrame | None        = None
+_clusters:    pd.DataFrame | None        = None
 
 
 # ── 리스크 레벨 분류 ────────────────────────────────────────────────────────
@@ -60,10 +61,13 @@ def _risk_level(score: float) -> str:
 # ── lifespan: 앱 시작 시 모델 로드 ─────────────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _sbert, _faiss_index, _risk_model, _meta, _umap, _clusters
+    global _sbert_faiss, _sbert_risk, _faiss_index, _risk_model, _meta, _umap, _clusters
 
-    print("[startup] SentenceTransformer 로드 중...")
-    _sbert = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
+    print("[startup] SentenceTransformer (FAISS용, 384차원) 로드 중...")
+    _sbert_faiss = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
+
+    print("[startup] SentenceTransformer (리스크용, 768차원) 로드 중...")
+    _sbert_risk = SentenceTransformer("jhgan/ko-sroberta-multitask")
 
     print("[startup] FAISS 인덱스 로드 중...")
     index_bytes = (OUT_DIR / "faiss.index").read_bytes()
@@ -79,6 +83,7 @@ async def lifespan(app: FastAPI):
     _clusters = pd.read_parquet(OUT_DIR / "cluster_info.parquet")
 
     print(f"[startup] 완료 — 아티클 {len(_meta)}건, 클러스터 {len(_clusters)}개")
+    print(f"[startup] FAISS 인덱스 차원: {_faiss_index.d} / 리스크 모델 입력 차원: 768")
 
     import os
     if os.getenv("OPENAI_API_KEY"):
@@ -92,7 +97,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="동아줄 ML API",
-    description="전략 리스크 진단 서비스 — SBERT + FAISS + LogReg",
+    description="전략 리스크 진단 서비스 — SBERT + FAISS + MLP",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -108,21 +113,30 @@ def diagnose(req: DiagnoseRequest):
     3. 리스크 스코어 = P(failure)
     4. 쿼리 클러스터 ID 추론
     """
-    if _sbert is None or _faiss_index is None or _risk_model is None:
+    if _sbert_faiss is None or _sbert_risk is None or _faiss_index is None or _risk_model is None:
         raise HTTPException(status_code=503, detail="모델 로딩 중입니다. 잠시 후 재시도하세요.")
 
-    # 1. 임베딩
-    q_emb = _sbert.encode(
+    # 1. FAISS 검색용 임베딩 (384차원)
+    q_emb_faiss = _sbert_faiss.encode(
         [req.text],
         normalize_embeddings=True,
         convert_to_numpy=True,
-    ).astype(np.float32)  # shape: (1, 384)
+    ).astype(np.float32)
 
-    # 2. FAISS 검색
-    scores, ids = _faiss_index.search(q_emb, req.top_k)
+    # 2. 리스크 스코어용 임베딩 (768차원)
+    q_emb_risk = _sbert_risk.encode(
+        [req.text],
+        normalize_embeddings=True,
+        convert_to_numpy=True,
+    ).astype(np.float32)
 
-    # 3. 리스크 스코어 = P(failure)
-    risk_score = float(_risk_model.predict_proba(q_emb)[0, 0])
+    # 3. FAISS 검색
+    scores, ids = _faiss_index.search(q_emb_faiss, req.top_k)
+
+    # 4. 리스크 스코어 = P(failure)
+    classes = list(_risk_model.classes_)
+    fail_col = classes.index(0)
+    risk_score = float(_risk_model.predict_proba(q_emb_risk)[0, fail_col])
 
     # 4. 유사 사례 구성
     similar: list[SimilarArticle] = []
@@ -201,7 +215,7 @@ def report(req: DiagnoseRequest):
 def health():
     return {
         "status": "ok",
-        "models_loaded": _sbert is not None,
+        "models_loaded": _sbert_faiss is not None and _sbert_risk is not None,
         "article_count": len(_meta) if _meta is not None else 0,
         "cluster_count": len(_clusters) if _clusters is not None else 0,
     }
