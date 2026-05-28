@@ -14,7 +14,7 @@ import { NotificationView } from './components/NotificationView';
 import { ProfileView } from './components/ProfileView';
 import { CompareView } from './components/CompareView';
 
-export type ViewType = 'dashboard' | 'analysis' | 'strategy' | 'compare' | 'history' | 'reports' | 'settings' | 'risk' | 'article' | 'notifications' | 'profile';
+export type ViewType = 'dashboard' | 'analysis' | 'strategy' | 'compare' | 'history' | 'settings' | 'risk' | 'article' | 'notifications' | 'profile';
 export type TabType = 'dashboard' | 'strategy' | 'history';
 
 interface CompareItem {
@@ -28,44 +28,28 @@ interface CompareItem {
   riskSum: string;
 }
 
-// App Component
+// 테스트 계정 초기화 (앱 로드 시 1회 실행)
+const TEST_USERS = [
+  { name: '테스트 사용자', email: 'test@test.com', password: '123456' },
+  { name: '김전략', email: 'admin@startq.ai', password: 'admin123' },
+];
+if (!localStorage.getItem('users')) {
+  localStorage.setItem('users', JSON.stringify(TEST_USERS));
+}
+
 export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('user'));
   const [showSignup, setShowSignup] = useState(false);
-  const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [selectedArticle, setSelectedArticle] = useState<number | null>(null);
   const [comparedItems, setComparedItems] = useState<CompareItem[]>([]);
-  const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('darkMode');
-    return saved !== null ? JSON.parse(saved) : false;
-  });
-  const [language, setLanguage] = useState(() => {
-    return localStorage.getItem('language') || 'ko';
-  });
+  const [previousView, setPreviousView] = useState<ViewType>('dashboard');
+  const [darkMode, setDarkMode] = useState(() => JSON.parse(localStorage.getItem('darkMode') || 'false'));
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [aiSearchQuery, setAiSearchQuery] = useState('');
 
-  // 로그인 상태 확인 및 테스트 계정 생성
-  useEffect(() => {
-    const user = localStorage.getItem('user');
-    if (user) {
-      setIsLoggedIn(true);
-    }
-
-    // 테스트 계정이 없으면 생성
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    if (users.length === 0) {
-      const testUsers = [
-        { name: '테스트 사용자', email: 'test@test.com', password: '123456' },
-        { name: '김전략', email: 'admin@startq.ai', password: 'admin123' }
-      ];
-      localStorage.setItem('users', JSON.stringify(testUsers));
-    }
-  }, []);
-
-  // Command Palette 단축키 (⌘K or Ctrl+K)
+  // Command Palette 단축키 (⌘K / Ctrl+K)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -73,46 +57,20 @@ export default function App() {
         setShowCommandPalette(prev => !prev);
       }
     };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // 다크 모드 및 언어 변경 감지
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const savedDarkMode = localStorage.getItem('darkMode');
-      const savedLanguage = localStorage.getItem('language');
-      if (savedDarkMode !== null) {
-        setDarkMode(JSON.parse(savedDarkMode));
-      }
-      if (savedLanguage) {
-        setLanguage(savedLanguage);
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    const interval = setInterval(handleStorageChange, 100);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
-    };
-  }, []);
-
   // 다크모드 body 클래스 적용
   useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    document.documentElement.classList.toggle('dark', darkMode);
+    localStorage.setItem('darkMode', JSON.stringify(darkMode));
   }, [darkMode]);
 
+  // --- 인증 핸들러 ---
   const handleLogin = (email: string, password: string) => {
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const user = users.find((u: any) => u.email === email && u.password === password);
-
+    const users: any[] = JSON.parse(localStorage.getItem('users') || '[]');
+    const user = users.find(u => u.email === email && u.password === password);
     if (user) {
       localStorage.setItem('user', JSON.stringify(user));
       setIsLoggedIn(true);
@@ -122,29 +80,20 @@ export default function App() {
   };
 
   const handleSignup = (email: string, password: string, name: string) => {
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const existingUser = users.find((u: any) => u.email === email);
-
-    if (existingUser) {
+    const users: any[] = JSON.parse(localStorage.getItem('users') || '[]');
+    if (users.find(u => u.email === email)) {
       alert('이미 등록된 이메일입니다.');
       return;
     }
-
     const newUser = { name, email, password };
-    users.push(newUser);
-    localStorage.setItem('users', JSON.stringify(users));
+    localStorage.setItem('users', JSON.stringify([...users, newUser]));
     localStorage.setItem('user', JSON.stringify(newUser));
     setIsLoggedIn(true);
     setShowSignup(false);
   };
 
   const handleSocialLogin = (provider: string) => {
-    // 소셜 로그인 시뮬레이션
-    const socialUser = {
-      name: `${provider} 사용자`,
-      email: `user@${provider}.com`,
-      provider: provider
-    };
+    const socialUser = { name: `${provider} 사용자`, email: `user@${provider}.com`, provider };
     localStorage.setItem('user', JSON.stringify(socialUser));
     setIsLoggedIn(true);
   };
@@ -155,175 +104,96 @@ export default function App() {
     setCurrentView('dashboard');
   };
 
+  // --- 네비게이션 핸들러 ---
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
-    if (tab === 'dashboard') {
-      setCurrentView('analysis');
-    } else if (tab === 'strategy') {
-      setCurrentView('strategy');
-    } else if (tab === 'history') {
-      setCurrentView('history');
-    }
+    const viewMap: Record<TabType, ViewType> = { dashboard: 'analysis', strategy: 'strategy', history: 'history' };
+    setCurrentView(viewMap[tab]);
   };
 
-  const handleToggleDarkMode = () => {
-    const newDarkMode = !darkMode;
-    setDarkMode(newDarkMode);
-    localStorage.setItem('darkMode', JSON.stringify(newDarkMode));
+  const handleViewChange = (view: string) => {
+    // compare는 TopNav에서 직접 클릭 시 아이템이 없으므로 analysis로 이동
+    setCurrentView(view === 'compare' ? 'analysis' : view as ViewType);
   };
 
-  const handleToggleLanguage = () => {
-    const newLanguage = language === 'ko' ? 'en' : 'ko';
-    setLanguage(newLanguage);
-    localStorage.setItem('language', newLanguage);
+  const navigateTo = (view: ViewType, from?: ViewType) => {
+    if (from) setPreviousView(from);
+    setCurrentView(view);
   };
 
+  // --- 비인증 화면 ---
   if (!isLoggedIn) {
-    if (showSignup) {
-      return (
-        <SignupScreen
-          onSignup={handleSignup}
-          onBackToLogin={() => setShowSignup(false)}
-        />
-      );
-    }
-    return (
-      <LoginScreen
-        onLogin={handleLogin}
-        onSocialLogin={handleSocialLogin}
-        onSignupClick={() => setShowSignup(true)}
-        onForgotPassword={() => setShowPasswordReset(true)}
-      />
-    );
+    return showSignup
+      ? <SignupScreen onSignup={handleSignup} onBackToLogin={() => setShowSignup(false)} />
+      : <LoginScreen onLogin={handleLogin} onSocialLogin={handleSocialLogin} onSignupClick={() => setShowSignup(true)} onForgotPassword={() => {}} />;
   }
+
+  // --- 공통 props ---
+  const commonProps = { darkMode, onNotificationClick: () => setCurrentView('notifications'), onProfileClick: () => setCurrentView('profile') };
 
   return (
     <div className={`flex flex-col h-screen w-screen ${darkMode ? 'dark bg-gray-900' : 'bg-[#F8FAFC]'}`}>
-      {/* Command Palette */}
-      <CommandPalette
-        isOpen={showCommandPalette}
-        onClose={() => setShowCommandPalette(false)}
-        darkMode={darkMode}
-      />
+      <CommandPalette isOpen={showCommandPalette} onClose={() => setShowCommandPalette(false)} darkMode={darkMode} />
 
-      {/* Top Navigation */}
       <TopNavigation
         currentView={currentView}
-        onViewChange={(view) => setCurrentView(view as ViewType)}
+        onViewChange={handleViewChange}
         darkMode={darkMode}
-        onToggleDarkMode={handleToggleDarkMode}
+        onToggleDarkMode={() => setDarkMode((d: boolean) => !d)}
         onNotificationClick={() => setCurrentView('notifications')}
-        language={language}
-        onToggleLanguage={handleToggleLanguage}
       />
 
-      {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
-        {/* AI Chat Panel - Left Sidebar */}
         {currentView === 'dashboard' && (
           <div className="w-[400px] border-r border-gray-200 dark:border-gray-800 flex-shrink-0">
             <GlobalHeader
               darkMode={darkMode}
-              onToggleDarkMode={handleToggleDarkMode}
+              onToggleDarkMode={() => setDarkMode((d: boolean) => !d)}
               onNotificationClick={() => setCurrentView('notifications')}
               onSearch={setAiSearchQuery}
             />
           </div>
         )}
 
-        {/* Content */}
         <main className="flex-1 overflow-hidden">
           {currentView === 'dashboard' ? (
-            <EnterpriseDashboard darkMode={darkMode} searchQuery={aiSearchQuery} language={language} />
+            <EnterpriseDashboard
+              darkMode={darkMode}
+              searchQuery={aiSearchQuery}
+              onCompareClick={(items) => { setComparedItems(items); navigateTo('compare', 'dashboard'); }}
+            />
           ) : currentView === 'analysis' ? (
             <MainDashboard
               activeTab={activeTab}
               onTabChange={handleTabChange}
               onNavigateToRisk={() => setCurrentView('risk')}
-              onArticleClick={(id) => {
-                setSelectedArticle(id);
-                setCurrentView('article');
-              }}
-              onCompareClick={(items) => {
-                setComparedItems(items);
-                setCurrentView('compare');
-              }}
-              onNotificationClick={() => setCurrentView('notifications')}
-              onProfileClick={() => setCurrentView('profile')}
-              darkMode={darkMode}
-              language={language}
+              onArticleClick={(id) => { setSelectedArticle(id); navigateTo('article', 'analysis'); }}
+              onCompareClick={(items) => { setComparedItems(items); navigateTo('compare', 'analysis'); }}
+              {...commonProps}
             />
           ) : currentView === 'strategy' ? (
-            <StrategyWorkspace
-              activeTab={activeTab}
-              onTabChange={handleTabChange}
-              onNotificationClick={() => setCurrentView('notifications')}
-              onProfileClick={() => setCurrentView('profile')}
-              darkMode={darkMode}
-              language={language}
-            />
+            <StrategyWorkspace activeTab={activeTab} onTabChange={handleTabChange} {...commonProps} darkMode={darkMode} language="ko" />
           ) : currentView === 'history' ? (
-            <SearchHistory
-              activeTab={activeTab}
-              onTabChange={handleTabChange}
-              onNotificationClick={() => setCurrentView('notifications')}
-              onProfileClick={() => setCurrentView('profile')}
-              darkMode={darkMode}
-              language={language}
-            />
+            <SearchHistory activeTab={activeTab} onTabChange={handleTabChange} {...commonProps} />
           ) : currentView === 'compare' ? (
-            <CompareView
-              items={comparedItems}
-              onBack={() => setCurrentView('analysis')}
-              darkMode={darkMode}
-              language={language}
-            />
+            <CompareView items={comparedItems} onBack={() => setCurrentView(previousView)} darkMode={darkMode} />
           ) : currentView === 'risk' ? (
             <RiskAnalysis
               onBack={() => setCurrentView('analysis')}
-              onArticleClick={(id) => {
-                setSelectedArticle(id);
-                setCurrentView('article');
-              }}
-              onNotificationClick={() => setCurrentView('notifications')}
-              onProfileClick={() => setCurrentView('profile')}
-              darkMode={darkMode}
-              language={language}
+              onArticleClick={(id) => { setSelectedArticle(id); navigateTo('article', 'risk'); }}
+              {...commonProps}
             />
           ) : currentView === 'article' && selectedArticle !== null ? (
-            <ArticleDetail
-              articleId={selectedArticle}
-              onBack={() => setCurrentView('analysis')}
-              darkMode={darkMode}
-              language={language}
-            />
+            <ArticleDetail articleId={selectedArticle} onBack={() => setCurrentView(previousView || 'analysis')} />
           ) : currentView === 'notifications' ? (
-            <NotificationView
-              onBack={() => setCurrentView('dashboard')}
-              darkMode={darkMode}
-              language={language}
-            />
-          ) : currentView === 'profile' ? (
-            <ProfileView
-              onBack={() => setCurrentView('dashboard')}
-              darkMode={darkMode}
-              language={language}
-            />
-          ) : currentView === 'reports' ? (
-            <div className={`h-full flex items-center justify-center ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-              <div className="text-center">
-                <h2 className="text-2xl font-semibold mb-2">Reports</h2>
-                <p className="text-gray-500">Coming soon...</p>
-              </div>
-            </div>
-          ) : currentView === 'settings' ? (
-            <ProfileView
-              onBack={() => setCurrentView('dashboard')}
-              darkMode={darkMode}
-              language={language}
-            />
+            <NotificationView onBack={() => setCurrentView('dashboard')} darkMode={darkMode} />
+          ) : (currentView === 'profile' || currentView === 'settings') ? (
+            <ProfileView onBack={() => setCurrentView('dashboard')} darkMode={darkMode} />
           ) : (
-            <EnterpriseDashboard darkMode={darkMode} language={language} />
+            <EnterpriseDashboard
+              darkMode={darkMode}
+              onCompareClick={(items) => { setComparedItems(items); navigateTo('compare', 'dashboard'); }}
+            />
           )}
         </main>
       </div>

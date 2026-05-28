@@ -1,3 +1,6 @@
+// ============================================================
+// MainDashboard.tsx
+// ============================================================
 import { Bell, User, TrendingUp, Search, Filter, BarChart3, AlertTriangle, X } from 'lucide-react';
 import { TabType } from '../App';
 import { ContextSwitcher } from './ContextSwitcher';
@@ -163,7 +166,6 @@ export function MainDashboard({ activeTab, onTabChange, onNavigateToRisk, onArti
     { id: 8, status: '실패', strategy: '시장진입', riskLevel: 'High', industry: '기술', company: 'Google+', title: 'SNS 시장 진입 실패 사례', strategySum: '후발주자로 차별화 부족한 진입 전략', riskSum: '네트워크 효과 극복 실패, 사용자 이탈', keywords: ['SNS', '시장진입', '구글플러스', '네트워크효과'] },
   ];
 
-  // 검색어와 필터로 사례 필터링
   const filteredItems = allItems.filter(item => {
     const query = activeSearchQuery.toLowerCase();
     const matchesSearch = !query ||
@@ -193,28 +195,6 @@ export function MainDashboard({ activeTab, onTabChange, onNavigateToRisk, onArti
 
   return (
     <div className={`h-full overflow-y-auto ${darkMode ? 'bg-[#0A0E1A]' : 'bg-[#FAFBFC]'} pb-24`}>
-      <header className={`${darkMode ? 'bg-[#0A0E1A]/80 backdrop-blur-xl border-gray-800/50' : 'bg-white/80 backdrop-blur-xl border-gray-200/50'} border-b sticky top-0 z-50`}>
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <ContextSwitcher
-              currentContext={currentContext}
-              onSelect={setCurrentContext}
-              darkMode={darkMode}
-              language={language}
-            />
-            <div className="flex items-center gap-3">
-              <button onClick={onNotificationClick} className={`p-2.5 ${darkMode ? 'text-gray-400 hover:text-white hover:bg-gray-800/60' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'} relative rounded-lg transition-all`}>
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white dark:ring-gray-900"></span>
-              </button>
-              <button onClick={onProfileClick} className={`p-2.5 ${darkMode ? 'text-gray-400 hover:text-white hover:bg-gray-800/60' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'} rounded-lg transition-all`}>
-                <User className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
       <div className="px-6 py-6 max-w-[1600px] mx-auto">
         {/* 필터 버튼 */}
         <div className="mb-6 flex items-center gap-3">
@@ -242,7 +222,7 @@ export function MainDashboard({ activeTab, onTabChange, onNavigateToRisk, onArti
               <div className={`text-xs font-medium ${darkMode ? 'text-gray-500' : 'text-gray-400'} uppercase tracking-wide`}>{text.successRate}</div>
             </div>
             <div className={`text-3xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'} mb-1`}>68%</div>
-            <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>+5.2% from last month</div>
+            <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>지난달 대비 +5.2%</div>
           </div>
 
           <div className={`group relative ${darkMode ? 'bg-gradient-to-br from-gray-800/40 to-gray-800/20' : 'bg-gradient-to-br from-amber-50 to-white'} p-5 rounded-2xl backdrop-blur-sm hover:shadow-lg transition-all duration-300`}>
@@ -252,8 +232,8 @@ export function MainDashboard({ activeTab, onTabChange, onNavigateToRisk, onArti
               </div>
               <div className={`text-xs font-medium ${darkMode ? 'text-gray-500' : 'text-gray-400'} uppercase tracking-wide`}>{text.avgRisk}</div>
             </div>
-            <div className={`text-3xl font-bold ${darkMode ? 'text-amber-400' : 'text-amber-600'} mb-1`}>Medium</div>
-            <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Stable trend</div>
+            <div className={`text-3xl font-bold ${darkMode ? 'text-amber-400' : 'text-amber-600'} mb-1`}>보통</div>
+            <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>안정적인 추세</div>
           </div>
 
           <div className={`group relative ${darkMode ? 'bg-gradient-to-br from-gray-800/40 to-gray-800/20' : 'bg-gradient-to-br from-indigo-50 to-white'} p-5 rounded-2xl backdrop-blur-sm hover:shadow-lg transition-all duration-300`}>
@@ -264,7 +244,7 @@ export function MainDashboard({ activeTab, onTabChange, onNavigateToRisk, onArti
               <div className={`text-xs font-medium ${darkMode ? 'text-gray-500' : 'text-gray-400'} uppercase tracking-wide`}>{text.totalCasesLabel}</div>
             </div>
             <div className={`text-3xl font-bold ${darkMode ? 'text-indigo-400' : 'text-indigo-600'} mb-1`}>24.5K</div>
-            <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>+1.2K this week</div>
+            <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>이번 주 +1.2K</div>
           </div>
         </div>
 
@@ -315,172 +295,170 @@ export function MainDashboard({ activeTab, onTabChange, onNavigateToRisk, onArti
         ) : (
           <div className="space-y-3">
             {filteredItems.map((item) => {
-            const isCompared = comparedItems.includes(item.id);
-            const riskColors = {
-              Low: darkMode ? 'bg-green-500/10 text-green-400' : 'bg-green-50 text-green-700',
-              Medium: darkMode ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-50 text-amber-700',
-              High: darkMode ? 'bg-red-500/10 text-red-400' : 'bg-red-50 text-red-700',
-            };
-            const statusColors = item.status === text.success
-              ? (darkMode ? 'bg-green-500/10 text-green-400' : 'bg-green-50 text-green-700')
-              : (darkMode ? 'bg-red-500/10 text-red-400' : 'bg-red-50 text-red-700');
+              const isCompared = comparedItems.includes(item.id);
+              const riskColors = {
+                Low: darkMode ? 'bg-green-500/10 text-green-400' : 'bg-green-50 text-green-700',
+                Medium: darkMode ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-50 text-amber-700',
+                High: darkMode ? 'bg-red-500/10 text-red-400' : 'bg-red-50 text-red-700',
+              };
+              const statusColors = item.status === text.success
+                ? (darkMode ? 'bg-green-500/10 text-green-400' : 'bg-green-50 text-green-700')
+                : (darkMode ? 'bg-red-500/10 text-red-400' : 'bg-red-50 text-red-700');
 
-            return (
-              <div
-                key={item.id}
-                className={`group relative ${
-                  darkMode
-                    ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30'
-                    : 'bg-white'
-                } p-5 rounded-2xl transition-all duration-300 ${
-                  isCompared
-                    ? 'ring-2 ring-[#142755] shadow-lg'
-                    : darkMode
-                    ? 'hover:shadow-xl hover:shadow-gray-900/20'
-                    : 'shadow-sm hover:shadow-md'
-                }`}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`px-2.5 py-1 text-xs font-medium rounded-lg ${statusColors}`}>
-                      {item.status}
-                    </span>
-                    <span className={`px-2.5 py-1 text-xs font-medium rounded-lg ${
-                      darkMode ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-50 text-indigo-700'
-                    }`}>
-                      {item.strategy}
-                    </span>
-                    <span className={`px-2.5 py-1 text-xs font-medium rounded-lg ${riskColors[item.riskLevel as keyof typeof riskColors]}`}>
-                      {item.riskLevel}
+              return (
+                <div
+                  key={item.id}
+                  className={`group relative ${
+                    darkMode
+                      ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30'
+                      : 'bg-white'
+                  } p-5 rounded-2xl transition-all duration-300 ${
+                    isCompared
+                      ? 'ring-2 ring-[#142755] shadow-lg'
+                      : darkMode
+                      ? 'hover:shadow-xl hover:shadow-gray-900/20'
+                      : 'shadow-sm hover:shadow-md'
+                  }`}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`px-2.5 py-1 text-xs font-medium rounded-lg ${statusColors}`}>
+                        {item.status}
+                      </span>
+                      <span className={`px-2.5 py-1 text-xs font-medium rounded-lg ${
+                        darkMode ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-50 text-indigo-700'
+                      }`}>
+                        {item.strategy}
+                      </span>
+                      <span className={`px-2.5 py-1 text-xs font-medium rounded-lg ${riskColors[item.riskLevel as keyof typeof riskColors]}`}>
+                        {item.riskLevel}
+                      </span>
+                    </div>
+                    <span className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} flex-shrink-0 ml-2`}>
+                      {item.industry}
                     </span>
                   </div>
-                  <span className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} flex-shrink-0 ml-2`}>
-                    {item.industry}
-                  </span>
-                </div>
 
-                <h4 className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-3 leading-relaxed`}>
-                  {item.title}
-                </h4>
+                  <h4 className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-3 leading-relaxed`}>
+                    {item.title}
+                  </h4>
 
-                <div className={`space-y-2 mb-4 ${darkMode ? 'bg-gray-900/30' : 'bg-gray-50/50'} p-3 rounded-xl`}>
-                  <div className="flex items-start gap-2">
-                    <span className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} min-w-[${language === 'en' ? '90px' : '70px'}] flex-shrink-0`}>
-                      {text.coreStrategy}
-                    </span>
-                    <p className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-700'} leading-relaxed`}>
-                      {item.strategySum}
-                    </p>
+                  <div className={`space-y-2 mb-4 ${darkMode ? 'bg-gray-900/30' : 'bg-gray-50/50'} p-3 rounded-xl`}>
+                    <div className="flex items-start gap-2">
+                      <span className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} min-w-[${language === 'en' ? '90px' : '70px'}] flex-shrink-0`}>
+                        {text.coreStrategy}
+                      </span>
+                      <p className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-700'} leading-relaxed`}>
+                        {item.strategySum}
+                      </p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} min-w-[${language === 'en' ? '90px' : '70px'}] flex-shrink-0`}>
+                        {text.mainRisk}
+                      </span>
+                      <p className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-700'} leading-relaxed`}>
+                        {item.riskSum}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <span className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} min-w-[${language === 'en' ? '90px' : '70px'}] flex-shrink-0`}>
-                      {text.mainRisk}
-                    </span>
-                    <p className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-700'} leading-relaxed`}>
-                      {item.riskSum}
-                    </p>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        if (comparedItems.length === 2) {
+                          handleViewDetails();
+                        } else {
+                          onArticleClick(item.id);
+                        }
+                      }}
+                      className="flex-1 px-4 py-2.5 text-xs font-semibold bg-gradient-to-r from-[#142755] to-[#444655] text-white rounded-xl hover:shadow-lg transition-all duration-300"
+                    >
+                      {comparedItems.length === 2 ? text.comparing : text.detailView}
+                    </button>
+                    <button
+                      onClick={() => toggleCompare(item.id)}
+                      className={`flex-1 px-4 py-2.5 text-xs font-semibold rounded-xl transition-all duration-300 ${
+                        isCompared
+                          ? 'bg-gradient-to-r from-[#142755] to-[#444655] text-white shadow-lg'
+                          : darkMode
+                          ? 'bg-gray-700/50 text-[#A9AABC] hover:bg-gray-700 border border-gray-600'
+                          : 'bg-gray-100 text-[#142755] hover:bg-gray-200 border border-gray-200'
+                      }`}
+                    >
+                      {isCompared ? text.selectedItem : text.compare}
+                    </button>
                   </div>
                 </div>
-
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => {
-                      if (comparedItems.length === 2) {
-                        handleViewDetails();
-                      } else {
-                        onArticleClick(item.id);
-                      }
-                    }}
-                    className="flex-1 px-4 py-2.5 text-xs font-semibold bg-gradient-to-r from-[#142755] to-[#444655] text-white rounded-xl hover:shadow-lg transition-all duration-300"
-                  >
-                    {comparedItems.length === 2 ? text.comparing : text.detailView}
-                  </button>
-                  <button
-                    onClick={() => toggleCompare(item.id)}
-                    className={`flex-1 px-4 py-2.5 text-xs font-semibold rounded-xl transition-all duration-300 ${
-                      isCompared
-                        ? 'bg-gradient-to-r from-[#142755] to-[#444655] text-white shadow-lg'
-                        : darkMode
-                        ? 'bg-gray-700/50 text-[#A9AABC] hover:bg-gray-700 border border-gray-600'
-                        : 'bg-gray-100 text-[#142755] hover:bg-gray-200 border border-gray-200'
-                    }`}
-                  >
-                    {isCompared ? text.selectedItem : text.compare}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* 필터 모달 */}
+      {/* 필터 모달 - 검정 빈 공간을 일체 남기지 않고 전체를 꽉 채우는 형태(Full Screen) */}
       {showFilterModal && (
-        <>
-          <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-40"
-            onClick={() => setShowFilterModal(false)}
-          />
-          <div className={`fixed bottom-0 left-0 right-0 ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-t-2xl z-50 max-h-[600px] overflow-y-auto`}>
-            <div className={`sticky top-0 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b px-4 py-3 flex items-center justify-between`}>
-              <h3 className={`text-base font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>필터</h3>
-              <button
-                onClick={() => setShowFilterModal(false)}
-                className={`${darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-4 space-y-4">
-              {Object.entries(filterOptions).map(([category, options]) => (
-                <div key={category}>
-                  <h4 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2 capitalize`}>
-                    {category === 'strategy' ? language === 'en' ? 'Strategy' : '전략 유형' :
-                     category === 'industry' ? language === 'en' ? 'Industry' : '산업' :
-                     category === 'riskType' ? language === 'en' ? 'Risk Type' : '리스크 유형' :
-                     category === 'riskLevel' ? language === 'en' ? 'Risk Level' : '리스크 수준' :
-                     category === 'status' ? language === 'en' ? 'Status' : '상태' : category}
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {options.map((option) => (
-                      <button
-                        key={option}
-                        onClick={() => toggleFilter(option)}
-                        className={`px-3 py-1.5 text-xs rounded-full transition-all ${
-                          selectedFilters.includes(option)
-                            ? 'bg-[#142755] text-white shadow-md'
-                            : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        {option}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className={`sticky bottom-0 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-t px-4 py-3 flex gap-2`}>
-              <button
-                onClick={() => {
-                  setSelectedFilters([]);
-                  setShowFilterModal(false);
-                }}
-                className={`flex-1 px-4 py-2 ${darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'} rounded-lg transition-colors`}
-              >
-                {language === 'en' ? 'Reset' : '초기화'}
-              </button>
-              <button
-                onClick={() => setShowFilterModal(false)}
-                className="flex-1 px-4 py-2 bg-[#142755] text-white rounded-lg hover:bg-[#444655] transition-colors"
-              >
-                {language === 'en' ? 'Apply' : '적용하기'}
-              </button>
-            </div>
+        <div className={`fixed inset-0 h-screen w-screen ${darkMode ? 'bg-gray-800' : 'bg-white'} z-50 flex flex-col overflow-hidden`}>
+          
+          {/* 상단 타이틀 영역 고정 */}
+          <div className={`sticky top-0 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b px-6 py-5 flex items-center justify-between`}>
+            <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>필터</h3>
+            <button
+              onClick={() => setShowFilterModal(false)}
+              className={`${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'} p-1 transition-colors`}
+            >
+              <X className="w-6 h-6" />
+            </button>
           </div>
-        </>
+
+          {/* 스크롤 가능한 내부 필터 옵션 영역 */}
+          <div className="p-6 space-y-6 overflow-y-auto flex-1">
+            {Object.entries(filterOptions).map(([category, options]) => (
+              <div key={category}>
+                <h4 className={`text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-3 capitalize`}>
+                  {category === 'strategy' ? language === 'en' ? 'Strategy' : '전략 유형' :
+                   category === 'industry' ? language === 'en' ? 'Industry' : '산업' :
+                   category === 'riskType' ? language === 'en' ? 'Risk Type' : '리스크 유형' :
+                   category === 'riskLevel' ? language === 'en' ? 'Risk Level' : '리스크 수준' :
+                   category === 'status' ? language === 'en' ? 'Status' : '상태' : category}
+                </h4>
+                <div className="flex flex-wrap gap-2.5">
+                  {options.map((option) => (
+                    <button
+                      key={option}
+                      onClick={() => toggleFilter(option)}
+                      className={`px-4 py-2 text-xs font-medium rounded-full transition-all ${
+                        selectedFilters.includes(option)
+                          ? 'bg-[#142755] text-white shadow-md scale-[1.02]'
+                          : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* 하단 기능 버튼 영역 고정 */}
+          <div className={`sticky bottom-0 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-t px-6 py-5 flex gap-3`}>
+            <button
+              onClick={() => {
+                setSelectedFilters([]);
+                setShowFilterModal(false);
+              }}
+              className={`flex-1 px-4 py-3 text-sm font-medium ${darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'} rounded-xl transition-colors`}
+            >
+              {language === 'en' ? 'Reset' : '초기화'}
+            </button>
+            <button
+              onClick={() => setShowFilterModal(false)}
+              className="flex-1 px-4 py-3 text-sm font-semibold bg-[#142755] text-white rounded-xl hover:bg-[#253b73] transition-colors shadow-md"
+            >
+              {language === 'en' ? 'Apply' : '적용하기'}
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
