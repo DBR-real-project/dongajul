@@ -1,0 +1,12 @@
+# develop 최신화
+git checkout develop
+git pull origin develop
+
+# dy 브랜치 가져오기
+git fetch origin dy
+
+# develop에 병합
+git merge origin/dy
+
+# push
+git push origin develop
