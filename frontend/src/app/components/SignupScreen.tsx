@@ -15,7 +15,8 @@ export function SignupScreen({ onSignup, onBackToLogin }: SignupScreenProps) {
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // 2. 에러 해결 포인트: React.FormEvent 대신 권장 표준인 React.SubmitEvent 사용
+  const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
     setError('');
 
@@ -61,7 +62,6 @@ export function SignupScreen({ onSignup, onBackToLogin }: SignupScreenProps) {
 
       {/* Left Side - Branding & Background (STRAND AI Identity) */}
       <div className="relative z-10 flex flex-col justify-center px-12 lg:px-20">
-        {/* 상징색인 금색(Gold) 포인트가 들어간 타이틀 */}
         <h1 className="text-6xl font-extrabold tracking-tight text-white mb-4">
           STRAND <span className="text-[#E5BA73]">AI</span>
         </h1>
@@ -72,13 +72,12 @@ export function SignupScreen({ onSignup, onBackToLogin }: SignupScreenProps) {
           위기를 기회로 바꾸는 가장 <span className="text-[#E5BA73] font-medium">견고한 비즈니스 전략</span>을 제시합니다.
         </p>
 
-        {/* Decorative Stats - Flip Cards */}
         <div className="mt-16">
           <FlipCard isLoggedIn={false} />
         </div>
       </div>
 
-      {/* Decorative Elements (Gold & Purple Blur) */}
+      {/* Decorative Elements */}
       <div className="absolute top-1/4 left-1/3 w-96 h-96 bg-[#E5BA73]/10 rounded-full blur-3xl"></div>
       <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
 
