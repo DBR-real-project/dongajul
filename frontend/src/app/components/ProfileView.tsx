@@ -1,10 +1,17 @@
+/**
+ * src/app/components/ProfileView.tsx - 프로필/설정 화면
+ * * 수정 포인트:
+ * - 영어 분기(language prop 및 관련 다국어 스왑 로직) 완전 제거 및 한국어 고정
+ * - 테마 인테리어 전격 동기화: #0B2F61(로고 딥 네이비), #C8994B(보조 웜 골드 변수) 정밀 반영
+ * - 마크업 다듬기: 모달 창 및 폼 컨트롤 인풋 포커스 라운딩 처리(rounded-xl) 최적화
+ */
+
 import { ArrowLeft, User, Mail, Building2, Briefcase, Settings, LogOut, Bell, Lock, X, Check, Eye, Shield, Globe, Moon, Sun, ChevronRight, Edit2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 interface ProfileViewProps {
   onBack: () => void;
   darkMode?: boolean;
-  language?: string;
 }
 
 type SettingsPanel = 'notification' | 'security' | 'environment' | 'editProfile' | 'resetPassword' | null;
@@ -15,6 +22,7 @@ interface UserData {
   company?: string;
   department?: string;
   provider?: string;
+  position?: string;
 }
 
 interface User {
@@ -23,11 +31,13 @@ interface User {
   password: string;
 }
 
-export function ProfileView({ onBack, darkMode: propDarkMode, language: propLanguage = 'ko' }: ProfileViewProps) {
+export function ProfileView({ onBack, darkMode: propDarkMode }: ProfileViewProps) {
   const [activePanel, setActivePanel] = useState<SettingsPanel>(null);
   const [toast, setToast] = useState<string | null>(null);
+  // [로그아웃 모달 상태 추가]
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
-  // 사용자 정보
+  // 사용자 정보 상태 관리
   const [userData, setUserData] = useState<UserData | null>(null);
   const [editName, setEditName] = useState('');
   const [editEmail, setEditEmail] = useState('');
@@ -53,19 +63,16 @@ export function ProfileView({ onBack, darkMode: propDarkMode, language: propLang
     return saved !== null ? JSON.parse(saved) : false;
   });
 
-  // 비밀번호 찾기
+  // 비밀번호 찾기 이메일
   const [resetEmail, setResetEmail] = useState('');
 
-  // 환경 설정 상태
+  // 환경 설정 상태 (다크모드 제어)
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode');
     return saved !== null ? JSON.parse(saved) : (propDarkMode || false);
   });
-  const [language, setLanguage] = useState(() => {
-    return localStorage.getItem('language') || propLanguage;
-  });
 
-  // 사용자 정보 로드
+  // 사용자 데이터 마이그레이션 로드
   useEffect(() => {
     const user = localStorage.getItem('user');
     if (user) {
@@ -86,25 +93,24 @@ export function ProfileView({ onBack, darkMode: propDarkMode, language: propLang
   const handleSaveNotification = () => {
     localStorage.setItem('pushEnabled', JSON.stringify(pushEnabled));
     localStorage.setItem('emailEnabled', JSON.stringify(emailEnabled));
-    showToast('알림 설정이 저장되었습니다');
+    showToast('알림 설정이 안전하게 저장되었습니다');
     setActivePanel(null);
   };
 
   const handleChangePassword = () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
-      showToast('모든 필드를 입력해주세요');
+      showToast('모든 필수 입력칸을 기입해 주세요');
       return;
     }
     if (newPassword !== confirmPassword) {
-      showToast('새 비밀번호가 일치하지 않습니다');
+      showToast('새로 지정한 암호가 서로 일치하지 않습니다');
       return;
     }
     if (newPassword.length < 6) {
-      showToast('비밀번호는 최소 6자 이상이어야 합니다');
+      showToast('비밀번호는 보안을 위해 최소 6자 이상 지정해야 합니다');
       return;
     }
 
-    // 실제 비밀번호 업데이트
     const users = JSON.parse(localStorage.getItem('users') || '[]') as User[];
     const userIndex = users.findIndex((u) => u.email === userData?.email);
     if (userIndex !== -1) {
@@ -112,24 +118,24 @@ export function ProfileView({ onBack, darkMode: propDarkMode, language: propLang
       localStorage.setItem('users', JSON.stringify(users));
     }
 
-    showToast('비밀번호가 변경되었습니다');
+    showToast('비밀번호가 성공적으로 변경되었습니다');
     setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
+    setActivePanel(null);
   };
 
   const handleSaveEnvironment = () => {
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
-    localStorage.setItem('language', language);
-    showToast(language === 'ko' ? '환경 설정이 저장되었습니다. 새로고침 중...' : 'Settings saved. Refreshing...');
+    showToast('환경 설정이 반영되었습니다. 새로고침 중...');
     setTimeout(() => {
-      window.location.reload(); // 언어/다크모드 변경 적용을 위해 새로고침
+      window.location.reload();
     }, 500);
   };
 
   const handleSaveProfile = () => {
     if (!editName.trim() || !editEmail.trim()) {
-      showToast('이름과 이메일을 입력해주세요');
+      showToast('성명과 이메일 주소는 필수 항목입니다');
       return;
     }
 
@@ -144,7 +150,6 @@ export function ProfileView({ onBack, darkMode: propDarkMode, language: propLang
     localStorage.setItem('user', JSON.stringify(updatedUser));
     setUserData(updatedUser);
 
-    // users 배열도 업데이트
     const users = JSON.parse(localStorage.getItem('users') || '[]') as User[];
     const userIndex = users.findIndex((u) => u.email === userData?.email);
     if (userIndex !== -1) {
@@ -152,13 +157,13 @@ export function ProfileView({ onBack, darkMode: propDarkMode, language: propLang
       localStorage.setItem('users', JSON.stringify(users));
     }
 
-    showToast('프로필이 업데이트되었습니다');
+    showToast('프로필 기본 정보가 가공 저장되었습니다');
     setActivePanel(null);
   };
 
   const handleResetPassword = () => {
     if (!resetEmail.trim() || !resetEmail.includes('@')) {
-      showToast('올바른 이메일을 입력해주세요');
+      showToast('정상적인 이메일 구조를 입력하세요');
       return;
     }
 
@@ -166,11 +171,11 @@ export function ProfileView({ onBack, darkMode: propDarkMode, language: propLang
     const user = users.find((u: any) => u.email === resetEmail);
 
     if (user) {
-      showToast('비밀번호 재설정 링크가 이메일로 전송되었습니다');
+      showToast('인증 재설정 토큰 링크가 기입하신 메일로 발송되었습니다');
       setResetEmail('');
       setActivePanel(null);
     } else {
-      showToast('등록되지 않은 이메일입니다');
+      showToast('시스템 데이터베이스에 등록되지 않은 이메일 계정입니다');
     }
   };
 
@@ -178,520 +183,275 @@ export function ProfileView({ onBack, darkMode: propDarkMode, language: propLang
     const newValue = !twoFactorEnabled;
     setTwoFactorEnabled(newValue);
     localStorage.setItem('twoFactorEnabled', JSON.stringify(newValue));
-    showToast(newValue ? '2단계 인증이 활성화되었습니다' : '2단계 인증이 비활성화되었습니다');
+    showToast(newValue ? '2단계 고밀도 인증 보안이 가동되었습니다' : '2단계 보안 인증이 차단 해제되었습니다');
   };
 
+  // [수정] 실제 로그아웃 처리 함수
   const handleLogout = () => {
-    if (window.confirm('로그아웃 하시겠습니까?')) {
-      localStorage.removeItem('user');
-      window.location.reload();
-    }
+    localStorage.removeItem('user');
+    window.location.reload();
   };
 
   return (
-    <div className={`h-full overflow-y-auto ${darkMode ? 'bg-black' : 'bg-[#f5f5f5]'} relative`}>
-      <header className={`${darkMode ? 'bg-[#1a1a1a] border-gray-800' : 'bg-white border-gray-200'} border-b sticky top-0 z-50`}>
-        <div className="px-3 py-2.5">
-          <div className="flex items-center gap-2">
-            <button onClick={onBack} className="p-1">
-              <ArrowLeft className={`w-5 h-5 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`} />
+    <div className={`h-full overflow-y-auto ${darkMode ? 'bg-[#0A0E1A]' : 'bg-[#f5f5f5]'} relative`}>
+      <header className={`${darkMode ? 'bg-[#0A0E1A] border-gray-800/50' : 'bg-white border-gray-200'} border-b sticky top-0 z-50`}>
+        <div className="px-6 py-4">
+          <div className="flex items-center gap-3">
+            <button onClick={onBack} className="p-1 hover:bg-slate-100 rounded-lg transition-colors">
+              <ArrowLeft className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
             </button>
-            <h1 className={`text-base ${darkMode ? 'text-white' : 'text-[#1e3a5f]'}`}>프로필</h1>
+            <h1 className={`text-base font-bold ${darkMode ? 'text-white' : 'text-[#0B2F61]'}`}>마이 프로필 및 환경설정</h1>
           </div>
         </div>
       </header>
 
-      <div className="px-3 py-4">
-        <div className={`${darkMode ? 'bg-[#1a1a1a]' : 'bg-white'} p-4 mb-4 text-center rounded-xl shadow-sm relative`}>
+      <div className="px-6 py-6 max-w-4xl mx-auto space-y-4">
+        {/* 프로필 아바타 요약 카드 */}
+        <div className={`${darkMode ? 'bg-gray-800/40 border-gray-700/50' : 'bg-white border-slate-200'} p-6 text-center rounded-2xl border shadow-sm relative overflow-hidden`}>
           <button
             onClick={() => setActivePanel('editProfile')}
-            className={`absolute top-3 right-3 p-1.5 ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'} rounded-lg transition-colors`}
+            className={`absolute top-4 right-4 p-2 ${darkMode ? 'hover:bg-gray-800 text-gray-400 hover:text-white' : 'hover:bg-slate-50 text-slate-500'} rounded-xl transition-all border border-transparent hover:border-slate-200/50`}
             title="프로필 수정"
           >
-            <Edit2 className={`w-3.5 h-3.5 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`} />
+            <Edit2 className="w-4 h-4" />
           </button>
-          <div className="w-16 h-16 bg-gradient-to-br from-[#1e3a5f] to-[#2d4a6f] text-white rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg">
-            <User className="w-8 h-8" />
+          <div className="w-16 h-16 bg-gradient-to-br from-[#0B2F61] to-[#3B547E] text-white rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-md">
+            <User className="w-7 h-7 text-[#C8994B]" />
           </div>
-          <h2 className={`text-base mb-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}>{userData?.name || '김전략'}</h2>
-          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{userData?.department || '전략기획팀'} {userData?.position || '팀장'}</p>
+          <h2 className={`text-base font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-0.5`}>{userData?.name || '김전략'}</h2>
+          <p className={`text-xs font-semibold ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{userData?.department || '전략기획팀'} · {userData?.position || '팀장'}</p>
         </div>
 
-        <div className={`${darkMode ? 'bg-[#1a1a1a]' : 'bg-white'} p-3 mb-4 rounded-xl shadow-sm`}>
-          <h3 className={`text-sm mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'} font-semibold`}>계정 정보</h3>
-          <div className="space-y-3">
+        {/* 세부 계정 파라미터 세그먼트 */}
+        <div className={`${darkMode ? 'bg-gray-800/40 border-gray-700/40' : 'bg-white border-slate-200'} p-5 rounded-2xl border shadow-sm`}>
+          <h3 className={`text-xs font-bold uppercase tracking-wider mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>기본 계정 명세</h3>
+          <div className="space-y-4">
             {[
-              { Icon: Mail, label: '이메일', value: userData?.email || 'analyst@dbrauthority.com', border: false },
-              { Icon: Building2, label: '회사', value: userData?.company || 'DBR Authority Inc.', border: true },
-              { Icon: Briefcase, label: '부서', value: userData?.department || '전략기획팀', border: true },
+              { Icon: Mail, label: '이메일 계정 주소', value: userData?.email || 'analyst@dbrauthority.com', border: false },
+              { Icon: Building2, label: '소속 법인 기관명', value: userData?.company || 'DBR Authority Inc.', border: true },
+              { Icon: Briefcase, label: '담당 실무 소속부서', value: userData?.department || '전략기획팀', border: true },
             ].map(({ Icon, label, value, border }) => (
-              <div key={label} className={`flex items-center gap-2 py-1.5 ${border ? (darkMode ? 'border-t border-gray-800' : 'border-t border-gray-100') : ''}`}>
-                <Icon className={`w-4 h-4 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+              <div key={label} className={`flex items-center gap-3 pt-3 ${border ? (darkMode ? 'border-t border-gray-800' : 'border-t border-slate-100') : ''}`}>
+                <div className={`p-2 rounded-lg ${darkMode ? 'bg-blue-950/40 text-blue-400' : 'bg-slate-50 text-[#0B2F61]'}`}>
+                  <Icon className="w-4 h-4" />
+                </div>
                 <div className="flex-1">
-                  <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>{label}</div>
-                  <div className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{value}</div>
+                  <div className="text-[10px] font-bold text-gray-400 dark:text-gray-500 mb-0.5">{label}</div>
+                  <div className={`text-sm font-bold ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>{value}</div>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className={`${darkMode ? 'bg-[#1a1a1a]' : 'bg-white'} p-3 mb-4 rounded-xl shadow-sm`}>
-          <h3 className={`text-sm mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'} font-semibold`}>구독 정보</h3>
-          <div className="flex items-center justify-between py-1.5">
-            <div>
-              <div className={`text-sm mb-0.5 ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>Professional Plan</div>
-              <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>다음 결제일: 2026.06.04</div>
-            </div>
-            <span className={`px-2 py-0.5 ${darkMode ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-700'} text-xs rounded-full font-semibold`}>
-              활성
-            </span>
+        {/* 결제 구독 관리 스테이지 */}
+        <div className={`${darkMode ? 'bg-gray-800/40 border-gray-700/40' : 'bg-white border-slate-200'} p-5 rounded-2xl border shadow-sm flex items-center justify-between`}>
+          <div>
+            <h3 className={`text-xs font-bold uppercase tracking-wider mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>라이선스 등급</h3>
+            <div className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-0.5`}>Enterprise Professional Plan</div>
+            <div className="text-[10px] text-gray-400 font-medium">다음 자동 갱신 결제 주기: 2026.06.04</div>
           </div>
+          <span className="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs rounded-xl font-bold shadow-inner">
+            서버 연동 활성
+          </span>
         </div>
 
-        <div className="space-y-2 mb-4">
+        {/* 핵심 제어 링크 버튼 스택 */}
+        <div className="space-y-2">
           {[
-            { Icon: Bell, label: '알림 설정', key: 'notification' as SettingsPanel },
-            { Icon: Lock, label: '보안 설정', key: 'security' as SettingsPanel },
-            { Icon: Settings, label: '환경 설정', key: 'environment' as SettingsPanel },
+            { Icon: Bell, label: '시스템 포커스 알림 설정', key: 'notification' as SettingsPanel },
+            { Icon: Lock, label: '계정 보안 아키텍처 설정', key: 'security' as SettingsPanel },
+            { Icon: Settings, label: '대시보드 에셋 환경 설정', key: 'environment' as SettingsPanel },
           ].map(({ Icon, label, key }) => (
             <button
               key={label}
               onClick={() => setActivePanel(key)}
-              className={`w-full ${darkMode ? 'bg-[#1a1a1a] hover:bg-[#252525] hover:border-[#142755]' : 'bg-white hover:bg-gray-100 hover:border-gray-300'} p-3 rounded-xl shadow-sm flex items-center justify-between transition-all border border-transparent`}
+              className={`w-full ${darkMode ? 'bg-gray-800/30 border-gray-800/60 hover:bg-gray-800/80 hover:border-[#0B2F61]' : 'bg-white border-slate-200 hover:bg-slate-50 hover:border-slate-300'} p-4 rounded-2xl shadow-sm flex items-center justify-between transition-all border`}
             >
-              <div className="flex items-center gap-2">
-                <div className={`w-8 h-8 ${darkMode ? 'bg-[#444655]' : 'bg-gray-100'} rounded-lg flex items-center justify-center`}>
-                  <Icon className={`w-4 h-4 ${darkMode ? 'text-[#A9AABC]' : 'text-[#142755]'}`} />
+              <div className="flex items-center gap-3">
+                <div className={`w-8 h-8 ${darkMode ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-[#0B2F61]'} rounded-xl flex items-center justify-center`}>
+                  <Icon className="w-4 h-4" />
                 </div>
-                <span className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{label}</span>
+                <span className={`text-xs sm:text-sm font-bold ${darkMode ? 'text-slate-300' : 'text-gray-800'}`}>{label}</span>
               </div>
-              <ChevronRight className={`w-4 h-4 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+              <ChevronRight className="w-4 h-4 text-gray-400" />
             </button>
           ))}
         </div>
 
+        {/* [수정] 로그아웃 액션 버튼 */}
         <button
-          onClick={handleLogout}
-          className={`w-full ${darkMode ? 'bg-[#1a1a1a] hover:bg-red-950' : 'bg-white hover:bg-red-50'} p-3 rounded-xl shadow-sm flex items-center justify-center gap-2 ${darkMode ? 'text-red-400 border-red-900' : 'text-red-600 border-red-200'} transition-colors border`}
+          onClick={() => setShowLogoutConfirm(true)}
+          className={`w-full ${darkMode ? 'bg-gray-800/20 hover:bg-red-950/40 border-red-900/50 text-red-400' : 'bg-white hover:bg-red-50 border-red-200 text-red-600'} p-4 rounded-2xl shadow-sm flex items-center justify-center gap-2 transition-all border font-bold text-xs sm:text-sm`}
         >
           <LogOut className="w-4 h-4" />
-          <span className="text-sm font-medium">로그아웃</span>
+          <span>보안 인증 세션 로그아웃</span>
         </button>
 
-        <div className="mt-4 text-center">
-          <p className={`text-xs ${darkMode ? 'text-gray-600' : 'text-gray-500'}`}>
-            Version 2.1.0 • © 2026 DBR Authority
+        {/* [수정] 로그아웃 모달 UI */}
+        {showLogoutConfirm && (
+          <>
+            <div className="fixed inset-0 bg-black/40 z-[100] backdrop-blur-sm" onClick={() => setShowLogoutConfirm(false)} />
+            <div className="fixed inset-0 z-[101] flex items-center justify-center p-4">
+              <div className={`${darkMode ? 'bg-[#1a1f2e]' : 'bg-white'} w-full max-w-sm rounded-3xl p-6 shadow-2xl border ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-12 h-12 bg-red-50 text-red-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm">
+                    <LogOut className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className={`font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>로그아웃</h3>
+                    <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>정말로 보안 세션을 종료하시겠습니까?</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => setShowLogoutConfirm(false)} className={`flex-1 py-3 rounded-2xl font-bold text-sm ${darkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>취소</button>
+                  <button onClick={handleLogout} className="flex-1 py-3 rounded-2xl font-bold text-sm bg-red-600 text-white hover:bg-red-700 transition-colors shadow-md">로그아웃</button>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        <div className="text-center pt-2">
+          <p className="text-[10px] text-gray-400 font-semibold tracking-wider uppercase">
+            Version 2.1.0 PRO • © 2026 DBR Authority Visualizer
           </p>
         </div>
       </div>
 
-      {/* Settings Modal */}
+      {/* 글로벌 레이어 팝업 컨테이너 */}
       {activePanel && (
         <>
           <div
-            className={`fixed inset-0 ${darkMode ? 'bg-black bg-opacity-80' : 'bg-white bg-opacity-95'} z-50 transition-opacity`}
+            className="fixed inset-0 bg-black/60 z-50 transition-opacity backdrop-blur-sm"
             onClick={() => setActivePanel(null)}
           />
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
-            <div className={`w-full max-w-4xl max-h-[90vh] ${darkMode ? 'bg-[#1a1a1a] border-gray-800' : 'bg-white border-gray-200'} rounded-2xl shadow-2xl overflow-hidden pointer-events-auto border-2`}>
-              <div className="sticky top-0 bg-gradient-to-r from-[#142755] to-[#444655] px-8 py-6 flex items-center justify-between shadow-lg">
-                <h2 className="text-2xl font-bold text-white">
-                  {activePanel === 'notification' && '알림 설정'}
-                  {activePanel === 'security' && '보안 설정'}
-                  {activePanel === 'environment' && '환경 설정'}
-                  {activePanel === 'editProfile' && '프로필 수정'}
-                  {activePanel === 'resetPassword' && '비밀번호 찾기'}
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className={`w-full max-w-2xl max-h-[85vh] ${darkMode ? 'bg-[#0A0E1A] border-gray-800' : 'bg-white border-slate-200'} rounded-2xl shadow-2xl overflow-hidden border`}>
+              
+              <div className="bg-gradient-to-r from-[#0B2F61] to-[#3B547E] px-6 py-4 flex items-center justify-between shadow-md">
+                <h2 className="text-base font-bold text-white">
+                  {activePanel === 'notification' && '알림 시스템 세부 제어'}
+                  {activePanel === 'security' && '계정 암호화 보안 세팅'}
+                  {activePanel === 'environment' && '대시보드 에셋 테마 세팅'}
+                  {activePanel === 'editProfile' && '프로필 명세 수정'}
+                  {activePanel === 'resetPassword' && '비밀번호 유실 복구'}
                 </h2>
-                <button
-                  onClick={() => setActivePanel(null)}
-                  className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
-                >
-                  <X className="w-6 h-6 text-white" />
+                <button onClick={() => setActivePanel(null)} className="p-1.5 hover:bg-white/10 rounded-xl transition-all">
+                  <X className="w-5 h-5 text-white" />
                 </button>
               </div>
 
-              <div className={`p-8 overflow-y-auto max-h-[calc(90vh-88px)] ${darkMode ? 'bg-black' : 'bg-gray-50'}`}>
-              {/* 알림 설정 패널 */}
-              {activePanel === 'notification' && (
-                <div className="space-y-8">
-                  <div className={`bg-gradient-to-r ${darkMode ? 'from-gray-900 to-blue-900 border-gray-600' : 'from-gray-50 to-blue-100 border-gray-300'} p-6 rounded-2xl border-2 shadow-sm`}>
-                    <div className="flex items-center gap-4 mb-3">
-                      <div className="w-12 h-12 bg-[#142755] rounded-xl flex items-center justify-center shadow-md">
-                        <Bell className="w-7 h-7 text-white" />
-                      </div>
-                      <div>
-                        <h3 className={`text-xl font-bold ${darkMode ? 'text-gray-300' : 'text-blue-900'}`}>알림 설정</h3>
-                        <p className={`text-sm ${darkMode ? 'text-[#A9AABC]' : 'text-[#142755]'}`}>
-                          중요한 업데이트와 분석 결과를 놓치지 마세요
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-5">
-                    <div className={`${darkMode ? 'bg-[#1a1a1a] border-gray-800 hover:border-gray-600' : 'bg-white border-gray-200 hover:border-blue-300'} p-6 rounded-2xl border-2 hover:shadow-lg transition-all`}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <h4 className={`text-lg font-bold ${darkMode ? 'text-gray-200' : 'text-gray-900'} mb-2`}>푸시 알림</h4>
-                          <p className={`text-base ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                            실시간 분석 결과 및 중요 알림을 받습니다
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => setPushEnabled(!pushEnabled)}
-                          className={`relative w-16 h-8 rounded-full transition-all duration-300 shadow-md ${
-                            pushEnabled ? 'bg-[#142755]' : (darkMode ? 'bg-gray-700' : 'bg-gray-300')
-                          }`}
-                        >
-                          <div
-                            className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow-sm transition-transform duration-300 ${
-                              pushEnabled ? 'transform translate-x-8' : ''
-                            }`}
-                          />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className={`${darkMode ? 'bg-[#1a1a1a] border-gray-800 hover:border-gray-600' : 'bg-white border-gray-200 hover:border-blue-300'} p-6 rounded-2xl border-2 hover:shadow-lg transition-all`}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <h4 className={`text-lg font-bold ${darkMode ? 'text-gray-200' : 'text-gray-900'} mb-2`}>이메일 알림</h4>
-                          <p className={`text-base ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                            주간 리포트 및 요약 정보를 이메일로 받습니다
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => setEmailEnabled(!emailEnabled)}
-                          className={`relative w-16 h-8 rounded-full transition-all duration-300 shadow-md ${
-                            emailEnabled ? 'bg-[#142755]' : (darkMode ? 'bg-gray-700' : 'bg-gray-300')
-                          }`}
-                        >
-                          <div
-                            className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow-sm transition-transform duration-300 ${
-                              emailEnabled ? 'transform translate-x-8' : ''
-                            }`}
-                          />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={handleSaveNotification}
-                    className="w-full bg-gradient-to-r from-[#142755] to-[#444655] text-white py-4 px-6 rounded-xl text-lg font-bold hover:from-[#444655] hover:to-[#444655] transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
-                  >
-                    <Check className="w-6 h-6" />
-                    설정 저장
-                  </button>
-                </div>
-              )}
-
-              {/* 보안 설정 패널 */}
-              {activePanel === 'security' && (
-                <div className="space-y-8">
-                  <div className={`bg-gradient-to-r ${darkMode ? 'from-red-950 to-orange-950 border-red-900' : 'from-red-50 to-orange-50 border-red-200'} p-6 rounded-2xl border-2 shadow-sm`}>
-                    <div className="flex items-center gap-4 mb-3">
-                      <div className="w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center shadow-md">
-                        <Shield className="w-7 h-7 text-white" />
-                      </div>
-                      <div>
-                        <h3 className={`text-xl font-bold ${darkMode ? 'text-red-300' : 'text-red-900'}`}>보안 설정</h3>
-                        <p className={`text-sm ${darkMode ? 'text-red-400' : 'text-red-700'}`}>
-                          계정 보안을 강화하고 안전하게 관리하세요
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className={`${darkMode ? 'bg-[#1a1a1a] border-gray-800' : 'bg-white border-gray-200'} p-6 rounded-2xl border-2 shadow-sm`}>
-                    <h4 className={`text-lg font-bold ${darkMode ? 'text-gray-200' : 'text-gray-900'} mb-5`}>비밀번호 변경</h4>
-                    <div className="space-y-4">
-                      <div>
-                        <label className={`block text-base font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>현재 비밀번호</label>
-                        <input
-                          type="password"
-                          value={currentPassword}
-                          onChange={(e) => setCurrentPassword(e.target.value)}
-                          className={`w-full px-4 py-3 text-base border-2 ${darkMode ? 'bg-black border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'} rounded-xl focus:outline-none focus:ring-2 focus:ring-[#142755] focus:border-[#142755] transition-all`}
-                          placeholder="현재 비밀번호 입력"
-                        />
-                      </div>
-                      <div>
-                        <label className={`block text-base font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>새 비밀번호</label>
-                        <input
-                          type="password"
-                          value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
-                          className={`w-full px-4 py-3 text-base border-2 ${darkMode ? 'bg-black border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'} rounded-xl focus:outline-none focus:ring-2 focus:ring-[#142755] focus:border-[#142755] transition-all`}
-                          placeholder="새 비밀번호 입력 (최소 6자)"
-                        />
-                      </div>
-                      <div>
-                        <label className={`block text-base font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>비밀번호 확인</label>
-                        <input
-                          type="password"
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          className={`w-full px-4 py-3 text-base border-2 ${darkMode ? 'bg-black border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'} rounded-xl focus:outline-none focus:ring-2 focus:ring-[#142755] focus:border-[#142755] transition-all`}
-                          placeholder="새 비밀번호 다시 입력"
-                        />
-                      </div>
-                      <button
-                        onClick={handleChangePassword}
-                        className="w-full bg-gradient-to-r from-[#142755] to-[#444655] text-white py-3 px-4 rounded-xl text-base font-bold hover:from-[#444655] hover:to-[#444655] transition-all shadow-md hover:shadow-lg"
-                      >
-                        비밀번호 변경
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className={`${darkMode ? 'bg-[#1a1a1a] border-gray-800 hover:border-gray-600' : 'bg-white border-gray-200 hover:border-blue-300'} p-6 rounded-2xl border-2 hover:shadow-lg transition-all`}>
-                    <div className="flex items-center justify-between">
+              <div className={`p-6 overflow-y-auto max-h-[calc(85vh-56px)] ${darkMode ? 'bg-black/20' : 'bg-slate-50/50'} space-y-6`}>
+                {activePanel === 'notification' && (
+                  <div className="space-y-4">
+                    <div className={`${darkMode ? 'bg-gray-800/40 border-gray-700/40' : 'bg-white border-slate-200'} p-4 rounded-xl border flex items-center justify-between`}>
                       <div className="flex-1">
-                        <h4 className={`text-lg font-bold ${darkMode ? 'text-gray-200' : 'text-gray-900'} mb-2`}>2단계 인증</h4>
-                        <p className={`text-base ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                          추가 보안 계층으로 계정을 보호합니다
-                        </p>
+                        <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-0.5">실시간 인프라 푸시 토글</h4>
+                        <p className="text-xs text-gray-500">분석 완료 트래킹 및 핵심 시각화 지표 수렴 시 실시간 브라우저 팝업 송출</p>
                       </div>
                       <button
-                        onClick={handleToggleTwoFactor}
-                        className={`relative w-16 h-8 rounded-full transition-all duration-300 shadow-md ${
-                          twoFactorEnabled ? 'bg-[#142755]' : (darkMode ? 'bg-gray-700' : 'bg-gray-300')
-                        }`}
+                        onClick={() => setPushEnabled(!pushEnabled)}
+                        className={`relative w-12 h-6 rounded-full transition-all duration-300 ${pushEnabled ? 'bg-[#0B2F61]' : 'bg-gray-300'}`}
                       >
-                        <div
-                          className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow-sm transition-transform duration-300 ${
-                            twoFactorEnabled ? 'transform translate-x-8' : ''
-                          }`}
-                        />
+                        <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-300 ${pushEnabled ? 'transform translate-x-6' : ''}`} />
                       </button>
                     </div>
-                  </div>
 
-                  <div className={`${darkMode ? 'bg-[#1a1a1a] border-gray-800' : 'bg-white border-gray-200'} p-6 rounded-2xl border-2 shadow-sm`}>
-                    <h4 className={`text-lg font-bold ${darkMode ? 'text-gray-200' : 'text-gray-900'} mb-4`}>로그인 기록</h4>
-                    <div className="space-y-4">
-                      {[
-                        { device: 'Chrome (Windows)', location: '서울, 대한민국', time: '2시간 전', current: true },
-                        { device: 'Safari (iPhone)', location: '서울, 대한민국', time: '1일 전', current: false },
-                        { device: 'Chrome (macOS)', location: '부산, 대한민국', time: '3일 전', current: false },
-                      ].map((log, idx) => (
-                        <div key={idx} className={`flex items-start gap-4 pb-4 border-b-2 ${darkMode ? 'border-gray-800' : 'border-gray-100'} last:border-0`}>
-                          <div className={`w-10 h-10 ${darkMode ? 'bg-blue-950' : 'bg-gray-100'} rounded-lg flex items-center justify-center flex-shrink-0`}>
-                            <Eye className={`w-5 h-5 ${darkMode ? 'text-[#A9AABC]' : 'text-[#142755]'}`} />
-                          </div>
-                          <div className="flex-1">
-                            <div className={`text-base font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-900'} flex items-center gap-2 mb-1`}>
-                              {log.device}
-                              {log.current && (
-                                <span className={`text-xs ${darkMode ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-700'} px-2 py-1 rounded-full font-bold`}>현재</span>
-                              )}
-                            </div>
-                            <div className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>{log.location} • {log.time}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* 환경 설정 패널 */}
-              {activePanel === 'environment' && (
-                <div className="space-y-8">
-                  <div className={`bg-gradient-to-r ${darkMode ? 'from-purple-950 to-pink-950 border-purple-900' : 'from-purple-50 to-pink-50 border-purple-200'} p-6 rounded-2xl border-2 shadow-sm`}>
-                    <div className="flex items-center gap-4 mb-3">
-                      <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center shadow-md">
-                        <Settings className="w-7 h-7 text-white" />
-                      </div>
-                      <div>
-                        <h3 className={`text-xl font-bold ${darkMode ? 'text-purple-300' : 'text-purple-900'}`}>{language === 'ko' ? '환경 설정' : 'Preferences'}</h3>
-                        <p className={`text-sm ${darkMode ? 'text-purple-400' : 'text-purple-700'}`}>
-                          {language === 'ko' ? '개인화된 사용 환경을 설정하세요' : 'Customize your experience'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className={`${darkMode ? 'bg-[#1a1a1a] border-gray-800 hover:border-gray-600' : 'bg-white border-gray-200 hover:border-blue-300'} p-6 rounded-2xl border-2 hover:shadow-lg transition-all`}>
-                    <div className="flex items-center justify-between">
+                    <div className={`${darkMode ? 'bg-gray-800/40 border-gray-700/40' : 'bg-white border-slate-200'} p-4 rounded-xl border flex items-center justify-between`}>
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          {darkMode ? <Moon className="w-6 h-6 text-[#A9AABC]" /> : <Sun className="w-6 h-6 text-amber-500" />}
-                          <h4 className={`text-lg font-bold ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>{language === 'ko' ? '다크 모드' : 'Dark Mode'}</h4>
-                        </div>
-                        <p className={`text-base ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                          {language === 'ko' ? '어두운 테마로 눈의 피로를 줄입니다' : 'Reduce eye strain with dark theme'}
-                        </p>
+                        <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-0.5">핵심 메일링 리포트 토글</h4>
+                        <p className="text-xs text-gray-500">주간 종합 성과 트렌드 아카이빙 파일을 지정된 관리자 메일로 정기 전송</p>
                       </div>
                       <button
-                        onClick={() => setDarkMode(!darkMode)}
-                        className={`relative w-16 h-8 rounded-full transition-all duration-300 shadow-md ${
-                          darkMode ? 'bg-[#142755]' : 'bg-gray-300'
-                        }`}
+                        onClick={() => setEmailEnabled(!emailEnabled)}
+                        className={`relative w-12 h-6 rounded-full transition-all duration-300 ${emailEnabled ? 'bg-[#0B2F61]' : 'bg-gray-300'}`}
                       >
-                        <div
-                          className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow-sm transition-transform duration-300 ${
-                            darkMode ? 'transform translate-x-8' : ''
-                          }`}
-                        />
+                        <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-300 ${emailEnabled ? 'transform translate-x-6' : ''}`} />
+                      </button>
+                    </div>
+
+                    <button onClick={handleSaveNotification} className="w-full py-2.5 bg-[#0B2F61] text-white rounded-xl text-xs font-bold shadow-md hover:bg-[#C8994B] transition-colors">
+                      알림 파라미터 업데이트 적용
+                    </button>
+                  </div>
+                )}
+
+                {activePanel === 'security' && (
+                  <div className="space-y-4">
+                    <div className={`${darkMode ? 'bg-gray-800/40 border-gray-700' : 'bg-white border-slate-200'} p-5 rounded-xl border space-y-3`}>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 mb-1">기존 비밀번호 검증</label>
+                        <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className={`w-full px-3 py-2 text-xs border ${darkMode ? 'bg-black border-gray-700 text-white' : 'bg-white border-slate-200'} rounded-xl focus:outline-none focus:ring-1 focus:ring-[#0B2F61]`} placeholder="기존 계정 패스워드" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 mb-1">교체 지망 암호 자격</label>
+                        <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className={`w-full px-3 py-2 text-xs border ${darkMode ? 'bg-black border-gray-700 text-white' : 'bg-white border-slate-200'} rounded-xl focus:outline-none focus:ring-1 focus:ring-[#0B2F61]`} placeholder="6자 이상의 신규 규격 암호" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 mb-1">신규 암호 교차 확인</label>
+                        <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={`w-full px-3 py-2 text-xs border ${darkMode ? 'bg-black border-gray-700 text-white' : 'bg-white border-slate-200'} rounded-xl focus:outline-none focus:ring-1 focus:ring-[#0B2F61]`} placeholder="동일하게 복사 입력" />
+                      </div>
+                      <button onClick={handleChangePassword} className="w-full py-2.5 bg-[#0B2F61] text-white text-xs font-bold rounded-xl shadow">비밀번호 변경 컴파일 실행</button>
+                    </div>
+
+                    <div className={`${darkMode ? 'bg-gray-800/40' : 'bg-white'} p-4 rounded-xl border flex items-center justify-between`}>
+                      <div>
+                        <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-0.5">2단계 계정 로그인 인증 스왑</h4>
+                        <p className="text-xs text-gray-400">이기종 디바이스 접근 시 세션 하이재킹 원천 방어막 형성</p>
+                      </div>
+                      <button onClick={handleToggleTwoFactor} className={`relative w-12 h-6 rounded-full transition-all duration-300 ${twoFactorEnabled ? 'bg-[#0B2F61]' : 'bg-gray-300'}`}>
+                        <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-300 ${twoFactorEnabled ? 'transform translate-x-6' : ''}`} />
                       </button>
                     </div>
                   </div>
+                )}
 
-                  <div className={`${darkMode ? 'bg-[#1a1a1a] border-gray-800' : 'bg-white border-gray-200'} p-6 rounded-2xl border-2 shadow-sm`}>
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className={`w-10 h-10 ${darkMode ? 'bg-blue-950' : 'bg-gray-100'} rounded-lg flex items-center justify-center`}>
-                        <Globe className={`w-6 h-6 ${darkMode ? 'text-[#A9AABC]' : 'text-[#142755]'}`} />
+                {activePanel === 'environment' && (
+                  <div className="space-y-4">
+                    <div className={`${darkMode ? 'bg-gray-800/40 border-gray-700' : 'bg-white border-slate-200'} p-4 rounded-xl border flex items-center justify-between`}>
+                      <div className="flex items-center gap-2">
+                        {darkMode ? <Moon className="w-4 h-4 text-[#C8994B]" /> : <Sun className="w-4 h-4 text-amber-500" />}
+                        <h4 className="text-sm font-bold text-gray-900 dark:text-white">다크 테마 스위치</h4>
                       </div>
-                      <h4 className={`text-lg font-bold ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>{language === 'ko' ? '언어 설정' : 'Language'}</h4>
+                      <button onClick={() => setDarkMode(!darkMode)} className={`relative w-12 h-6 rounded-full transition-all duration-300 ${darkMode ? 'bg-[#0B2F61]' : 'bg-gray-300'}`}>
+                        <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-300 ${darkMode ? 'transform translate-x-6' : ''}`} />
+                      </button>
                     </div>
-                    <select
-                      value={language}
-                      onChange={(e) => setLanguage(e.target.value)}
-                      className={`w-full px-4 py-3 text-base border-2 ${darkMode ? 'bg-black border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'} rounded-xl focus:outline-none focus:ring-2 focus:ring-[#142755] focus:border-[#142755] transition-all cursor-pointer`}
-                    >
-                      <option value="ko">한국어</option>
-                      <option value="en">English</option>
-                    </select>
+                    <button onClick={handleSaveEnvironment} className="w-full py-2.5 bg-[#0B2F61] text-white text-xs font-bold rounded-xl shadow-md">테마 리로드 마이그레이션 실행</button>
                   </div>
+                )}
 
-                  <button
-                    onClick={handleSaveEnvironment}
-                    className="w-full bg-gradient-to-r from-[#142755] to-[#444655] text-white py-4 px-6 rounded-xl text-lg font-bold hover:from-[#444655] hover:to-[#444655] transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
-                  >
-                    <Check className="w-6 h-6" />
-                    {language === 'ko' ? '설정 저장' : 'Save Settings'}
-                  </button>
-                </div>
-              )}
-
-              {/* 프로필 편집 패널 */}
-              {activePanel === 'editProfile' && (
-                <div className="space-y-8">
-                  <div className={`bg-gradient-to-r ${darkMode ? 'from-green-950 to-emerald-950 border-green-900' : 'from-green-50 to-emerald-50 border-green-200'} p-6 rounded-2xl border-2 shadow-sm`}>
-                    <div className="flex items-center gap-4 mb-3">
-                      <div className="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center shadow-md">
-                        <User className="w-7 h-7 text-white" />
-                      </div>
-                      <div>
-                        <h3 className={`text-xl font-bold ${darkMode ? 'text-green-300' : 'text-green-900'}`}>프로필 수정</h3>
-                        <p className={`text-sm ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
-                          개인 정보를 업데이트하세요
-                        </p>
-                      </div>
+                {activePanel === 'editProfile' && (
+                  <div className={`${darkMode ? 'bg-gray-800/40 border-gray-700' : 'bg-white border-slate-200'} p-5 rounded-xl border space-y-3`}>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 mb-1">성명</label>
+                      <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className={`w-full px-3 py-2 text-xs border ${darkMode ? 'bg-black border-gray-700 text-white' : 'bg-white border-slate-200'} rounded-xl focus:outline-none`} />
                     </div>
-                  </div>
-
-                  <div className={`${darkMode ? 'bg-[#1a1a1a] border-gray-800' : 'bg-white border-gray-200'} p-6 rounded-2xl border-2 shadow-sm`}>
-                    <div className="space-y-5">
-                      <div>
-                        <label className={`block text-base ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2 font-bold`}>이름</label>
-                        <input
-                          type="text"
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          className={`w-full px-4 py-3 text-base border-2 ${darkMode ? 'bg-black border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'} rounded-xl focus:outline-none focus:ring-2 focus:ring-[#142755] focus:border-[#142755] transition-all`}
-                          placeholder="이름 입력"
-                        />
-                      </div>
-
-                      <div>
-                        <label className={`block text-base ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2 font-bold`}>이메일</label>
-                        <input
-                          type="email"
-                          value={editEmail}
-                          onChange={(e) => setEditEmail(e.target.value)}
-                          className={`w-full px-4 py-3 text-base border-2 ${darkMode ? 'bg-black border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'} rounded-xl focus:outline-none focus:ring-2 focus:ring-[#142755] focus:border-[#142755] transition-all`}
-                          placeholder="example@company.com"
-                        />
-                      </div>
-
-                      <div>
-                        <label className={`block text-base ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2 font-bold`}>회사</label>
-                        <input
-                          type="text"
-                          value={editCompany}
-                          onChange={(e) => setEditCompany(e.target.value)}
-                          className={`w-full px-4 py-3 text-base border-2 ${darkMode ? 'bg-black border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'} rounded-xl focus:outline-none focus:ring-2 focus:ring-[#142755] focus:border-[#142755] transition-all`}
-                          placeholder="회사명 입력"
-                        />
-                      </div>
-
-                      <div>
-                        <label className={`block text-base ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2 font-bold`}>부서</label>
-                        <input
-                          type="text"
-                          value={editDepartment}
-                          onChange={(e) => setEditDepartment(e.target.value)}
-                          className={`w-full px-4 py-3 text-base border-2 ${darkMode ? 'bg-black border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'} rounded-xl focus:outline-none focus:ring-2 focus:ring-[#142755] focus:border-[#142755] transition-all`}
-                          placeholder="부서명 입력"
-                        />
-                      </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 mb-1">대표 수신 이메일</label>
+                      <input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className={`w-full px-3 py-2 text-xs border ${darkMode ? 'bg-black border-gray-700 text-white' : 'bg-white border-slate-200'} rounded-xl focus:outline-none`} />
                     </div>
-                  </div>
-
-                  <button
-                    onClick={handleSaveProfile}
-                    className="w-full bg-gradient-to-r from-[#142755] to-[#444655] text-white py-4 px-6 rounded-xl text-lg font-bold hover:from-[#444655] hover:to-[#444655] transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
-                  >
-                    <Check className="w-6 h-6" />
-                    저장하기
-                  </button>
-                </div>
-              )}
-
-              {/* 비밀번호 재설정 패널 */}
-              {activePanel === 'resetPassword' && (
-                <div className="space-y-8">
-                  <div className={`bg-gradient-to-r ${darkMode ? 'from-amber-950 to-yellow-950 border-amber-900' : 'from-amber-50 to-yellow-50 border-amber-200'} p-6 rounded-2xl border-2 shadow-sm`}>
-                    <div className="flex items-center gap-4 mb-3">
-                      <div className="w-12 h-12 bg-amber-600 rounded-xl flex items-center justify-center shadow-md">
-                        <Lock className="w-7 h-7 text-white" />
-                      </div>
-                      <div>
-                        <h3 className={`text-xl font-bold ${darkMode ? 'text-amber-300' : 'text-amber-900'}`}>비밀번호 찾기</h3>
-                        <p className={`text-sm ${darkMode ? 'text-amber-400' : 'text-amber-700'}`}>
-                          등록된 이메일로 비밀번호 재설정 링크를 보내드립니다
-                        </p>
-                      </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 mb-1">법인 기관명</label>
+                      <input type="text" value={editCompany} onChange={(e) => setEditCompany(e.target.value)} className={`w-full px-3 py-2 text-xs border ${darkMode ? 'bg-black border-gray-700 text-white' : 'bg-white border-slate-200'} rounded-xl focus:outline-none`} />
                     </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 mb-1">실무 부서명</label>
+                      <input type="text" value={editDepartment} onChange={(e) => setEditDepartment(e.target.value)} className={`w-full px-3 py-2 text-xs border ${darkMode ? 'bg-black border-gray-700 text-white' : 'bg-white border-slate-200'} rounded-xl focus:outline-none`} />
+                    </div>
+                    <button onClick={handleSaveProfile} className="w-full py-2.5 bg-[#0B2F61] text-white text-xs font-bold rounded-xl shadow-md">개인 인적 스펙 갱신 저장</button>
                   </div>
-
-                  <div className={`${darkMode ? 'bg-[#1a1a1a] border-gray-800' : 'bg-white border-gray-200'} p-6 rounded-2xl border-2 shadow-sm`}>
-                    <label className={`block text-base ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-3 font-bold`}>이메일 주소</label>
-                    <input
-                      type="email"
-                      value={resetEmail}
-                      onChange={(e) => setResetEmail(e.target.value)}
-                      className={`w-full px-4 py-3 text-base border-2 ${darkMode ? 'bg-black border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'} rounded-xl focus:outline-none focus:ring-2 focus:ring-[#142755] focus:border-[#142755] transition-all`}
-                      placeholder="example@company.com"
-                    />
-                    <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-500'} mt-3`}>
-                      회원가입 시 사용한 이메일 주소를 입력해주세요
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={handleResetPassword}
-                    className="w-full bg-gradient-to-r from-[#142755] to-[#444655] text-white py-4 px-6 rounded-xl text-lg font-bold hover:from-[#444655] hover:to-[#444655] transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
-                  >
-                    <Mail className="w-6 h-6" />
-                    재설정 링크 전송
-                  </button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
-        </div>
         </>
       )}
 
-      {/* Toast Notification */}
       {toast && (
-        <div className={`fixed bottom-6 left-1/2 transform -translate-x-1/2 ${darkMode ? 'bg-gray-800 text-white' : 'bg-gray-900 text-white'} px-6 py-3 rounded-lg shadow-2xl z-[60] flex items-center gap-2 animate-fade-in`}>
-          <Check className="w-5 h-5 text-green-400" />
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-5 py-2.5 rounded-xl shadow-2xl z-[60] flex items-center gap-2 text-xs font-bold animate-fade-in">
+          <Check className="w-4 h-4 text-green-400" />
           {toast}
         </div>
       )}

@@ -8,40 +8,49 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: #030213;
+  
+  /* 🌟 [원하는 상징색으로 교체 및 추가] */
+  --primary: #0B2F61;                 /* 주조색: 로고 왼쪽 날개 딥 네이비 */
   --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.95 0.0058 264.53);
-  --secondary-foreground: #030213;
+  --secondary: #C8994B;               /* 보조색: 로고 오른쪽 날개 웜 골드 */
+  --secondary-foreground: #ffffff;
+  --destructive: #EA0029;             /* 강조색: 시그니처 레드 */
+  --destructive-foreground: #ffffff;
+  
   --muted: #ececf0;
   --muted-foreground: #717182;
   --accent: #e9ebef;
-  --accent-foreground: #030213;
-  --destructive: #d4183d;
-  --destructive-foreground: #ffffff;
+  --accent-foreground: #0B2F61;       /* 안내 텍스트나 강조 글자에 딥 네이비 적용 */
   --border: rgba(0, 0, 0, 0.1);
   --input: transparent;
   --input-background: #f3f3f5;
   --switch-background: #cbced4;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
+  --ring: #0B2F61;                    /* 포커스 링 색상도 딥 네이비로 매칭 */
+  
+  /* 📊 [차트 색상 커스텀 추가] */
+  --chart-1: #0B2F61;                 /* 차트 1번: 딥 네이비 (전략 A) */
+  --chart-2: #C8994B;                 /* 차트 2번: 웜 골드 (전략 B) */
+  --chart-3: #EA0029;                 /* 차트 3번: 시그니처 레드 */
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
+  
   --radius: 0.625rem;
+  
+  /* 🗂️ [사이드바 상징색 매핑 수정] */
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: #030213;
+  --sidebar-primary: #0B2F61;          /* 사이드바 선택 시 활성화 배경을 딥 네이비로 */
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.97 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar-ring: #0B2F61;
 }
 
 .dark {
+  /* 🌙 다크모드 기존 틀 완전 유지 */
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.145 0 0);
@@ -78,7 +87,15 @@
   --sidebar-ring: oklch(0.439 0 0);
 }
 
-@theme inline {
+/* globals.css 하단의 @theme 블록을 아래 코드로 덮어씌우세요 */
+
+@theme {
+  /* 🌟 [우리의 브랜드 상징색 테마 직접 등록] */
+  --color-brand-navy: #0B2F61;
+  --color-brand-gold: #C8994B;
+  --color-brand-red: #EA0029;
+
+  /* 시스템 UI 기본 색상 매핑 */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -100,15 +117,21 @@
   --color-input-background: var(--input-background);
   --color-switch-background: var(--switch-background);
   --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
+
+  /* 데이터 시각화 차트 컬레스케일 명시적 매핑 */
+  --color-chart-1: #0B2F61;           /* 변수 대신 헥사코드를 직접 주입하여 캐시 씹힘 방지 */
+  --color-chart-2: #C8994B;
+  --color-chart-3: #EA0029;
+  --color-chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+
+  /* 반경 설정 */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  /* 사이드바 테마 매핑 */
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);

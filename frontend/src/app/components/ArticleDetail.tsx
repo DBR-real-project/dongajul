@@ -1,10 +1,12 @@
 import { ArrowLeft, Building2, Calendar, TrendingUp, TrendingDown, Target, Users, DollarSign, Lightbulb } from 'lucide-react';
 
+// 외부에서 전달하는 컴포넌트 Props 규격 정의
 interface ArticleDetailProps {
-  articleId: number;
-  onBack: () => void;
+  articleId: number; // 조회할 아티클의 고유 ID
+  onBack: () => void; // '목록으로' 버튼을 누를 때 뷰 상태를 원복할 이벤트 콜백 함수
 }
 
+// 아티클 상세 데이터를 보관하는 데이터 레이어 객체 (Id 1: 넷플릭스, Id 3: 코닥)
 const articleDetails: Record<number, any> = {
   1: {
     title: '넷플릭스의 데이터 기반 콘텐츠 전략',
@@ -35,15 +37,18 @@ const articleDetails: Record<number, any> = {
 };
 
 export function ArticleDetail({ articleId, onBack }: ArticleDetailProps) {
+  // 인덱스 맵 접근 후 일치하는 데이터가 없으면 기본값으로 1번(넷플릭스) 데이터를 매핑하여 예외 처리
   const article = articleDetails[articleId] || articleDetails[1];
+  // 카테고리가 'success'인지 여부를 체크하여 화면 UI의 포인트 컬러(그린/레드) 분기 처리 변수 설정
   const isSuccess = article.category === 'success';
 
   return (
     <div className="min-h-screen bg-white">
+      {/* 1. 상단 고정 헤더 바 영역 (이전 목록 이동용 스티키 영역) */}
       <div className="bg-white border-b sticky top-0 z-40">
         <div className="px-4 sm:px-6 md:px-8 py-3 sm:py-4">
           <button
-            onClick={onBack}
+            onClick={onBack} // 클릭 시 메인 대시보드 뷰로 상태 원복
             className="flex items-center gap-2 text-gray-600 hover:text-[#EA0029] transition-colors"
           >
             <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -52,9 +57,12 @@ export function ArticleDetail({ articleId, onBack }: ArticleDetailProps) {
         </div>
       </div>
 
+      {/* 2. 본문 디테일 콘텐츠 기술 구역 (최대 너비 3xl 고정) */}
       <div className="px-4 sm:px-6 md:px-8 py-4 sm:py-6 max-w-3xl">
+        {/* 성공/실패 여부에 따른 상단 장식 바 컬러 분기 (성공: 그린, 실패: 레드) */}
         <div className={`h-1 mb-4 ${isSuccess ? 'bg-green-600' : 'bg-red-600'}`} />
 
+        {/* 성공/실패 유형 아이콘 및 배지 표기 영역 */}
         <div className="flex items-center gap-2 mb-3">
           {isSuccess ? (
             <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
@@ -66,10 +74,12 @@ export function ArticleDetail({ articleId, onBack }: ArticleDetailProps) {
           </span>
         </div>
 
+        {/* 아티클 제목 */}
         <h1 className="text-xl sm:text-2xl md:text-3xl mb-4 text-gray-900 leading-tight">
           {article.title}
         </h1>
 
+        {/* 메타 데이터 영역 (기업명, 산업군, 발행 날짜를 아이콘 컬렉션 순회 방식으로 렌더링) */}
         <div className="flex flex-wrap gap-3 mb-6 text-xs sm:text-sm text-gray-600">
           {[
             { Icon: Building2, text: article.company },
@@ -83,6 +93,7 @@ export function ArticleDetail({ articleId, onBack }: ArticleDetailProps) {
           ))}
         </div>
 
+        {/* 요약 박스 세션 (왼쪽 바 하이라이팅 처리) */}
         <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-5 mb-4 border-l-4 border-[#EA0029]">
           <div className={`inline-flex items-center gap-1.5 mb-2 text-xs sm:text-sm ${isSuccess ? 'text-green-900' : 'text-red-900'}`}>
             <Lightbulb className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -91,11 +102,13 @@ export function ArticleDetail({ articleId, onBack }: ArticleDetailProps) {
           <p className="text-sm sm:text-base text-gray-700 leading-relaxed">{article.summary}</p>
         </div>
 
+        {/* 히스토리 및 배경 설명 블록 */}
         <div className="bg-white border border-gray-200 p-4 sm:p-5 mb-4">
           <h2 className="text-base sm:text-lg mb-3 text-gray-900">배경</h2>
           <p className="text-sm sm:text-base text-gray-700 leading-relaxed">{article.background}</p>
         </div>
 
+        {/* 추진 전략 리스트 블록 (인덱스 순번을 서클 넘버 뱃지로 커스텀 마크업) */}
         <div className="bg-white border border-gray-200 p-4 sm:p-5 mb-4">
           <div className="flex items-center gap-2 mb-3">
             <Target className="w-5 h-5 sm:w-6 sm:h-6 text-[#EA0029]" />
@@ -113,6 +126,7 @@ export function ArticleDetail({ articleId, onBack }: ArticleDetailProps) {
           </ul>
         </div>
 
+        {/* 정량/정성적 결과 리스트 블록 (성공/실패 분기 스퀘어 인디케이터 바인딩) */}
         <div className="bg-white border border-gray-200 p-4 sm:p-5 mb-4">
           <div className="flex items-center gap-2 mb-3">
             <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-[#EA0029]" />
@@ -128,6 +142,7 @@ export function ArticleDetail({ articleId, onBack }: ArticleDetailProps) {
           </ul>
         </div>
 
+        {/* 핵심 분석 인사이트 하이라이팅 블록 (엠버/오렌지 계열 그라데이션 컨테이너 박스 처리) */}
         <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-4 sm:p-5 mb-4 border-2 border-amber-200">
           <div className="flex items-center gap-2 mb-3">
             <Lightbulb className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600" />
@@ -143,6 +158,7 @@ export function ArticleDetail({ articleId, onBack }: ArticleDetailProps) {
           </ul>
         </div>
 
+        {/* 교훈 및 시사점 체크 리스트 블록 */}
         <div className="bg-white border border-gray-200 p-4 sm:p-5 mb-4">
           <h2 className="text-base sm:text-lg mb-3 text-gray-900">교훈 및 시사점</h2>
           <ul className="space-y-2">

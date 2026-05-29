@@ -1,4 +1,4 @@
-import { Bell, User, ChevronDown, Plus, FileText, FileUp, TrendingUp, DollarSign, Target, Users, ChevronUp, Image } from 'lucide-react';
+import { ChevronDown, Plus, FileText, FileUp, TrendingUp, DollarSign, Target, Users, ChevronUp, Image, X } from 'lucide-react';
 import { TabType } from '../App';
 import { ContextSwitcher } from './ContextSwitcher';
 import { useState, useEffect } from 'react';
@@ -63,6 +63,13 @@ export function StrategyWorkspace({ activeTab, onTabChange, onNotificationClick,
       barChart: '점수 비교 (바 차트)',
       lineChart: 'ROI 추세',
       score: '점수',
+      performanceAnalytics: '성과 분석 지표',
+      cardSubLabels: {
+        conversion: '업계 평균 이상',
+        roi: '전년 대비 증가',
+        growth: '분기별 성장 추세',
+        campaigns: '활성화된 캠페인'
+      },
       chartLabels: {
         conversionRate: '전환율',
         roi: 'ROI',
@@ -88,6 +95,13 @@ export function StrategyWorkspace({ activeTab, onTabChange, onNotificationClick,
         influencer: '인플루언서',
         sponsorship: '협찬',
         viral: '바이럴',
+      },
+      modal: {
+        title: '새 전략 추가',
+        name: '전략 이름',
+        content: '상세 내용',
+        cancel: '취소',
+        submit: '등록'
       }
     },
     en: {
@@ -122,6 +136,13 @@ export function StrategyWorkspace({ activeTab, onTabChange, onNotificationClick,
       barChart: 'Score Comparison (Bar)',
       lineChart: 'ROI Trend',
       score: 'Score',
+      performanceAnalytics: 'Performance Analytics',
+      cardSubLabels: {
+        conversion: 'Above industry avg',
+        roi: 'Year over year',
+        growth: 'Quarterly trend',
+        campaigns: 'Active campaigns'
+      },
       chartLabels: {
         conversionRate: 'Conversion',
         roi: 'ROI',
@@ -147,6 +168,13 @@ export function StrategyWorkspace({ activeTab, onTabChange, onNotificationClick,
         influencer: 'Influencer',
         sponsorship: 'Sponsorship',
         viral: 'Viral',
+      },
+      modal: {
+        title: 'Add New Strategy',
+        name: 'Strategy Name',
+        content: 'Details',
+        cancel: 'Cancel',
+        submit: 'Submit'
       }
     }
   };
@@ -186,7 +214,17 @@ export function StrategyWorkspace({ activeTab, onTabChange, onNotificationClick,
   const [newKeyword, setNewKeyword] = useState('');
   const [sortBy, setSortBy] = useState<'score' | 'roi' | 'growth'>('score');
 
-  // Update strategies when language changes
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newStrategy, setNewStrategy] = useState({
+    name: '',
+    content: '',
+    conversion: 5.0,
+    roi: 100,
+    growth: 10,
+    cost: 1000,
+    engagement: 5.0
+  });
+
   useEffect(() => {
     setStrategies([
       {
@@ -217,7 +255,6 @@ export function StrategyWorkspace({ activeTab, onTabChange, onNotificationClick,
     setCurrentContext(text.currentContext);
   }, [language]);
 
-  // 점수 계산 (정량 지표 기반)
   const calculateScore = (metrics: Strategy['metrics']) => {
     const normalized = {
       conversion: (metrics.conversion / 10) * 20,
@@ -262,8 +299,39 @@ export function StrategyWorkspace({ activeTab, onTabChange, onNotificationClick,
     );
   };
 
-  // 레이더 차트 데이터
-  const radarData = strategiesWithScores.slice(0, 3).map((s, index) => ({
+  const handleAddStrategySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newStrategy.name.trim()) return;
+
+    const createdStrategy: Strategy = {
+      id: Date.now(),
+      name: newStrategy.name,
+      keywords: [language === 'en' ? 'New' : '신규'],
+      content: newStrategy.content || (language === 'en' ? 'No description available.' : '등록된 상세 내용이 없습니다.'),
+      files: [],
+      metrics: {
+        conversion: Number(newStrategy.conversion),
+        roi: Number(newStrategy.roi),
+        growth: Number(newStrategy.growth),
+        cost: Number(newStrategy.cost),
+        engagement: Number(newStrategy.engagement),
+      }
+    };
+
+    setStrategies(prev => [...prev, createdStrategy]);
+    setIsAddModalOpen(false);
+    setNewStrategy({
+      name: '',
+      content: '',
+      conversion: 5.0,
+      roi: 100,
+      growth: 10,
+      cost: 1000,
+      engagement: 5.0
+    });
+  };
+
+  const radarData = strategiesWithScores.slice(0, 3).map((s) => ({
     id: `strategy-${s.id}`,
     strategy: `${s.name.slice(0, language === 'en' ? 15 : 10)}-${s.id}`,
     conversion: s.metrics.conversion,
@@ -272,8 +340,7 @@ export function StrategyWorkspace({ activeTab, onTabChange, onNotificationClick,
     engagement: s.metrics.engagement,
   }));
 
-  // 비교 차트 데이터
-  const comparisonData = strategiesWithScores.map((s, index) => ({
+  const comparisonData = strategiesWithScores.map((s) => ({
     id: `strategy-${s.id}`,
     name: `${s.name.slice(0, language === 'en' ? 12 : 8)}-${s.id}`,
     score: s.score,
@@ -282,91 +349,81 @@ export function StrategyWorkspace({ activeTab, onTabChange, onNotificationClick,
 
   return (
     <div className={`h-full overflow-y-auto ${darkMode ? 'bg-[#0A0E1A]' : 'bg-[#FAFBFC]'} pb-24`}>
-      {/* 상단 선택 바 */}
-      <header className={`${darkMode ? 'bg-[#0A0E1A]/80 backdrop-blur-xl border-gray-800/50' : 'bg-white/80 backdrop-blur-xl border-gray-200/50'} border-b sticky top-0 z-50`}>
+      
+      {/* 서브 헤더 */}
+      <header className={`${darkMode ? 'bg-[#0A0E1A]/80 backdrop-blur-xl border-gray-800/50' : 'bg-white/80 backdrop-blur-xl border-gray-200/50'} border-b sticky top-0 z-40`}>
         <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-start">
             <ContextSwitcher
               currentContext={currentContext}
               onSelect={setCurrentContext}
               darkMode={darkMode}
               language={language}
             />
-
-            <div className="flex items-center gap-3">
-              <button onClick={onNotificationClick} className={`p-2.5 ${darkMode ? 'text-gray-400 hover:text-white hover:bg-gray-800/60' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'} relative rounded-lg transition-all`}>
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white dark:ring-gray-900"></span>
-              </button>
-              <button onClick={onProfileClick} className={`p-2.5 ${darkMode ? 'text-gray-400 hover:text-white hover:bg-gray-800/60' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'} rounded-lg transition-all`}>
-                <User className="w-5 h-5" />
-              </button>
-            </div>
           </div>
         </div>
       </header>
 
       <div className="px-6 py-6 max-w-[1600px] mx-auto">
-        {/* 상단 인사이트 카드 */}
-        <div className="grid grid-cols-4 gap-4 mb-8">
-          <div className={`group relative ${darkMode ? 'bg-gradient-to-br from-gray-800/40 to-gray-800/20' : 'bg-gradient-to-br from-indigo-50 to-white'} p-5 rounded-2xl backdrop-blur-sm hover:shadow-lg transition-all duration-300`}>
+        {/* 🛠️ 상단 4구 통계 카드 다크모드 가독성 강화 (text-gray-400 -> text-gray-200/white로 전면 톤업) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className={`group relative ${darkMode ? 'bg-gradient-to-br from-gray-800/70 to-gray-800/40 border border-gray-700/50' : 'bg-gradient-to-br from-indigo-50 to-white'} p-5 rounded-2xl backdrop-blur-sm hover:shadow-lg transition-all duration-300`}>
             <div className="flex items-center justify-between mb-3">
-              <div className={`p-2 rounded-lg ${darkMode ? 'bg-indigo-500/10' : 'bg-indigo-100'}`}>
+              <div className={`p-2 rounded-lg ${darkMode ? 'bg-indigo-500/20' : 'bg-indigo-100'}`}>
                 <Target className={`w-5 h-5 ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`} />
               </div>
-              <div className={`text-xs font-medium ${darkMode ? 'text-gray-500' : 'text-gray-400'} uppercase tracking-wide`}>{text.avgConversion}</div>
+              <div className={`text-xs font-bold ${darkMode ? 'text-gray-300' : 'text-gray-400'} uppercase tracking-wide`}>{text.avgConversion}</div>
             </div>
-            <div className={`text-3xl font-bold ${darkMode ? 'text-indigo-400' : 'text-indigo-600'} mb-1`}>
-              {(strategiesWithScores.reduce((sum, s) => sum + s.metrics.conversion, 0) / strategiesWithScores.length).toFixed(1)}%
+            <div className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-indigo-600'} mb-1`}>
+              {strategiesWithScores.length ? (strategiesWithScores.reduce((sum, s) => sum + s.metrics.conversion, 0) / strategiesWithScores.length).toFixed(1) : '0.0'}%
             </div>
-            <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Above industry avg</div>
+            <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>{text.cardSubLabels.conversion}</div>
           </div>
 
-          <div className={`group relative ${darkMode ? 'bg-gradient-to-br from-gray-800/40 to-gray-800/20' : 'bg-gradient-to-br from-green-50 to-white'} p-5 rounded-2xl backdrop-blur-sm hover:shadow-lg transition-all duration-300`}>
+          <div className={`group relative ${darkMode ? 'bg-gradient-to-br from-gray-800/70 to-gray-800/40 border border-gray-700/50' : 'bg-gradient-to-br from-green-50 to-white'} p-5 rounded-2xl backdrop-blur-sm hover:shadow-lg transition-all duration-300`}>
             <div className="flex items-center justify-between mb-3">
-              <div className={`p-2 rounded-lg ${darkMode ? 'bg-green-500/10' : 'bg-green-100'}`}>
+              <div className={`p-2 rounded-lg ${darkMode ? 'bg-green-500/20' : 'bg-green-100'}`}>
                 <DollarSign className={`w-5 h-5 ${darkMode ? 'text-green-400' : 'text-green-600'}`} />
               </div>
-              <div className={`text-xs font-medium ${darkMode ? 'text-gray-500' : 'text-gray-400'} uppercase tracking-wide`}>{text.avgROI}</div>
+              <div className={`text-xs font-bold ${darkMode ? 'text-gray-300' : 'text-gray-400'} uppercase tracking-wide`}>{text.avgROI}</div>
             </div>
-            <div className={`text-3xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'} mb-1`}>
-              {Math.round(strategiesWithScores.reduce((sum, s) => sum + s.metrics.roi, 0) / strategiesWithScores.length)}%
+            <div className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-green-600'} mb-1`}>
+              {strategiesWithScores.length ? Math.round(strategiesWithScores.reduce((sum, s) => sum + s.metrics.roi, 0) / strategiesWithScores.length) : 0}%
             </div>
-            <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Year over year</div>
+            <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>{text.cardSubLabels.roi}</div>
           </div>
 
-          <div className={`group relative ${darkMode ? 'bg-gradient-to-br from-gray-800/40 to-gray-800/20' : 'bg-gradient-to-br from-purple-50 to-white'} p-5 rounded-2xl backdrop-blur-sm hover:shadow-lg transition-all duration-300`}>
+          <div className={`group relative ${darkMode ? 'bg-gradient-to-br from-gray-800/70 to-gray-800/40 border border-gray-700/50' : 'bg-gradient-to-br from-purple-50 to-white'} p-5 rounded-2xl backdrop-blur-sm hover:shadow-lg transition-all duration-300`}>
             <div className="flex items-center justify-between mb-3">
-              <div className={`p-2 rounded-lg ${darkMode ? 'bg-purple-500/10' : 'bg-purple-100'}`}>
+              <div className={`p-2 rounded-lg ${darkMode ? 'bg-purple-500/20' : 'bg-purple-100'}`}>
                 <TrendingUp className={`w-5 h-5 ${darkMode ? 'text-purple-400' : 'text-purple-600'}`} />
               </div>
-              <div className={`text-xs font-medium ${darkMode ? 'text-gray-500' : 'text-gray-400'} uppercase tracking-wide`}>{text.avgGrowth}</div>
+              <div className={`text-xs font-bold ${darkMode ? 'text-gray-300' : 'text-gray-400'} uppercase tracking-wide`}>{text.avgGrowth}</div>
             </div>
-            <div className={`text-3xl font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'} mb-1`}>
-              {Math.round(strategiesWithScores.reduce((sum, s) => sum + s.metrics.growth, 0) / strategiesWithScores.length)}%
+            <div className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-purple-600'} mb-1`}>
+              {strategiesWithScores.length ? Math.round(strategiesWithScores.reduce((sum, s) => sum + s.metrics.growth, 0) / strategiesWithScores.length) : 0}%
             </div>
-            <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Quarterly trend</div>
+            <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>{text.cardSubLabels.growth}</div>
           </div>
 
-          <div className={`group relative ${darkMode ? 'bg-gradient-to-br from-gray-800/40 to-gray-800/20' : 'bg-gradient-to-br from-orange-50 to-white'} p-5 rounded-2xl backdrop-blur-sm hover:shadow-lg transition-all duration-300`}>
+          <div className={`group relative ${darkMode ? 'bg-gradient-to-br from-gray-800/70 to-gray-800/40 border border-gray-700/50' : 'bg-gradient-to-br from-orange-50 to-white'} p-5 rounded-2xl backdrop-blur-sm hover:shadow-lg transition-all duration-300`}>
             <div className="flex items-center justify-between mb-3">
-              <div className={`p-2 rounded-lg ${darkMode ? 'bg-orange-500/10' : 'bg-orange-100'}`}>
+              <div className={`p-2 rounded-lg ${darkMode ? 'bg-orange-500/20' : 'bg-orange-100'}`}>
                 <Users className={`w-5 h-5 ${darkMode ? 'text-orange-400' : 'text-orange-600'}`} />
               </div>
-              <div className={`text-xs font-medium ${darkMode ? 'text-gray-500' : 'text-gray-400'} uppercase tracking-wide`}>{text.totalStrategies}</div>
+              <div className={`text-xs font-bold ${darkMode ? 'text-gray-300' : 'text-gray-400'} uppercase tracking-wide`}>{text.totalStrategies}</div>
             </div>
-            <div className={`text-3xl font-bold ${darkMode ? 'text-orange-400' : 'text-orange-600'} mb-1`}>{strategies.length}</div>
-            <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Active campaigns</div>
+            <div className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-orange-600'} mb-1`}>{strategies.length}</div>
+            <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>{text.cardSubLabels.campaigns}</div>
           </div>
         </div>
 
         <div className="space-y-6">
-          {/* 전략 리스트 */}
           <div className="space-y-4">
             <div className="flex items-center justify-between mb-5">
-              <h2 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+              <h2 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                 {text.strategyList}
-                <span className={`ml-2 text-sm font-normal ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                <span className={`ml-2 text-sm font-semibold ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                   {strategies.length}
                 </span>
               </h2>
@@ -374,13 +431,16 @@ export function StrategyWorkspace({ activeTab, onTabChange, onNotificationClick,
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className={`px-3 py-2 text-xs font-medium border ${darkMode ? 'bg-gray-700/50 border-gray-600 text-white hover:bg-gray-700' : 'bg-white border-gray-200 text-gray-900 hover:bg-gray-50'} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#142755] transition-all`}
+                  className={`px-3 py-2 text-xs font-bold border ${darkMode ? 'bg-gray-800 border-gray-700 text-white hover:bg-gray-700' : 'bg-white border-gray-200 text-gray-900 hover:bg-gray-50'} rounded-lg focus:outline-none focus:ring-2 focus:ring-[#142755] transition-all`}
                 >
                   <option value="score">{text.sortByScore}</option>
                   <option value="roi">{text.sortByROI}</option>
                   <option value="growth">{text.sortByGrowth}</option>
                 </select>
-                <button className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-[#142755] to-[#444655] text-white text-xs font-semibold rounded-lg hover:shadow-lg transition-all duration-300">
+                <button 
+                  onClick={() => setIsAddModalOpen(true)}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-[#142755] to-[#444655] text-white text-xs font-bold rounded-lg hover:shadow-lg transition-all duration-300"
+                >
                   <Plus className="w-4 h-4" />
                   {text.addStrategy}
                 </button>
@@ -390,29 +450,22 @@ export function StrategyWorkspace({ activeTab, onTabChange, onNotificationClick,
             {strategiesWithScores.map((strategy, index) => (
               <div
                 key={strategy.id}
-                className={`group relative ${
-                  darkMode
-                    ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30'
-                    : 'bg-white'
-                } p-5 rounded-2xl transition-all duration-300 ${
-                  darkMode
-                    ? 'hover:shadow-xl hover:shadow-gray-900/20'
-                    : 'shadow-sm hover:shadow-md'
-                } overflow-hidden`}
+                className={`group relative ${darkMode ? 'bg-gradient-to-br from-gray-800/80 to-gray-800/40 border border-gray-700/60' : 'bg-white border border-gray-200'} p-5 rounded-2xl transition-all duration-300 ${darkMode ? 'hover:shadow-xl hover:shadow-gray-950/40' : 'shadow-sm hover:shadow-md'} overflow-hidden`}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       {index === 0 && (
-                        <span className={`px-2.5 py-1 ${darkMode ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-50 text-amber-700'} text-xs font-medium rounded-lg`}>
+                        <span className={`px-2.5 py-1 ${darkMode ? 'bg-amber-400/20 text-amber-300' : 'bg-amber-50 text-amber-700'} text-xs font-bold rounded-lg`}>
                           {text.recommended}
                         </span>
                       )}
-                      <h3 className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{strategy.name}</h3>
+                      {/* 🛠️ 전략 카드 타이틀 다크모드 가독성 전면 개선 */}
+                      <h3 className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{strategy.name}</h3>
                     </div>
                     <div className="flex flex-wrap gap-1.5 mb-2">
                       {strategy.keywords.map((kw) => (
-                        <span key={`${strategy.id}-keyword-${kw}`} className={`px-2.5 py-1 ${darkMode ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-50 text-indigo-700'} text-xs font-medium rounded-lg`}>
+                        <span key={`${strategy.id}-keyword-${kw}`} className={`px-2.5 py-1 ${darkMode ? 'bg-indigo-500/20 text-indigo-300 font-bold' : 'bg-indigo-50 text-indigo-700'} text-xs font-medium rounded-lg`}>
                           #{kw}
                         </span>
                       ))}
@@ -428,7 +481,7 @@ export function StrategyWorkspace({ activeTab, onTabChange, onNotificationClick,
                           />
                           <button
                             onClick={() => addKeyword(strategy.id)}
-                            className={`p-1 rounded ${darkMode ? 'text-indigo-400 hover:bg-indigo-500/10' : 'text-indigo-600 hover:bg-indigo-50'} transition-colors`}
+                            className={`p-1 rounded ${darkMode ? 'text-indigo-300 hover:bg-indigo-500/20' : 'text-indigo-600 hover:bg-indigo-50'} transition-colors`}
                           >
                             <Plus className="w-4 h-4" />
                           </button>
@@ -436,85 +489,81 @@ export function StrategyWorkspace({ activeTab, onTabChange, onNotificationClick,
                       )}
                     </div>
                   </div>
-                  <div className={`flex flex-col items-end gap-1 ${darkMode ? 'bg-gray-900/30' : 'bg-gray-50/50'} px-4 py-3 rounded-xl ml-4`}>
-                    <div className={`text-3xl font-bold ${
-                      (strategy.score || 0) >= 70 ? (darkMode ? 'text-green-400' : 'text-green-600') :
-                      (strategy.score || 0) >= 50 ? (darkMode ? 'text-amber-400' : 'text-amber-600') :
-                      (darkMode ? 'text-red-400' : 'text-red-600')
-                    }`}>
+                  {/* 🛠️ 우측 가능성 점수 뱃지 다크모드 배경 가인성 정비 */}
+                  <div className={`flex flex-col items-end gap-1 ${darkMode ? 'bg-gray-900 border border-gray-700/50' : 'bg-gray-50/50'} px-4 py-3 rounded-xl ml-4`}>
+                    <div className={`text-3xl font-extrabold ${(strategy.score || 0) >= 70 ? (darkMode ? 'text-green-400' : 'text-green-600') : (strategy.score || 0) >= 50 ? (darkMode ? 'text-amber-400' : 'text-amber-600') : (darkMode ? 'text-red-400' : 'text-red-600')}`}>
                       {strategy.score}
                     </div>
-                    <span className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{text.possibilityScore}</span>
+                    <span className={`text-[10px] font-bold ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>{text.possibilityScore}</span>
                   </div>
                 </div>
 
-                  {expandedStrategy === strategy.id && (
-                    <div className="mb-4 space-y-3">
-                      <div className={`${darkMode ? 'bg-gray-900/30' : 'bg-gray-50/50'} p-4 rounded-xl`}>
-                        <p className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-700'} leading-relaxed mb-3`}>{strategy.content}</p>
-                        <button
-                          onClick={() => setEditingStrategy(editingStrategy === strategy.id ? null : strategy.id)}
-                          className={`text-xs font-medium ${darkMode ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-700'} transition-colors`}
-                        >
-                          {editingStrategy === strategy.id ? text.editComplete : text.edit}
-                        </button>
-                      </div>
+                {expandedStrategy === strategy.id && (
+                  <div className="mb-4 space-y-3">
+                    <div className={`p-4 rounded-xl ${darkMode ? 'bg-gray-900/60 border border-gray-800' : 'bg-gray-50/50'}`}>
+                      <p className={`text-xs ${darkMode ? 'text-gray-200' : 'text-gray-700'} leading-relaxed mb-3 font-medium`}>{strategy.content}</p>
+                      <button
+                        onClick={() => setEditingStrategy(editingStrategy === strategy.id ? null : strategy.id)}
+                        className={`text-xs font-bold ${darkMode ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-700'} transition-colors`}
+                      >
+                        {editingStrategy === strategy.id ? text.editComplete : text.edit}
+                      </button>
+                    </div>
 
-                      {/* 파일 목록 */}
-                      <div className={`${darkMode ? 'bg-gray-900/30' : 'bg-gray-50/50'} p-4 rounded-xl`}>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className={`text-xs font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{text.attachedFiles}</span>
-                          <label className={`cursor-pointer text-xs font-medium ${darkMode ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-700'} transition-colors`}>
-                            {text.addFile}
-                            <input
-                              type="file"
-                              className="hidden"
-                              onChange={(e) => handleFileUpload(strategy.id, e)}
-                              accept=".txt,.pdf,image/*"
-                            />
-                          </label>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {strategy.files.map((file) => (
-                            <div key={`${strategy.id}-file-${file.name}`} className={`flex items-center gap-1.5 px-2.5 py-1.5 ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg text-xs border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                              {file.type === 'image' ? <Image className="w-3.5 h-3.5" /> :
-                               file.type === 'pdf' ? <FileText className="w-3.5 h-3.5" /> :
-                               <FileUp className="w-3.5 h-3.5" />}
-                              <span>{file.name}</span>
-                            </div>
-                          ))}
-                        </div>
+                    <div className={`p-4 rounded-xl ${darkMode ? 'bg-gray-900/60 border border-gray-800' : 'bg-gray-50/50'}`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`text-xs font-bold ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{text.attachedFiles}</span>
+                        <label className={`cursor-pointer text-xs font-bold ${darkMode ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-700'} transition-colors`}>
+                          {text.addFile}
+                          <input
+                            type="file"
+                            className="hidden"
+                            onChange={(e) => handleFileUpload(strategy.id, e)}
+                            accept=".txt,.pdf,image/*"
+                          />
+                        </label>
                       </div>
-
-                      {/* 정량 지표 */}
-                      <div className={`grid grid-cols-5 gap-3 ${darkMode ? 'bg-gray-900/30' : 'bg-gray-50/50'} p-4 rounded-xl`}>
-                        <div>
-                          <div className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} mb-1`}>{text.conversion}</div>
-                          <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{strategy.metrics.conversion}%</div>
-                        </div>
-                        <div>
-                          <div className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} mb-1`}>{text.roi}</div>
-                          <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{strategy.metrics.roi}%</div>
-                        </div>
-                        <div>
-                          <div className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} mb-1`}>{text.growth}</div>
-                          <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{strategy.metrics.growth}%</div>
-                        </div>
-                        <div>
-                          <div className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} mb-1`}>{text.cost}</div>
-                          <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>${strategy.metrics.cost}</div>
-                        </div>
-                        <div>
-                          <div className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} mb-1`}>{text.engagement}</div>
-                          <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{strategy.metrics.engagement}%</div>
-                        </div>
+                      <div className="flex flex-wrap gap-2">
+                        {strategy.files.map((file) => (
+                          <div key={`${strategy.id}-file-${file.name}`} className={`flex items-center gap-1.5 px-2.5 py-1.5 ${darkMode ? 'bg-gray-800 border-gray-700 text-gray-200' : 'bg-white text-gray-700 border-gray-200'} rounded-lg text-xs border`}>
+                            {file.type === 'image' ? <Image className="w-3.5 h-3.5" /> : file.type === 'pdf' ? <FileText className="w-3.5 h-3.5" /> : <FileUp className="w-3.5 h-3.5" />}
+                            <span className="font-medium">{file.name}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  )}
 
+                    <div className={`grid grid-cols-5 gap-3 ${darkMode ? 'bg-gray-950 border border-gray-800' : 'bg-gray-50/50'} p-4 rounded-xl`}>
+                      <div>
+                        <div className={`text-xs font-bold ${darkMode ? 'text-gray-400' : 'text-gray-500'} mb-1`}>{text.conversion}</div>
+                        <div className={`text-sm sm:text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{strategy.metrics.conversion}%</div>
+                      </div>
+                      <div>
+                        <div className={`text-xs font-bold ${darkMode ? 'text-gray-400' : 'text-gray-500'} mb-1`}>{text.roi}</div>
+                        <div className={`text-sm sm:text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{strategy.metrics.roi}%</div>
+                      </div>
+                      <div>
+                        <div className={`text-xs font-bold ${darkMode ? 'text-gray-400' : 'text-gray-500'} mb-1`}>{text.growth}</div>
+                        <div className={`text-sm sm:text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{strategy.metrics.growth}%</div>
+                      </div>
+                      <div>
+                        <div className={`text-xs font-bold ${darkMode ? 'text-gray-400' : 'text-gray-500'} mb-1`}>{text.cost}</div>
+                        <div className={`text-sm sm:text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                          {language === 'ko' ? `${(strategy.metrics.cost * 1350).toLocaleString()}원` : `$${strategy.metrics.cost}`}
+                        </div>
+                      </div>
+                      <div>
+                        <div className={`text-xs font-bold ${darkMode ? 'text-gray-400' : 'text-gray-500'} mb-1`}>{text.engagement}</div>
+                        <div className={`text-sm sm:text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{strategy.metrics.engagement}%</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 🛠️ 자세히 보기 / 접기 제어 텍스트 다크모드 가독성 강화 */}
                 <button
                   onClick={() => setExpandedStrategy(expandedStrategy === strategy.id ? null : strategy.id)}
-                  className={`flex items-center gap-1.5 text-xs font-medium ${darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-900'} transition-colors`}
+                  className={`flex items-center gap-1.5 text-xs font-bold ${darkMode ? 'text-gray-200 hover:text-white' : 'text-gray-600 hover:text-gray-900'} transition-colors`}
                 >
                   {expandedStrategy === strategy.id ? (
                     <>
@@ -532,20 +581,20 @@ export function StrategyWorkspace({ activeTab, onTabChange, onNotificationClick,
             ))}
           </div>
 
-          {/* 데이터 시각화 */}
+          {/* 데이터 시각화 차트 섹션 */}
           <div>
-            <h2 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-5`}>
-              Performance Analytics
+            <h2 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-5`}>
+              {text.performanceAnalytics}
             </h2>
-            <div className="grid grid-cols-2 gap-4">
-              <div className={`${darkMode ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30' : 'bg-white'} p-6 rounded-2xl ${darkMode ? 'shadow-xl shadow-gray-900/20' : 'shadow-sm'}`}>
-                <h3 className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>{text.radarChart}</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className={`${darkMode ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30 border border-gray-700/50' : 'bg-white'} p-6 rounded-2xl ${darkMode ? 'shadow-xl shadow-gray-950/40' : 'shadow-sm'}`}>
+                <h3 className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>{text.radarChart}</h3>
                 <ResponsiveContainer width="100%" height={280}>
                   <RadarChart data={radarData}>
-                    <PolarGrid stroke={darkMode ? '#374151' : '#e5e7eb'} strokeWidth={1} />
+                    <PolarGrid stroke={darkMode ? '#4b5563' : '#e5e7eb'} strokeWidth={1} />
                     <PolarAngleAxis
                       dataKey="strategy"
-                      tick={{ fontSize: 11, fill: darkMode ? '#9ca3af' : '#6b7280', fontWeight: 500 }}
+                      tick={{ fontSize: 11, fill: darkMode ? '#d1d5db' : '#6b7280', fontWeight: 600 }}
                     />
                     <PolarRadiusAxis
                       angle={90}
@@ -556,8 +605,8 @@ export function StrategyWorkspace({ activeTab, onTabChange, onNotificationClick,
                       key="radar-conversion"
                       name={text.chartLabels.conversionRate}
                       dataKey="conversion"
-                      stroke="#142755"
-                      fill="#142755"
+                      stroke={darkMode ? '#6366f1' : '#142755'}
+                      fill={darkMode ? '#6366f1' : '#142755'}
                       fillOpacity={0.4}
                       strokeWidth={2}
                     />
@@ -570,29 +619,25 @@ export function StrategyWorkspace({ activeTab, onTabChange, onNotificationClick,
                       fillOpacity={0.4}
                       strokeWidth={2}
                     />
-                    <Legend
-                      wrapperStyle={{ fontSize: '11px', fontWeight: 500 }}
-                    />
+                    <Legend wrapperStyle={{ fontSize: '11px', fontWeight: 600, color: darkMode ? '#fff' : '#000' }} />
                   </RadarChart>
                 </ResponsiveContainer>
               </div>
 
-              <div className={`${darkMode ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30' : 'bg-white'} p-6 rounded-2xl ${darkMode ? 'shadow-xl shadow-gray-900/20' : 'shadow-sm'}`}>
-                <h3 className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>{text.barChart}</h3>
+              <div className={`${darkMode ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30 border border-gray-700/50' : 'bg-white'} p-6 rounded-2xl ${darkMode ? 'shadow-xl shadow-gray-950/40' : 'shadow-sm'}`}>
+                <h3 className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>{text.barChart}</h3>
                 <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={comparisonData}>
                     <CartesianGrid
                       strokeDasharray="3 3"
-                      stroke={darkMode ? '#374151' : '#e5e7eb'}
+                      stroke={darkMode ? '#4b5563' : '#e5e7eb'}
                       vertical={false}
                     />
                     <XAxis
                       dataKey="name"
-                      tick={{ fontSize: 11, fill: darkMode ? '#9ca3af' : '#6b7280', fontWeight: 500 }}
+                      tick={{ fontSize: 11, fill: darkMode ? '#d1d5db' : '#6b7280', fontWeight: 600 }}
                     />
-                    <YAxis
-                      tick={{ fontSize: 10, fill: darkMode ? '#9ca3af' : '#6b7280' }}
-                    />
+                    <YAxis tick={{ fontSize: 10, fill: darkMode ? '#9ca3af' : '#6b7280' }} />
                     <Tooltip
                       contentStyle={darkMode ? {
                         backgroundColor: '#1f2937',
@@ -606,29 +651,27 @@ export function StrategyWorkspace({ activeTab, onTabChange, onNotificationClick,
                     />
                     <Bar
                       dataKey="score"
-                      fill="#142755"
+                      fill={darkMode ? '#3b82f6' : '#142755'}
                       radius={[8, 8, 0, 0]}
                     />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
 
-              <div className={`col-span-2 ${darkMode ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30' : 'bg-white'} p-6 rounded-2xl ${darkMode ? 'shadow-xl shadow-gray-900/20' : 'shadow-sm'}`}>
-                <h3 className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>{text.lineChart}</h3>
+              <div className={`col-span-1 md:col-span-2 ${darkMode ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30 border border-gray-700/50' : 'bg-white'} p-6 rounded-2xl ${darkMode ? 'shadow-xl shadow-gray-950/40' : 'shadow-sm'}`}>
+                <h3 className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>{text.lineChart}</h3>
                 <ResponsiveContainer width="100%" height={280}>
                   <LineChart data={comparisonData}>
                     <CartesianGrid
                       strokeDasharray="3 3"
-                      stroke={darkMode ? '#374151' : '#e5e7eb'}
+                      stroke={darkMode ? '#4b5563' : '#e5e7eb'}
                       vertical={false}
                     />
                     <XAxis
                       dataKey="name"
-                      tick={{ fontSize: 11, fill: darkMode ? '#9ca3af' : '#6b7280', fontWeight: 500 }}
+                      tick={{ fontSize: 11, fill: darkMode ? '#d1d5db' : '#6b7280', fontWeight: 600 }}
                     />
-                    <YAxis
-                      tick={{ fontSize: 10, fill: darkMode ? '#9ca3af' : '#6b7280' }}
-                    />
+                    <YAxis tick={{ fontSize: 10, fill: darkMode ? '#9ca3af' : '#6b7280' }} />
                     <Tooltip
                       contentStyle={darkMode ? {
                         backgroundColor: '#1f2937',
@@ -655,6 +698,115 @@ export function StrategyWorkspace({ activeTab, onTabChange, onNotificationClick,
           </div>
         </div>
       </div>
+
+      {/* 신규 전략 추가 모달 오버레이 */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div className={`w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden transform transition-all ${darkMode ? 'bg-gray-800 text-white border border-gray-700' : 'bg-white text-gray-900'}`}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-base font-bold flex items-center gap-2">
+                <Plus className="w-5 h-5 text-indigo-500" />
+                {text.modal.title}
+              </h3>
+              <button 
+                onClick={() => setIsAddModalOpen(false)}
+                className={`p-1.5 rounded-lg transition-colors ${darkMode ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleAddStrategySubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold mb-1.5">{text.modal.name}</label>
+                <input
+                  type="text"
+                  required
+                  value={newStrategy.name}
+                  onChange={e => setNewStrategy(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder={language === 'en' ? 'Enter strategy name' : '전략 이름을 입력하세요'}
+                  className={`w-full px-3 py-2 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold mb-1.5">{text.modal.content}</label>
+                <textarea
+                  value={newStrategy.content}
+                  onChange={e => setNewStrategy(prev => ({ ...prev, content: e.target.value }))}
+                  placeholder={language === 'en' ? 'Describe the strategy details' : '전략의 세부 내용을 입력하세요'}
+                  rows={2}
+                  className={`w-full px-3 py-2 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <div>
+                  <label className="block text-xs font-medium mb-1">{text.conversion} (%)</label>
+                  <input
+                    type="number" step="0.1" min="0" max="100"
+                    value={newStrategy.conversion}
+                    onChange={e => setNewStrategy(prev => ({ ...prev, conversion: parseFloat(e.target.value) || 0 }))}
+                    className={`w-full px-3 py-1.5 text-sm border rounded-lg ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white'}`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1">{text.roi} (%)</label>
+                  <input
+                    type="number" min="0"
+                    value={newStrategy.roi}
+                    onChange={e => setNewStrategy(prev => ({ ...prev, roi: parseInt(e.target.value) || 0 }))}
+                    className={`w-full px-3 py-1.5 text-sm border rounded-lg ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white'}`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1">{text.growth} (%)</label>
+                  <input
+                    type="number" min="0"
+                    value={newStrategy.growth}
+                    onChange={e => setNewStrategy(prev => ({ ...prev, growth: parseInt(e.target.value) || 0 }))}
+                    className={`w-full px-3 py-1.5 text-sm border rounded-lg ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white'}`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1">{text.engagement} (%)</label>
+                  <input
+                    type="number" step="0.1" min="0"
+                    value={newStrategy.engagement}
+                    onChange={e => setNewStrategy(prev => ({ ...prev, engagement: parseFloat(e.target.value) || 0 }))}
+                    className={`w-full px-3 py-1.5 text-sm border rounded-lg ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white'}`}
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-medium mb-1">{text.cost} ($)</label>
+                  <input
+                    type="number" min="0"
+                    value={newStrategy.cost}
+                    onChange={e => setNewStrategy(prev => ({ ...prev, cost: parseInt(e.target.value) || 0 }))}
+                    className={`w-full px-3 py-1.5 text-sm border rounded-lg ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white'}`}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  type="button"
+                  onClick={() => setIsAddModalOpen(false)}
+                  className={`px-4 py-2 text-xs font-semibold rounded-xl border ${darkMode ? 'border-gray-600 hover:bg-gray-700 text-gray-300' : 'border-gray-200 hover:bg-gray-50 text-gray-700'}`}
+                >
+                  {text.modal.cancel}
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-xs font-semibold text-white rounded-xl bg-gradient-to-r from-[#142755] to-[#444655] hover:shadow-lg transition-all"
+                >
+                  {text.modal.submit}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
