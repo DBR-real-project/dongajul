@@ -22,21 +22,35 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // 1. 에러 해결 포인트: React.FormEvent 대신 권장 표준인 React.SubmitEvent 사용
+  const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
-    setError('');
 
-    if (!email.trim() || !email.includes('@')) {
-      setError('올바른 이메일을 입력해주세요.');
-      return;
+    try {
+      const res = await fetch('http://localhost:3000/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert('로그인 성공');
+        console.log(data);
+        onLogin(email, password);
+      } else {
+        alert((data as { message?: string }).message || '로그인 실패');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('서버 오류');
     }
-
-    if (!password.trim()) {
-      setError('비밀번호를 입력해주세요.');
-      return;
-    }
-
-    onLogin(email, password);
   };
 
   const handlePasswordReset = () => {
@@ -59,14 +73,9 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
 
   return (
     <>
-      {/* 
-        [여백 버그 해결 핵심 포인트] 
-        fixed inset-0에 min-h-screen과 w-screen을 명시하여 브라우저 전체 화면을 강제로 꽉 채웁니다.
-        기존에 충돌을 일으키던 relative 속성을 최상단에서 제거했습니다.
-      */}
       <div className="fixed inset-0 min-h-screen w-screen grid grid-cols-[1.618fr_1fr] bg-[#142755] overflow-hidden">
         
-        {/* Background Image with Overlay - w-full h-full 배치 보완 */}
+        {/* Background Image with Overlay */}
         <div className="absolute inset-0 w-full h-full z-0">
           <img
             src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1920"
@@ -76,7 +85,7 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
           <div className="absolute inset-0 w-full h-full bg-gradient-to-tr from-[#0f1d3e] via-[#142755]/90 to-[#1d3573]/80"></div>
         </div>
 
-        {/* Left Side - Branding & Background (STRAND 45 Identity) */}
+        {/* Left Side - Branding & Background */}
         <div className="relative z-10 flex flex-col justify-center px-12 lg:px-20">
           <h1 className="text-6xl font-extrabold tracking-tight text-white mb-4 select-none">
             STRAND <span className="text-[#E5BA73]">45</span>
@@ -88,13 +97,12 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
             가장 <span className="text-[#E5BA73] font-medium">견고한 비즈니스 궤도</span>를 제시합니다.
           </p>
 
-          {/* Decorative Stats - Flip Cards */}
           <div className="mt-16">
             <FlipCard isLoggedIn={false} />
           </div>
         </div>
 
-        {/* Decorative Elements (Gold & Purple Blur) */}
+        {/* Decorative Elements */}
         <div className="absolute top-1/4 left-1/3 w-96 h-96 bg-[#E5BA73]/10 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -179,7 +187,6 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
                 </div>
               </div>
 
-              {/* 소셜 로그인 디자인 밸런스 튠 */}
               <div className="grid grid-cols-3 gap-3">
                 <button
                   type="button"

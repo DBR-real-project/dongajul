@@ -4,8 +4,6 @@ import { LucideIcon } from 'lucide-react';
 
 interface NotificationViewProps {
   onBack: () => void;
-  // 💡 실제 네비게이션/뷰 전환을 수행할 콜백 함수 프로퍼티 정의
-  // 프로젝트 환경(React Router 등)에 맞게 상위에서 주입하여 사용합니다.
   onNavigate?: (viewName: string, params?: any) => void; 
   darkMode?: boolean;
 }
@@ -23,12 +21,11 @@ interface Notification {
   actionColor: string;
   read: boolean;
   detailContent: string;
-  targetView: string; // 💡 이동해야 할 타겟 뷰/메뉴 식별자 추가
-  targetParams?: any; // 💡 상세 보기 진입 시 필요한 아이디 등의 파라미터
+  targetView: string;
+  targetParams?: any;
 }
 
 export function NotificationView({ onBack, onNavigate, darkMode = false }: NotificationViewProps) {
-  // 최근 알림 리스트 상태 관리
   const [activeNotifications, setActiveNotifications] = useState<Notification[]>(
     [
       { 
@@ -44,7 +41,7 @@ export function NotificationView({ onBack, onNavigate, darkMode = false }: Notif
         actionColor: 'text-red-600 dark:text-red-400', 
         read: false, 
         detailContent: '현재 시장 변동성이 급증하고 있습니다.\n\n주요 리스크 요인:\n- 글로벌 경제 불확실성 증가\n- 주요 산업 섹터 변동성 확대\n- 공급망 이슈 지속\n\n권장 대응 전략:\n1. 포트폴리오 다각화\n2. 리스크 헤징 강화\n3. 시장 모니터링 주기 단축',
-        targetView: '데이터 분석' // 💡 이동 경로 바인딩 완료
+        targetView: '데이터 분석' 
       },
       { 
         id: 2, 
@@ -59,7 +56,7 @@ export function NotificationView({ onBack, onNavigate, darkMode = false }: Notif
         actionColor: 'text-green-600 dark:text-green-400', 
         read: false, 
         detailContent: '제조업 디지털 전환 성공 사례\n\n기업명: ㈜테크매뉴팩처링\n산업군: 정밀 제조업\n프로젝트 기간: 18개월\n\n주요 성과:\n- 생산성 35% 향상\n- 불량률 60% 감소\n- 운영 비용 25% 절감\n\n귀사에 적용 가능한 인사이트를 확인해보세요.',
-        targetView: '비교 분석', // 💡 이동 경로 바인딩 완료 (넷플릭스 등 단독 상세 케이스 연동 가능)
+        targetView: '비교 분석', 
         targetParams: { articleId: 1 } 
       },
       { 
@@ -74,8 +71,8 @@ export function NotificationView({ onBack, onNavigate, darkMode = false }: Notif
         action: '자세히 보기 →', 
         actionColor: 'text-[#142755] dark:text-blue-400', 
         read: false, 
-        detailContent: '새로운 기능 안내\n\n업데이트 내용:\n- AI 기반 전략 프레임워크 분석 기능\n- 실시간 시장 데이터 연동\n- 경쟁사 벤치마킹 자동화\n\n사용 방법:\n전략 워크스페이스 > 프레임워크 분석 메뉴에서 이용하실 수 있습니다.',
-        targetView: '전략 워크스페이스' // 💡 이동 경로 바인딩 완료
+        detailContent: '새로운 기능 안내\n\n업데이트 내용:\n- AI 기반 전략 프레임워크 분석 기능\n- 실시간 시장 데이터 연동\n- 경쟁사 벤치마킹 자동화\n\n사용 방법:\n데이터 분석 메뉴에서 이용하실 수 있습니다.',
+        targetView: '데이터 분석' // 💡 사용하지 않는 전략 워크스페이스 대신 데이터 분석으로 경로 우회 완료
       }
     ]
   );
@@ -93,15 +90,11 @@ export function NotificationView({ onBack, onNavigate, darkMode = false }: Notif
     setSelectedNotification(item);
   };
 
-  // 💡 리스트 및 모달 내부에서 '관련 페이지로 이동' 클릭 시 라우팅을 수행하는 통합 핸들러
   const handlePageNavigation = (targetView: string, params?: any) => {
-    setSelectedNotification(null); // 모달이 열려있었다면 닫기 처리
-    
+    setSelectedNotification(null);
     if (onNavigate) {
-      // 상위 라우터 함수가 존재하면 해당 경로로 파라미터와 함께 이동
       onNavigate(targetView, params);
     } else {
-      // 대체 작동 폴백: 라우터 연동 확인용 토스트 출력
       triggerToast(`'${targetView}' 메뉴 경로로 내비게이션을 수행합니다.`);
     }
   };
@@ -122,7 +115,6 @@ export function NotificationView({ onBack, onNavigate, darkMode = false }: Notif
 
   return (
     <div className={`h-full overflow-y-auto ${darkMode ? 'bg-gray-900' : 'bg-[#f5f5f5]'} relative`}>
-      
       {/* 상단 액션 인터랙티브 토스트 피드백 */}
       {toast.show && (
         <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 bg-slate-900/95 dark:bg-white/95 text-white dark:text-slate-900 px-5 py-3 rounded-2xl shadow-xl backdrop-blur-md border border-white/10 dark:border-slate-200 text-sm font-bold animate-in fade-in slide-in-from-top-4 duration-300">
@@ -146,7 +138,6 @@ export function NotificationView({ onBack, onNavigate, darkMode = false }: Notif
       </header>
 
       <div className="px-3 py-6 max-w-[1200px] mx-auto">
-        
         {activeNotifications.length > 0 && (
           <div className="flex items-center justify-between mb-4">
             <h2 className={`text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>최근 알림</h2>
@@ -189,7 +180,6 @@ export function NotificationView({ onBack, onNavigate, darkMode = false }: Notif
             </div>
           )}
 
-          {/* 기존 완료 목록 (히스토리성 안내문구 배치) */}
           {[
             { title: '월간 리포트 생성 완료', time: '어제', desc: '5월 전략 분석 리포트가 생성되었습니다.', targetView: '히스토리' },
             { title: '리스크 평가 완료', time: '2일 전', desc: '정기 리스크 평가가 완료되었습니다. 종합 점수: 5.2', targetView: '데이터 분석' },
@@ -236,7 +226,7 @@ export function NotificationView({ onBack, onNavigate, darkMode = false }: Notif
         </div>
       </div>
 
-      {/* 알림 상세 보기 모달 구조 */}
+      {/* 알림 상세 보기 모달 */}
       {selectedNotification && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[150] p-4 animate-in fade-in duration-200">
           <div className={`${darkMode ? 'bg-gray-900 border border-gray-800 text-white' : 'bg-white text-gray-900'} rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-150`}>
@@ -268,7 +258,6 @@ export function NotificationView({ onBack, onNavigate, darkMode = false }: Notif
                 >
                   닫기
                 </button>
-                {/* 💡 관련 페이지로 이동 핸들러 연결 */}
                 <button
                   onClick={() => handlePageNavigation(selectedNotification.targetView, selectedNotification.targetParams)}
                   className={`px-4 py-2 text-xs font-bold text-white rounded-xl ${selectedNotification.border === 'red' ? 'bg-red-600 hover:bg-red-500' : selectedNotification.border === 'green' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-[#142755] hover:bg-indigo-900'} transition-all`}
