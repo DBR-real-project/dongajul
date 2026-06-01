@@ -21,11 +21,8 @@ export function Sidebar({ currentView, onViewChange, darkMode }: SidebarProps) {
     { id: 'settings', icon: Settings, label: '설정' },
   ];
 
-  const projects = [
-    { id: 1, name: '디지털 전환 프로젝트' },
-    { id: 2, name: 'AI 마케팅 전략' },
-    { id: 3, name: '고객 경험 개선' },
-  ];
+  // TODO: 사용자 프로젝트 목록 API 연동 후 교체
+  const projects: { id: number; name: string }[] = [];
 
   return (
     <div className={`w-64 h-full ${darkMode ? 'bg-[#0A0E1A] border-gray-800/50' : 'bg-white border-gray-200'} border-r flex flex-col`}>
@@ -67,11 +64,11 @@ export function Sidebar({ currentView, onViewChange, darkMode }: SidebarProps) {
               AI Usage
             </span>
             <span className="text-sm font-bold bg-gradient-to-r from-[#142755] to-indigo-600 bg-clip-text text-transparent">
-              73%
+              -
             </span>
           </div>
           <div className={`w-full h-2 ${darkMode ? 'bg-gray-700' : 'bg-gray-200'} rounded-full overflow-hidden`}>
-            <div className="h-full bg-gradient-to-r from-[#142755] to-indigo-600 rounded-full shadow-lg" style={{ width: '73%' }}></div>
+            <div className="h-full bg-gradient-to-r from-[#142755] to-indigo-600 rounded-full shadow-lg" style={{ width: '0%' }}></div>
           </div>
         </div>
 
@@ -89,8 +86,8 @@ export function Sidebar({ currentView, onViewChange, darkMode }: SidebarProps) {
               <User className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1 text-left">
-              <p className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>김전략</p>
-              <p className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>전략팀</p>
+              <p className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{(typeof window !== 'undefined' && localStorage.getItem('userName')) || '사용자'}</p>
+              <p className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>-</p>
             </div>
           </button>
 

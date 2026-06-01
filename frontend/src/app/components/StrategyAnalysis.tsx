@@ -105,12 +105,9 @@ export function StrategyAnalysis({ activeTab, onTabChange, onNavigateToRisk, onA
           <h3 className="text-base sm:text-lg mb-3">전략 프레임워크별 사례</h3>
         </div>
 
+        {/* TODO: GET /api/articles 응답으로 교체 */}
         <div className="space-y-3 sm:space-y-4 mb-6">
-          {[
-            { border: 'blue', badge: 'SWOT 분석', badgeColor: 'blue', industry: '기술 산업', title: '애플의 생태계 전략 - 강점 극대화 전략', desc: '하드웨어·소프트웨어·서비스 통합을 통한 강력한 고객 락인 효과', tags: ['#생태계', '#수직계열화'] },
-            { border: 'green', badge: '포터의 5 Forces', badgeColor: 'green', industry: '유통', title: '아마존의 시장 지배력 구축 전략', desc: '진입장벽 강화 및 공급자 협상력 확보를 통한 경쟁 우위 확립', tags: ['#시장지배력', '#규모의경제'] },
-            { border: 'purple', badge: '블루오션 전략', badgeColor: 'purple', industry: '엔터테인먼트', title: '넷플릭스의 시장 재정의 전략', desc: '비디오 대여 시장을 스트리밍 시장으로 재정의하여 새로운 가치 창출', tags: ['#시장재정의', '#혁신'] },
-          ].map((item) => (
+          {([] as { border: string; badge: string; badgeColor: string; industry: string; title: string; desc: string; tags: string[] }[]).map((item) => (
             <div key={item.title} className={`bg-white p-4 sm:p-5 border-l-4 border-${item.border}-500`}>
               <div className="flex items-center gap-2 mb-2">
                 <span className={`px-2 py-0.5 bg-${item.badgeColor}-100 text-${item.badgeColor}-800 text-xs sm:text-sm`}>{item.badge}</span>

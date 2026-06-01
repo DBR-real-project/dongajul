@@ -10,20 +10,9 @@ interface RiskIndicatorsProps {
   onProfileClick: () => void;
 }
 
-const riskTrendData = [
-  { id: 1, month: '1월', risk: 6.2 },
-  { id: 2, month: '2월', risk: 5.8 },
-  { id: 3, month: '3월', risk: 6.5 },
-  { id: 4, month: '4월', risk: 5.2 },
-  { id: 5, month: '5월', risk: 5.2 }
-];
-
-const categoryRiskData = [
-  { id: 1, category: '재무', score: 4.2 },
-  { id: 2, category: '운영', score: 5.8 },
-  { id: 3, category: '시장', score: 6.1 },
-  { id: 4, category: '규제', score: 3.5 }
-];
+// TODO: DB 연동 후 실제 리스크 데이터로 교체
+const riskTrendData: { id: number; month: string; risk: number }[] = [];
+const categoryRiskData: { id: number; category: string; score: number }[] = [];
 
 export function RiskIndicators({ activeTab, onTabChange, onArticleClick, onNotificationClick, onProfileClick }: RiskIndicatorsProps) {
   return (
@@ -78,10 +67,10 @@ export function RiskIndicators({ activeTab, onTabChange, onArticleClick, onNotif
       <div className="px-4 sm:px-6 md:px-8 py-6 sm:py-8">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
           {[
-            { label: '종합 리스크', value: '5.2', sub: '↓ 0.3 (전월 대비)', subColor: 'text-green-600', Icon: Activity, iconColor: 'text-amber-600' },
-            { label: '재무 건전성', value: 'A+', sub: '안정적', subColor: 'text-gray-500', Icon: DollarSign, iconColor: 'text-[#142755]' },
-            { label: '시장 변동성', value: '6.1', sub: '↑ 0.8 (주의)', subColor: 'text-red-600', Icon: TrendingDown, iconColor: 'text-red-600' },
-            { label: '경고 알림', value: '2', sub: '확인 필요', subColor: 'text-amber-600', Icon: AlertTriangle, iconColor: 'text-amber-600' },
+            { label: '종합 리스크', value: '-', sub: '분석 필요', subColor: 'text-gray-400', Icon: Activity, iconColor: 'text-amber-600' },
+            { label: '재무 건전성', value: '-', sub: '-', subColor: 'text-gray-400', Icon: DollarSign, iconColor: 'text-[#142755]' },
+            { label: '시장 변동성', value: '-', sub: '-', subColor: 'text-gray-400', Icon: TrendingDown, iconColor: 'text-red-600' },
+            { label: '경고 알림', value: '-', sub: '-', subColor: 'text-gray-400', Icon: AlertTriangle, iconColor: 'text-amber-600' },
           ].map(({ label, value, sub, subColor, Icon, iconColor }) => (
             <div key={label} className="bg-white p-4 sm:p-5 border border-gray-200">
               <div className="flex items-center justify-between mb-2">
@@ -126,12 +115,9 @@ export function RiskIndicators({ activeTab, onTabChange, onArticleClick, onNotif
           <h3 className="text-base sm:text-lg mb-3">주요 리스크 요인</h3>
         </div>
 
+        {/* TODO: DB 연동 후 실제 리스크 요인 데이터로 교체 */}
         <div className="space-y-3 sm:space-y-4">
-          {[
-            { border: 'red', level: '높음', levelColor: 'red', category: '시장 리스크', title: '시장 경쟁 심화로 인한 수익성 저하', desc: '신규 경쟁자 진입 및 가격 경쟁 심화로 마진율 감소 예상', tags: ['#경쟁심화', '#수익성'], score: '8.2', scoreColor: 'text-red-600' },
-            { border: 'amber', level: '중간', levelColor: 'amber', category: '운영 리스크', title: '공급망 불안정으로 인한 생산 차질', desc: '주요 부품 공급 지연 및 물류비 상승으로 운영 효율성 저하', tags: ['#공급망', '#운영효율'], score: '5.8', scoreColor: 'text-amber-600' },
-            { border: 'blue', level: '낮음', levelColor: 'blue', category: '재무 리스크', title: '환율 변동에 따른 수익 영향', desc: '달러 강세로 인한 수출 경쟁력 저하 가능성', tags: ['#환율', '#재무안정성'], score: '4.2', scoreColor: 'text-[#142755]' },
-          ].map((item) => (
+          {([] as { border: string; level: string; levelColor: string; category: string; title: string; desc: string; tags: string[]; score: string; scoreColor: string }[]).map((item) => (
             <div key={item.title} className={`bg-white p-4 sm:p-5 border-l-4 border-${item.border}-500`}>
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">

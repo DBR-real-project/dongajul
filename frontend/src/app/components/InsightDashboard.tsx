@@ -5,44 +5,12 @@ interface InsightDashboardProps {
   onBack: () => void;
 }
 
-const categoryData = [
-  { name: '성공', value: 5, color: '#16a34a' },
-  { name: '실패', value: 3, color: '#dc2626' }
-];
-
-const industryData = [
-  { industry: '기술', success: 2, failure: 1 },
-  { industry: '엔터테인먼트', success: 1, failure: 1 },
-  { industry: '자동차', success: 1, failure: 0 },
-  { industry: '모바일', success: 0, failure: 1 },
-  { industry: '식음료', success: 1, failure: 0 },
-  { industry: '클라우드', success: 1, failure: 0 }
-];
-
-const trendData = [
-  { year: '2020', success: 8, failure: 5 },
-  { year: '2021', success: 12, failure: 7 },
-  { year: '2022', success: 15, failure: 6 },
-  { year: '2023', success: 18, failure: 8 },
-  { year: '2024', success: 22, failure: 7 },
-  { year: '2025', success: 25, failure: 9 },
-  { year: '2026', success: 5, failure: 3 }
-];
-
-const successFactors = [
-  { factor: '데이터 기반 의사결정', count: 4 },
-  { factor: '혁신적 비즈니스 모델', count: 3 },
-  { factor: '고객 중심 전략', count: 5 },
-  { factor: '수직 계열화', count: 2 },
-  { factor: '생태계 구축', count: 3 }
-];
-
-const failureFactors = [
-  { factor: '시장 변화 대응 실패', count: 3 },
-  { factor: '기존 사업 고수', count: 2 },
-  { factor: '혁신 지연', count: 2 },
-  { factor: '조직 경직성', count: 1 }
-];
+// TODO: GET /api/stats 응답으로 교체
+const categoryData: { name: string; value: number; color: string }[] = [];
+const industryData: { industry: string; success: number; failure: number }[] = [];
+const trendData: { year: string; success: number; failure: number }[] = [];
+const successFactors: { factor: string; count: number }[] = [];
+const failureFactors: { factor: string; count: number }[] = [];
 
 export function InsightDashboard({ onBack }: InsightDashboardProps) {
   return (
@@ -64,7 +32,7 @@ export function InsightDashboard({ onBack }: InsightDashboardProps) {
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex flex-col items-center">
             <Target className="w-6 h-6 text-[#EA0029] mb-2" />
-            <div className="text-2xl mb-1 text-gray-900">8</div>
+            <div className="text-2xl mb-1 text-gray-900">-</div>
             <div className="text-xs text-gray-500">전체</div>
           </div>
         </div>
@@ -72,7 +40,7 @@ export function InsightDashboard({ onBack }: InsightDashboardProps) {
         <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg border-2 border-green-200 p-4">
           <div className="flex flex-col items-center">
             <TrendingUp className="w-6 h-6 text-green-600 mb-2" />
-            <div className="text-2xl mb-1 text-green-900">5</div>
+            <div className="text-2xl mb-1 text-green-900">-</div>
             <div className="text-xs text-green-700">성공</div>
           </div>
         </div>
@@ -80,7 +48,7 @@ export function InsightDashboard({ onBack }: InsightDashboardProps) {
         <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg border-2 border-red-200 p-4">
           <div className="flex flex-col items-center">
             <TrendingDown className="w-6 h-6 text-red-600 mb-2" />
-            <div className="text-2xl mb-1 text-red-900">3</div>
+            <div className="text-2xl mb-1 text-red-900">-</div>
             <div className="text-xs text-red-700">실패</div>
           </div>
         </div>

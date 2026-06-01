@@ -33,56 +33,8 @@ interface Notification {
 }
 
 export function NotificationView({ onBack, onNavigate, darkMode = false }: NotificationViewProps) {
-  const [activeNotifications, setActiveNotifications] = useState<Notification[]>(
-    [
-      { 
-        id: 1, 
-        border: 'red', 
-        bg: 'bg-red-100 dark:bg-red-950/30', 
-        Icon: AlertTriangle, 
-        iconColor: 'text-red-600 dark:text-red-400', 
-        title: '리스크 경고', 
-        time: '5분 전', 
-        desc: '시장 변동성 리스크 점수가 6.1로 상승했습니다. 관련 대응 전략을 확인하세요.', 
-        action: '자세히 보기 →', 
-        actionColor: 'text-red-600 dark:text-red-400', 
-        read: false, 
-        detailContent: '현재 시장 변동성이 급증하고 있습니다.\n\n주요 리스크 요인:\n- 글로벌 경제 불확실성 증가\n- 주요 산업 섹터 변동성 확대\n- 공급망 이슈 지속\n\n권장 대응 전략:\n1. 포트폴리오 다각화\n2. 리스크 헤징 강화\n3. 시장 모니터링 주기 단축',
-        targetView: '데이터 분석' 
-      },
-      { 
-        id: 2, 
-        border: 'green', 
-        bg: 'bg-green-100 dark:bg-green-950/30', 
-        Icon: TrendingUp, 
-        iconColor: 'text-green-600 dark:text-green-400', 
-        title: '새로운 성공 사례', 
-        time: '1시간 전', 
-        desc: '귀사와 유사한 산업군의 디지털 전환 성공 사례가 추가되었습니다.', 
-        action: '사례 보기 →', 
-        actionColor: 'text-green-600 dark:text-green-400', 
-        read: false, 
-        detailContent: '제조업 디지털 전환 성공 사례\n\n기업명: ㈜테크매뉴팩처링\n산업군: 정밀 제조업\n프로젝트 기간: 18개월\n\n주요 성과:\n- 생산성 35% 향상\n- 불량률 60% 감소\n- 운영 비용 25% 절감\n\n귀사에 적용 가능한 인사이트를 확인해보세요.',
-        targetView: '비교 분석', 
-        targetParams: { articleId: 1 } 
-      },
-      { 
-        id: 3, 
-        border: 'blue', 
-        bg: darkMode ? 'bg-[#0B2F61]/20' : 'bg-blue-50', 
-        Icon: Info, 
-        iconColor: darkMode ? 'text-blue-400' : 'text-[#0B2F61]', 
-        title: '시스템 업데이트', 
-        time: '3시간 전', 
-        desc: '새로운 전략 프레임워크 분석 기능이 추가되었습니다.', 
-        action: '자세히 보기 →', 
-        actionColor: darkMode ? 'text-blue-400' : 'text-[#0B2F61]', 
-        read: false, 
-        detailContent: '새로운 기능 안내\n\n업데이트 내용:\n- AI 기반 전략 프레임워크 분석 기능\n- 실시간 시장 데이터 연동\n- 경쟁사 벤치마킹 자동화\n\n사용 방법:\n데이터 분석 메뉴에서 이용하실 수 있습니다.',
-        targetView: '데이터 분석' 
-      }
-    ]
-  );
+  // TODO: 알림 API 연동 후 실제 데이터로 교체
+  const [activeNotifications, setActiveNotifications] = useState<Notification[]>([]);
 
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -186,11 +138,8 @@ export function NotificationView({ onBack, onNavigate, darkMode = false }: Notif
             </div>
           )}
 
-          {/* 읽은 보조 알림 아카이브 슬롯 */}
-          {[
-            { title: '월간 리포트 생성 완료', time: '어제', desc: '5월 전략 분석 리포트가 생성되었습니다.', targetView: '히스토리' },
-            { title: '리스크 평가 완료', time: '2일 전', desc: '정기 리스크 평가가 완료되었습니다. 종합 점수: 5.2', targetView: '데이터 분석' },
-          ].map((item, index) => (
+          {/* 읽은 보조 알림 아카이브 슬롯 - TODO: 알림 API 연동 후 실제 데이터로 교체 */}
+          {([] as { title: string; time: string; desc: string; targetView: string }[]).map((item, index) => (
             <div 
               key={index} 
               className={`${darkMode ? 'bg-gray-900/10 border-gray-800/40 text-gray-100 hover:bg-gray-900/30' : 'bg-slate-50/60 border-slate-200/60 text-gray-900 hover:bg-slate-100/40'} p-5 border rounded-2xl shadow-sm transition-all cursor-pointer flex items-start gap-4`} 
