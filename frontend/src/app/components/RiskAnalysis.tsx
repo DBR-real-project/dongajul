@@ -127,23 +127,23 @@ export function RiskAnalysis({ onBack, onArticleClick, onNotificationClick, onPr
                 textAnchor="middle"
                 className={`text-4xl font-bold ${darkMode ? 'fill-white' : 'fill-gray-900'}`}
               >
-                5.2
+                -
               </text>
               <text
                 x="100" y="98"
                 textAnchor="middle"
-                className={`text-sm font-semibold ${darkMode ? 'fill-green-400' : 'fill-green-600'}`}
+                className={`text-sm font-semibold ${darkMode ? 'fill-gray-400' : 'fill-gray-500'}`}
               >
-                STABLE
+                분석 필요
               </text>
             </svg>
           </div>
 
           <div className="grid grid-cols-3 gap-6">
             {[
-              { label: text.riskPossibility, value: 'Low', icon: TrendingDown, color: 'green' },
-              { label: text.industryAvg, value: '-12.4%', icon: Activity, color: 'blue' },
-              { label: text.industryGrade, value: 'AA+', icon: TrendingUp, color: 'purple' },
+              { label: text.riskPossibility, value: '-', icon: TrendingDown, color: 'green' },
+              { label: text.industryAvg, value: '-', icon: Activity, color: 'blue' },
+              { label: text.industryGrade, value: '-', icon: TrendingUp, color: 'purple' },
             ].map(({ label, value, icon: Icon, color }) => (
               <div
                 key={label}
@@ -180,11 +180,10 @@ export function RiskAnalysis({ onBack, onArticleClick, onNotificationClick, onPr
             </h3>
           </div>
 
+          {/* TODO: POST /api/diagnose 응답의 similar_articles (label=success) Top3로 교체 */}
           <div className="space-y-3">
             {[
-              { id: 1, similarity: '92', title: '디지털 트렌스포메이션을 통한 고객 경험 혁신 전략', tags: ['#디지털_전환', '#고객경험', '#Agile'] },
-              { id: 2, similarity: '85', title: '플랫폼 경제 내 독점적 생태계 구축 모델 연구', tags: ['#생태계', '#버티컬구조'] },
-              { id: 8, similarity: '78', title: 'ESG 경영 고도화를 통한 글로벌 브랜드 가치 증대', tags: ['#ESG', '#지속가능경영'] },
+              { id: 1, similarity: '-', title: '(예시) 분석 실행 후 유사 성공 사례가 표시됩니다', tags: ['#DBR', '#성공사례'] },
             ].map((item) => (
               <div
                 key={item.id}
@@ -241,11 +240,10 @@ export function RiskAnalysis({ onBack, onArticleClick, onNotificationClick, onPr
             </h3>
           </div>
 
+          {/* TODO: POST /api/diagnose 응답의 similar_articles (label=failure) Top3로 교체 */}
           <div className="space-y-3">
             {[
-              { id: 3, similarity: '95', title: '무리한 사업 다각화에 따른 유동성 위기 분석', tags: ['#과잉투자', '#부채위기'] },
-              { id: 5, similarity: '82', title: '시장 변동성 예측 실패로 재고 관리 부실 사례', tags: ['#예측오류', '#공급망위기'] },
-              { id: 7, similarity: '71', title: '조직 문화 경직에 따른 혁신 기술 도입 지연', tags: ['#조직문화', '#혁신저항'] },
+              { id: 3, similarity: '-', title: '(예시) 분석 실행 후 유사 실패 사례가 표시됩니다', tags: ['#DBR', '#실패사례'] },
             ].map((item) => (
               <div
                 key={item.id}

@@ -3,7 +3,6 @@ import { LoginScreen } from './components/LoginScreen';
 import { SignupScreen } from './components/SignupScreen';
 import { TopNavigation } from './components/TopNavigation';
 import { GlobalHeader } from './components/GlobalHeader';
-import { CommandPalette } from './components/CommandPalette';
 import { EnterpriseDashboard } from './components/EnterpriseDashboard';
 import { MainDashboard } from './components/MainDashboard';
 import { StrategyWorkspace } from './components/StrategyWorkspace';
@@ -46,20 +45,7 @@ export default function App() {
   const [comparedItems, setComparedItems] = useState<CompareItem[]>([]);
   const [previousView, setPreviousView] = useState<ViewType>('dashboard');
   const [darkMode, setDarkMode] = useState(() => JSON.parse(localStorage.getItem('darkMode') || 'false'));
-  const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [aiSearchQuery, setAiSearchQuery] = useState('');
-
-  // Command Palette 단축키 (⌘K / Ctrl+K)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        setShowCommandPalette(prev => !prev);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
 
   // 다크모드 body 클래스 적용
   useEffect(() => {
@@ -133,8 +119,6 @@ export default function App() {
 
   return (
     <div className={`flex flex-col h-screen w-screen ${darkMode ? 'dark bg-gray-900' : 'bg-[#F8FAFC]'}`}>
-      <CommandPalette isOpen={showCommandPalette} onClose={() => setShowCommandPalette(false)} darkMode={darkMode} />
-
       <TopNavigation
         currentView={currentView}
         onViewChange={handleViewChange}

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { FlipCard } from './FlipCard';
 
 interface LoginScreenProps {
   onLogin: (email: string, password: string) => void;
@@ -97,9 +96,6 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
             가장 <span className="text-[#E5BA73] font-medium">견고한 비즈니스 궤도</span>를 제시합니다.
           </p>
 
-          <div className="mt-16">
-            <FlipCard isLoggedIn={false} />
-          </div>
         </div>
 
         {/* Decorative Elements */}
