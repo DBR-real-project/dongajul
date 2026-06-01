@@ -54,7 +54,7 @@ export function TopBar({ darkMode, language = 'ko', currentView }: TopBarProps) 
             {language === 'ko' ? 'AI 사용량' : 'AI Usage'}
           </span>
           <span className="text-xs font-bold bg-gradient-to-r from-[#142755] to-indigo-600 bg-clip-text text-transparent">
-            73%
+            -
           </span>
         </div>
       </div>

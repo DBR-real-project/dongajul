@@ -139,7 +139,7 @@ export function LeftSidebar({
             </div>
             <div className="flex-1 text-left min-w-0">
               <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'} font-medium`}>Account</p>
-              <p className={`text-sm font-bold truncate ${darkMode ? 'text-white' : 'text-gray-900'}`}>김전략</p>
+              <p className={`text-sm font-bold truncate ${darkMode ? 'text-white' : 'text-gray-900'}`}>{(typeof window !== 'undefined' && localStorage.getItem('userName')) || '사용자'}</p>
             </div>
           </button>
 
