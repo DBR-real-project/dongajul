@@ -1,3 +1,5 @@
+import mysql from 'mysql2/promise';
+
 const mysql = require('mysql2');
 
 const connection = mysql.createConnection({
@@ -13,6 +15,13 @@ connection.connect((err) => {
   } else {
     console.log('DB 연결 성공');
   }
+});
+
+export const db = await mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: '비밀번호',
+  database: 'your_db'
 });
 
 module.exports = connection;
