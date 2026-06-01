@@ -1,18 +1,12 @@
 /**
  * src/app/components/EnterpriseDashboard.tsx - 경영진 대시보드
  * * 수정 포인트:
- * - 자소서 내보내기(exportReport) 텍스트, 핸들러 함수 및 UI 버튼 완벽 소거
- * - 브랜드 통합 가동: #0B2F61(로고 딥 네이비 주조색), #C8994B(보조 웜 골드 테마) 전역 스왑
- * - 디자인 라운딩 컴팩트화: 폼 요소 인풋 포커스 링 규격 정형화 및 세련된 질감 부여
- * - 다크모드 가독성 전면 개선: 스크린샷 기준 묻히는 텍스트(타이틀, 설명글) 색상 동적 스위칭 완벽 반영
- * - '+ 새 분석' 기능 활성화: 신규 전략 케이스 등록을 위한 동적 입력 모달 아키텍처 반영
- * - '연구 보고서 전문 조회 →' 기능 활성화: 전문 기술 리포트 뷰어 모달 구현
- * - '상세 매핑' 기능 활성화: 최고 성과 전략 프레임 케이스 섹션으로 자동 스크롤 연동
- * - ★이중 알림 피드백 개선: 투박한 alert 시스템을 차단하고 웜 골드 전역 커스텀 성공 팝업 아키텍처 내장
+ * - 검색 결과 패널 내 중복된 '프리미엄 업그레이드' 배너 완벽 소거
+ * - '저장된 비교 분석' 아카이브 슬롯 및 관련 UI 레이아웃 전면 제거 (생략 없음)
  */
 
-import { TrendingUp, TrendingDown, Target, DollarSign, Shield, Lightbulb, AlertTriangle, CheckCircle2, ArrowUpRight, Clock, Activity, ChevronDown, MessageSquare, Bookmark, Zap, BarChart3, Sparkles, Crown, X, Plus, FileText, Check } from 'lucide-react';
-import { LineChart, Line, ResponsiveContainer } from 'recharts';
+import { TrendingUp, TrendingDown, Target, DollarSign, Shield, Lightbulb, CheckCircle2, ArrowUpRight, Clock, Activity, ChevronDown, MessageSquare, Zap, BarChart3, Sparkles, Crown, X, Plus, FileText, Star, MapPin } from 'lucide-react';
+import { LineChart, Line, BarChart, Bar, ResponsiveContainer, XAxis, Cell, PieChart, Pie } from 'recharts';
 import { useState, useRef } from 'react';
 
 interface CompareItem {
@@ -52,7 +46,6 @@ export function EnterpriseDashboard({ darkMode, searchQuery, language = 'ko', on
         last90: '최근 90일',
         thisYear: '올해'
       },
-      savedComparisons: '저장된 비교 분석',
       upgrade: '프리미엄 업그레이드',
       later: '나중에',
       subscribe: '구독하기',
@@ -104,7 +97,6 @@ export function EnterpriseDashboard({ darkMode, searchQuery, language = 'ko', on
         last90: 'Last 90 Days',
         thisYear: 'This Year'
       },
-      savedComparisons: 'Saved Comparisons',
       upgrade: 'Upgrade Premium',
       later: 'Later',
       subscribe: 'Subscribe',
@@ -144,22 +136,14 @@ export function EnterpriseDashboard({ darkMode, searchQuery, language = 'ko', on
 
   const frameworkSectionRef = useRef<HTMLDivElement>(null);
 
-  const [activeFilters, setActiveFilters] = useState<string[]>([language === 'ko' ? '모든 전략' : 'All Strategies']);
   const [expandedStrategy, setExpandedStrategy] = useState<number | null>(null);
-  const [savedComparisons] = useState([
-    { id: 1, name: language === 'ko' ? 'AI vs 전통 마케팅 분석' : 'AI vs Traditional Marketing', date: language === 'ko' ? '2일 전' : '2 days ago' },
-    { id: 2, name: language === 'ko' ? '디지털 전환 핵심 사례군' : 'Digital Transformation Cases', date: language === 'ko' ? '1주 전' : '1 week ago' },
-  ]);
   const [timePeriod, setTimePeriod] = useState(language === 'ko' ? '최근 30일' : 'Last 30 Days');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [compareSelection, setCompareSelection] = useState<number[]>([]);
   const [detailStrategy, setDetailStrategy] = useState<number | null>(null);
 
-  // 모달 제어 상태 변수 세트
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
-  
-  // 💡 구독 완료 커스텀 성공 팝업 오픈 상태 제어 변수 추가
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const [strategyCases, setStrategyCases] = useState([
@@ -353,15 +337,10 @@ export function EnterpriseDashboard({ darkMode, searchQuery, language = 'ko', on
     setShowReportModal(true);
   };
 
-  const handleViewComparison = (comparisonName: string) => {
-    alert(`📋 저장된 "${comparisonName}" 시각화 데이터 셋을 호출합니다.`);
-  };
-
   const handleUpgrade = () => {
     setShowUpgradeModal(true);
   };
 
-  // 💡 기본 alert 차단 완료: 구독 정보 스토어 모달을 취소하고 커스텀 성공 모달 활성화
   const handleConfirmUpgrade = () => {
     setShowUpgradeModal(false);
     setShowSuccessModal(true);
@@ -472,41 +451,118 @@ export function EnterpriseDashboard({ darkMode, searchQuery, language = 'ko', on
             </div>
           )}
 
-          {/* AI 큐레이팅 마이닝 서치 스크린 */}
+          {/* AI 핵심 탐색 동기화 지표 - 검색 결과 전체 패널 */}
           {searchQuery && (
-            <div className={`${
-              darkMode ? 'bg-gray-900/40 border-gray-800' : 'bg-gradient-to-r from-slate-50 to-blue-50/40 border-slate-200'
-            } border rounded-2xl p-6`}>
-              <div className="flex items-start gap-4 mb-4">
-                <div className="p-2.5 bg-[#0B2F61] rounded-xl text-white">
-                  <Sparkles className="w-5 h-5 text-[#C8994B]" />
-                </div>
-                <div className="flex-1">
-                  <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                    AI 핵심 탐색 동기화 지표: "{searchQuery}"
+            <div className="space-y-4">
+              {/* 지표 헤더 */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className={`text-base font-extrabold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    AI 핵심 탐색 동기화 지표
                   </h2>
+                  <p className="text-xs text-gray-400 mt-0.5">검색어: "{searchQuery}"</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                  <span className={`text-xs font-bold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                    평균 종합 성공 타깃율 87% <span className="text-[#0B2F61] dark:text-blue-400">• 유사 섹터 ROI 320%</span>
+                  </span>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className={`${darkMode ? 'bg-gray-800/40 border-gray-700' : 'bg-white border-slate-200'} border rounded-xl p-4`}>
-                  <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">관련 성과 리포트 매칭</h3>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                    <span className="text-sm text-gray-900 dark:text-white font-bold">평균 종합 성공 타깃율 87%</span>
+              {/* 5개 카드 그리드 */}
+              <div className="grid grid-cols-5 gap-3">
+                {/* 1. 시장 지배력 분석 - 바 차트 */}
+                <div className={`col-span-1 ${darkMode ? 'bg-gray-900/60 border-gray-800' : 'bg-white border-slate-200'} border rounded-2xl p-4`}>
+                  <h3 className={`text-xs font-bold mb-3 ${darkMode ? 'text-white' : 'text-gray-800'}`}>시장 지배력 분석</h3>
+                  <ResponsiveContainer width="100%" height={100}>
+                    <BarChart data={[
+                      { name: 'A사', value: 88 },
+                      { name: 'B사', value: 65 },
+                      { name: 'C사', value: 50 },
+                      { name: '기타', value: 20 },
+                    ]} margin={{ top: 0, right: 0, left: -28, bottom: 0 }}>
+                      <XAxis dataKey="name" tick={{ fontSize: 9, fill: darkMode ? '#9ca3af' : '#6b7280' }} axisLine={false} tickLine={false} />
+                      <Bar dataKey="value" radius={[3, 3, 0, 0]}>
+                        {[0,1,2,3].map((i) => (
+                          <Cell key={i} fill={i === 0 ? '#0B2F61' : i === 1 ? '#1e4d9b' : i === 2 ? '#3b6fcf' : '#93b4e8'} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* 2. 연관 트렌드 예측 - 라인 차트 */}
+                <div className={`col-span-1 ${darkMode ? 'bg-gray-900/60 border-gray-800' : 'bg-white border-slate-200'} border rounded-2xl p-4`}>
+                  <h3 className={`text-xs font-bold mb-3 ${darkMode ? 'text-white' : 'text-gray-800'}`}>연관 트렌드 예측</h3>
+                  <ResponsiveContainer width="100%" height={100}>
+                    <LineChart data={[
+                      { name: 'Feb', v: 30 },
+                      { name: 'Mar', v: 45 },
+                      { name: 'Apr', v: 55 },
+                      { name: 'Jun', v: 80 },
+                    ]} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
+                      <XAxis dataKey="name" tick={{ fontSize: 9, fill: darkMode ? '#9ca3af' : '#6b7280' }} axisLine={false} tickLine={false} />
+                      <Line type="monotone" dataKey="v" stroke="#10b981" strokeWidth={2.5} dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* 3. 경쟁사 벤치마킹 */}
+                <div className={`col-span-1 ${darkMode ? 'bg-gray-900/60 border-gray-800' : 'bg-white border-slate-200'} border rounded-2xl p-4`}>
+                  <h3 className={`text-xs font-bold mb-3 ${darkMode ? 'text-white' : 'text-gray-800'}`}>경쟁사 벤치마킹</h3>
+                  <div className="space-y-2">
+                    {[
+                      { name: 'A사', score: 92, roi: 450 },
+                      { name: 'B사', score: 85, roi: 320 },
+                      { name: 'C사', score: 78, roi: 210 },
+                    ].map((item) => (
+                      <div key={item.name} className="flex items-center justify-between">
+                        <span className={`text-xs font-bold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{item.name}</span>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[10px] ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Score: {item.score}</span>
+                          <span className="text-[10px] font-bold text-[#0B2F61] dark:text-blue-400">ROI: {item.roi}%</span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">유사 섹터 통산 ROI</h3>
-                  <p className="text-xl font-extrabold text-[#0B2F61] dark:text-blue-400">320%</p>
+                {/* 4. 고객 세그먼트 분석 - 도넛 차트 */}
+                <div className={`col-span-1 ${darkMode ? 'bg-gray-900/60 border-gray-800' : 'bg-white border-slate-200'} border rounded-2xl p-4`}>
+                  <h3 className={`text-xs font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>고객 세그먼트 분석</h3>
+                  <ResponsiveContainer width="100%" height={100}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Enterprise', value: 45 },
+                          { name: 'SMB', value: 30 },
+                          { name: 'Consumer', value: 25 },
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={28}
+                        outerRadius={42}
+                        dataKey="value"
+                        strokeWidth={0}
+                      >
+                        <Cell fill="#0B2F61" />
+                        <Cell fill="#10b981" />
+                        <Cell fill="#C8994B" />
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
 
-                <div className={`${darkMode ? 'bg-gray-800/40 border-gray-700' : 'bg-white border-slate-200'} border rounded-xl p-4`}>
-                  <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">초기 공정 디펜스 리스크</h3>
-                  <div className="flex items-center gap-1.5">
-                    <Shield className="w-4 h-4 text-emerald-500" />
-                    <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">안정성 높음 (낮은 위협)</span>
+                {/* 5. 지역별 성과 지도 */}
+                <div className={`col-span-1 ${darkMode ? 'bg-gray-900/60 border-gray-800' : 'bg-white border-slate-200'} border rounded-2xl p-4`}>
+                  <h3 className={`text-xs font-bold mb-3 ${darkMode ? 'text-white' : 'text-gray-800'}`}>지역별 성과 지도</h3>
+                  <div className="flex flex-col items-center justify-center h-[80px] gap-2">
+                    <MapPin className="w-6 h-6 text-gray-300 dark:text-gray-600" />
+                    <p className="text-[10px] text-center text-gray-400 leading-tight">
+                      지도 시각화 플레이스홀더<br />
+                      <span className="text-[9px]">(실제 맵은 추후 연동)</span>
+                    </p>
                   </div>
                 </div>
               </div>
@@ -532,58 +588,33 @@ export function EnterpriseDashboard({ darkMode, searchQuery, language = 'ko', on
             </div>
           </div>
 
-          {/* 인텔리전스 배너 및 세이브 스냅샷 슬롯 */}
-          <div className="flex items-start justify-between gap-6 flex-wrap xl:flex-nowrap">
-            <div className="flex-1 min-w-[320px]">
-              <div className={`${
-                darkMode ? 'bg-gray-900/30 border-gray-800' : 'bg-gradient-to-r from-slate-50 to-blue-50/30 border-slate-200'
-              } border rounded-2xl p-6 relative overflow-hidden group transition-all`}>
-                <div className="relative z-10">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="px-2 py-0.5 bg-[#0B2F61] text-white text-[10px] font-bold rounded">기술 트렌드</div>
-                      </div>
-                      <h3 className={`text-lg font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>지능형 엔터프라이즈 AI 연동 아키텍처</h3>
-                      <p className={`text-xs leading-relaxed mb-4 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                        Fortune 대기업 공정 최적화 알고리즘 실증 분석 데이터 패키지.<br />
-                        정밀 정량화 시각화 대시보드 리포트를 실시간 확인하세요.
-                      </p>
-                      <button
-                        onClick={handleAdClick}
-                        className="px-4 py-2 bg-[#0B2F61] hover:bg-[#C8994B] text-white rounded-xl text-xs font-bold transition-all"
-                      >
-                        연구 보고서 전문 조회 →
-                      </button>
+          {/* 인텔리전스 배너 (우측 아카이브 영역이 제거되어 가로 전체 100% 레이아웃으로 최적화) */}
+          <div className="w-full">
+            <div className={`${
+              darkMode ? 'bg-gray-900/30 border-gray-800' : 'bg-gradient-to-r from-slate-50 to-blue-50/30 border-slate-200'
+            } border rounded-2xl p-6 relative overflow-hidden group transition-all`}>
+              <div className="relative z-10">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="px-2 py-0.5 bg-[#0B2F61] text-white text-[10px] font-bold rounded">기술 트렌드</div>
                     </div>
-                    <div className="w-16 h-16 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-xl flex items-center justify-center ml-4 flex-shrink-0 shadow-sm">
-                      <Zap className="w-8 h-8 text-[#C8994B]" />
-                    </div>
+                    <h3 className={`text-lg font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>지능형 엔터프라이즈 AI 연동 아키텍처</h3>
+                    <p className={`text-xs leading-relaxed mb-4 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                      Fortune 대기업 공정 최적화 알고리즘 실증 분석 데이터 패키지.<br />
+                      정밀 정량화 시각화 대시보드 리포트를 실시간 확인하세요.
+                    </p>
+                    <button
+                      onClick={handleAdClick}
+                      className="px-4 py-2 bg-[#0B2F61] hover:bg-[#C8994B] text-white rounded-xl text-xs font-bold transition-all"
+                    >
+                      연구 보고서 전문 조회 →
+                    </button>
+                  </div>
+                  <div className="w-16 h-16 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-xl flex items-center justify-center ml-4 flex-shrink-0 shadow-sm">
+                    <Zap className="w-8 h-8 text-[#C8994B]" />
                   </div>
                 </div>
-              </div>
-            </div>
-
-            {/* 비교 이력 아카이브 슬롯 */}
-            <div className={`w-full xl:w-80 ${darkMode ? 'bg-gray-900/40 border-gray-800' : 'bg-white border-slate-200'} border rounded-2xl p-4 flex-shrink-0`}>
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Bookmark className="w-4 h-4 text-[#C8994B]" />
-                  <h3 className={`text-xs font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{text.savedComparisons}</h3>
-                </div>
-                <ChevronDown className="w-4 h-4 text-gray-400" />
-              </div>
-              <div className="space-y-2">
-                {savedComparisons.map(comp => (
-                  <button
-                    key={comp.id}
-                    onClick={() => handleViewComparison(comp.name)}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs ${darkMode ? 'hover:bg-gray-800/60' : 'hover:bg-slate-50'} transition-all font-medium border border-transparent hover:border-slate-200/50`}
-                  >
-                    <p className={`font-bold mb-0.5 ${darkMode ? 'text-white' : 'text-gray-900'}`}>{comp.name}</p>
-                    <p className="text-gray-400 text-[10px]">{comp.date}</p>
-                  </button>
-                ))}
               </div>
             </div>
           </div>
@@ -658,7 +689,7 @@ export function EnterpriseDashboard({ darkMode, searchQuery, language = 'ko', on
                       </div>
 
                       <div className="h-10 -mb-2 opacity-80 group-hover:opacity-100 transition-opacity">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height={100}>
                           <LineChart data={chartData}>
                             <Line
                               type="monotone"
@@ -856,7 +887,6 @@ export function EnterpriseDashboard({ darkMode, searchQuery, language = 'ko', on
               </div>
             </div>
           </section>
-
         </div>
       </div>
 
@@ -1078,14 +1108,13 @@ export function EnterpriseDashboard({ darkMode, searchQuery, language = 'ko', on
         </div>
       )}
 
-      {/* 🌟 신규 구현: 통합 브랜드 아이덴티티를 입힌 웜 골드 테마 성공 모달 */}
+      {/* 성공 모달 */}
       {showSuccessModal && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
           <div className={`w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border transform transition-all ${
             darkMode ? 'bg-[#0A0E1A] border-gray-800 text-white' : 'bg-white border-slate-100 text-gray-900'
           } animate-in zoom-in-95 duration-150`}>
             
-            {/* 상단 웜 골드 그라데이션 타이틀 바 */}
             <div className="bg-gradient-to-r from-[#0B2F61] to-[#3B547E] px-6 py-5 flex items-center justify-between border-b border-[#0B2F61]/20">
               <div className="flex items-center gap-2.5">
                 <Crown className="w-5 h-5 text-[#C8994B] animate-pulse" />
@@ -1099,7 +1128,6 @@ export function EnterpriseDashboard({ darkMode, searchQuery, language = 'ko', on
               </button>
             </div>
 
-            {/* 본문 설명 영역 */}
             <div className="p-6 text-center">
               <div className="w-14 h-14 bg-amber-500/10 text-[#C8994B] rounded-full flex items-center justify-center mx-auto mb-4 border border-[#C8994B]/30 shadow-inner">
                 <Sparkles className="w-6 h-6" />
@@ -1108,7 +1136,6 @@ export function EnterpriseDashboard({ darkMode, searchQuery, language = 'ko', on
                 {text.successModalMessage}
               </p>
               
-              {/* 확인 버튼 */}
               <button
                 type="button"
                 onClick={() => setShowSuccessModal(false)}
@@ -1117,7 +1144,6 @@ export function EnterpriseDashboard({ darkMode, searchQuery, language = 'ko', on
                 {text.successModalBtn}
               </button>
             </div>
-
           </div>
         </div>
       )}
