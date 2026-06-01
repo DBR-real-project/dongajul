@@ -9,7 +9,7 @@ exports.login = async (req, res) => {
   }
   try {
     const user = await authService.loginUser(email, password);
-    res.json({ success: true, user: { id: user.user_id, email: user.email, name: user.name } });
+    res.json({ success: true, user: { id: user.user_id, email: user.email, name: user.nickname || user.email.split('@')[0] } });
   } catch (err) {
     if (err.message === 'USER_NOT_FOUND' || err.message === 'INVALID_PASSWORD') {
       return res.status(401).json({ message: '이메일 또는 비밀번호가 올바르지 않습니다.' });

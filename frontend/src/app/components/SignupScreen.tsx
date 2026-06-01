@@ -1,8 +1,8 @@
 import { ArrowLeft } from 'lucide-react';
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 interface SignupScreenProps {
-  onSignup: (email: string, password: string, name: string) => void;
+  onSignup: () => void;
   onBackToLogin: () => void;
 }
 
@@ -15,7 +15,7 @@ export function SignupScreen({ onSignup, onBackToLogin }: SignupScreenProps) {
   const [error, setError] = useState('');
 
   // 2. 에러 해결 포인트: React.FormEvent 대신 권장 표준인 React.SubmitEvent 사용
-  const handleSubmit = async (e: React.SubmitEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
 
@@ -44,7 +44,23 @@ export function SignupScreen({ onSignup, onBackToLogin }: SignupScreenProps) {
       return;
     }
 
-    onSignup(email, password, name);
+    try {
+      const res = await fetch('http://localhost:3001/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert('회원가입이 완료되었습니다. 로그인해주세요.');
+        onSignup();
+      } else {
+        setError((data as { message?: string }).message || '회원가입 실패');
+      }
+    } catch (err) {
+      console.error(err);
+      setError('서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.');
+    }
   };
 
   return (

@@ -1,16 +1,10 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 interface LoginScreenProps {
-  onLogin: (email: string, password: string) => void;
+  onLogin: (user: { id: number; email: string; name: string }) => void;
   onSocialLogin: (provider: string) => void;
   onSignupClick: () => void;
   onForgotPassword?: () => void;
-}
-
-interface User {
-  name: string;
-  email: string;
-  password: string;
 }
 
 export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPassword }: LoginScreenProps) {
@@ -22,11 +16,11 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
   const [resetEmail, setResetEmail] = useState('');
 
   // 1. 에러 해결 포인트: React.FormEvent 대신 권장 표준인 React.SubmitEvent 사용
-  const handleSubmit = async (e: React.SubmitEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     try {
-      const res = await fetch('http://localhost:3000/login', {
+      const res = await fetch('http://localhost:3001/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -40,15 +34,13 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
       const data = await res.json();
 
       if (res.ok) {
-        alert('로그인 성공');
-        console.log(data);
-        onLogin(email, password);
+        onLogin((data as { user: { id: number; email: string; name: string } }).user);
       } else {
-        alert((data as { message?: string }).message || '로그인 실패');
+        setError((data as { message?: string }).message || '로그인 실패');
       }
     } catch (err) {
       console.error(err);
-      alert('서버 오류');
+      setError('서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.');
     }
   };
 
@@ -57,17 +49,9 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
       alert('올바른 이메일을 입력해주세요.');
       return;
     }
-
-    const users = JSON.parse(localStorage.getItem('users') || '[]') as User[];
-    const user = users.find((u) => u.email === resetEmail);
-
-    if (user) {
-      alert('비밀번호 재설정 링크가 이메일로 전송되었습니다.');
-      setResetEmail('');
-      setShowResetModal(false);
-    } else {
-      alert('등록되지 않은 이메일입니다.');
-    }
+    alert('비밀번호 재설정 링크가 이메일로 전송되었습니다.');
+    setResetEmail('');
+    setShowResetModal(false);
   };
 
   return (
