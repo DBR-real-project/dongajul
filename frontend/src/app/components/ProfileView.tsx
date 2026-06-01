@@ -78,10 +78,10 @@ export function ProfileView({ onBack, darkMode: propDarkMode }: ProfileViewProps
     if (user) {
       const parsedUser = JSON.parse(user);
       setUserData(parsedUser);
-      setEditName(parsedUser.name || '김전략');
+      setEditName(parsedUser.name || '');
       setEditEmail(parsedUser.email || '');
-      setEditCompany(parsedUser.company || 'DBR Authority Inc.');
-      setEditDepartment(parsedUser.department || '전략기획팀');
+      setEditCompany(parsedUser.company || '');
+      setEditDepartment(parsedUser.department || '');
     }
   }, []);
 
@@ -218,8 +218,8 @@ export function ProfileView({ onBack, darkMode: propDarkMode }: ProfileViewProps
           <div className="w-16 h-16 bg-gradient-to-br from-[#0B2F61] to-[#3B547E] text-white rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-md">
             <User className="w-7 h-7 text-[#C8994B]" />
           </div>
-          <h2 className={`text-base font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-0.5`}>{userData?.name || '김전략'}</h2>
-          <p className={`text-xs font-semibold ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{userData?.department || '전략기획팀'} · {userData?.position || '팀장'}</p>
+          <h2 className={`text-base font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-0.5`}>{userData?.name || '-'}</h2>
+          <p className={`text-xs font-semibold ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{userData?.department || '-'} · {userData?.position || '-'}</p>
         </div>
 
         {/* 세부 계정 파라미터 세그먼트 */}
@@ -227,9 +227,9 @@ export function ProfileView({ onBack, darkMode: propDarkMode }: ProfileViewProps
           <h3 className={`text-xs font-bold uppercase tracking-wider mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>기본 계정 명세</h3>
           <div className="space-y-4">
             {[
-              { Icon: Mail, label: '이메일 계정 주소', value: userData?.email || 'analyst@dbrauthority.com', border: false },
-              { Icon: Building2, label: '소속 법인 기관명', value: userData?.company || 'DBR Authority Inc.', border: true },
-              { Icon: Briefcase, label: '담당 실무 소속부서', value: userData?.department || '전략기획팀', border: true },
+              { Icon: Mail, label: '이메일 계정 주소', value: userData?.email || '-', border: false },
+              { Icon: Building2, label: '소속 법인 기관명', value: userData?.company || '-', border: true },
+              { Icon: Briefcase, label: '담당 실무 소속부서', value: userData?.department || '-', border: true },
             ].map(({ Icon, label, value, border }) => (
               <div key={label} className={`flex items-center gap-3 pt-3 ${border ? (darkMode ? 'border-t border-gray-800' : 'border-t border-slate-100') : ''}`}>
                 <div className={`p-2 rounded-lg ${darkMode ? 'bg-blue-950/40 text-blue-400' : 'bg-slate-50 text-[#0B2F61]'}`}>
@@ -248,8 +248,8 @@ export function ProfileView({ onBack, darkMode: propDarkMode }: ProfileViewProps
         <div className={`${darkMode ? 'bg-gray-800/40 border-gray-700/40' : 'bg-white border-slate-200'} p-5 rounded-2xl border shadow-sm flex items-center justify-between`}>
           <div>
             <h3 className={`text-xs font-bold uppercase tracking-wider mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>라이선스 등급</h3>
-            <div className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-0.5`}>Enterprise Professional Plan</div>
-            <div className="text-[10px] text-gray-400 font-medium">다음 자동 갱신 결제 주기: 2026.06.04</div>
+            <div className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-0.5`}>{userData?.subscription || '-'}</div>
+            <div className="text-[10px] text-gray-400 font-medium">-</div>
           </div>
           <span className="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs rounded-xl font-bold shadow-inner">
             서버 연동 활성
