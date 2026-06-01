@@ -146,56 +146,8 @@ export function EnterpriseDashboard({ darkMode, searchQuery, language = 'ko', on
   const [showReportModal, setShowReportModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  const [strategyCases, setStrategyCases] = useState([
-    {
-      id: 1,
-      title: '네이버 - AI 기반 개인화 추천 시스템 도입 성공 사례',
-      strategy: 'AI 개인화 추천',
-      industry: 'IT / 정보통신 기술',
-      status: 'success',
-      riskLevel: 'Low',
-      roi: 450,
-      risk: '낮음',
-      confidence: 94,
-      growth: 52,
-      strategySum: '맞춤형 콘텐츠 추천 기술 연동으로 유저 도달률과 비즈니스 마진을 전격 개선했습니다.',
-      riskSum: '초기 원천 데이터 정제 및 규제 프레임워크 대응 이슈가 잠재 요인입니다.',
-      tags: ['AI/ML', '개인화 컨텍스트', '데이터 실시간 인프라'],
-      summary: '네이버는 독자적인 하이퍼클로바 인프라 기술을 검색 피드 전반에 스왑하여 락인 효과를 완성했습니다. 세그먼트 고도화를 통해 정밀 타격 마케팅을 실현한 대표적 벤치마크입니다.',
-    },
-    {
-      id: 2,
-      title: '삼성전자 - 글로벌 대규모 스마트 팩토리 디지털 트윈 전환 프로젝트',
-      strategy: '스마트 팩토리',
-      industry: '制造业 엔지니어링',
-      status: 'success',
-      riskLevel: 'Medium',
-      roi: 380,
-      risk: '중간',
-      confidence: 89,
-      growth: 45,
-      strategySum: '공정 자동화 및 품질 결함 예측 알고리즘 배포로 생산 효율을 대폭 끌어올렸습니다.',
-      riskSum: '기존 공정 파이프라인의 레거시 통합 장벽 및 설비 초기 비용 투자가 요구됩니다.',
-      tags: ['IoT 제어', '엔지니어링 자동화', '디지털 트윈'],
-      summary: '삼성전자는 전 공정 노드에 센서 어레이 신호 처리를 주입하고 지능형 모니터링을 완성했습니다. 스케줄링 자동화와 불량 예측 시각화를 완벽히 구동하여 품질 보증 단계를 혁신했습니다.',
-    },
-    {
-      id: 3,
-      title: 'CJ - 온·오프라인 옴니채널 차세대 물류 지능형 플랫폼 구축',
-      strategy: '옴니채널 물류',
-      industry: '유통 및 SCM 플랫폼',
-      status: 'success',
-      riskLevel: 'Medium',
-      roi: 320,
-      risk: '중간',
-      confidence: 87,
-      growth: 38,
-      strategySum: '온·오프라인 분산 인벤토리의 풀링 통합을 통해 물류 회전율을 최적화했습니다.',
-      riskSum: '각 거점 ERP의 대규모 이기종 연동 인프라 비용 리스크가 존재합니다.',
-      tags: ['옴니채널', '공급망 SCM', '플랫폼 자동화'],
-      summary: 'CJ는 풀필먼트 전반에 지능형 실시간 재고 추적 아키텍처를 도입하고 리드타임을 획기적으로 압축했습니다. 최적 배송 라우팅 알고리즘을 도입하여 딜리버리 인프라 효율성을 입증했습니다.',
-    },
-  ]);
+  // TODO: POST /api/diagnose 응답의 similar_articles로 교체
+  const [strategyCases, setStrategyCases] = useState<any[]>([]);
 
   const [newAnalysisData, setNewAnalysisData] = useState({
     company: '',
@@ -208,21 +160,16 @@ export function EnterpriseDashboard({ darkMode, searchQuery, language = 'ko', on
     tags: ''
   });
 
+  // TODO: DB 연동 후 실제 집계값으로 교체
   const kpiData = [
-    { label: text.kpi.successRate, value: '78.5%', change: '+12.3%', trend: 'up', icon: Target, color: 'blue' },
-    { label: text.kpi.avgROI, value: '342%', change: '+28.1%', trend: 'up', icon: DollarSign, color: 'green' },
-    { label: text.kpi.riskIndex, value: '2.4/10', change: '-8.2%', trend: 'down', icon: Shield, color: 'orange' },
-    { label: text.kpi.feasibility, value: '92점', change: '+5.4', trend: 'up', icon: Lightbulb, color: 'purple' },
+    { label: text.kpi.successRate, value: '-', change: '-', trend: 'up', icon: Target, color: 'blue' },
+    { label: text.kpi.avgROI, value: '-', change: '-', trend: 'up', icon: DollarSign, color: 'green' },
+    { label: text.kpi.riskIndex, value: '-', change: '-', trend: 'down', icon: Shield, color: 'orange' },
+    { label: text.kpi.feasibility, value: '-', change: '-', trend: 'up', icon: Lightbulb, color: 'purple' },
   ];
 
-  const chartData = [
-    { month: '1월', value: 65 },
-    { month: '2월', value: 72 },
-    { month: '3월', value: 68 },
-    { month: '4월', value: 78 },
-    { month: '5월', value: 85 },
-    { month: '6월', value: 92 },
-  ];
+  // TODO: DB 연동 후 실제 월별 데이터로 교체
+  const chartData: { month: string; value: number }[] = [];
 
   const getColorClass = (color: string) => {
     const colors: Record<string, string> = {
@@ -346,11 +293,8 @@ export function EnterpriseDashboard({ darkMode, searchQuery, language = 'ko', on
     setShowSuccessModal(true);
   };
 
-  const activities = [
-    { action: '고성능 벤치마크 모델 래핑 완료', user: '김전략', time: '5분 전', type: 'create' },
-    { action: '비교 시각화 매트릭스 백업 저장됨', user: '박분석', time: '23분 전', type: 'save' },
-    { action: '차세대 리스크 트렌드 엔진 평가 통과', user: '시스템', time: '1시간 전', type: 'ai' },
-  ];
+  // TODO: DB 연동 후 실제 활동 내역으로 교체
+  const activities: { action: string; user: string; time: string; type: string }[] = [];
 
   return (
     <div className={`h-full flex flex-col ${darkMode ? 'bg-[#0A0E1A]' : 'bg-[#FAFBFC]'} relative`}>
