@@ -86,7 +86,7 @@ export function TopNavigation({ currentView, onViewChange, darkMode, onToggleDar
             {language === 'ko' ? 'AI 사용량' : 'AI Usage'}
           </span>
           <span className="text-xs font-bold bg-gradient-to-r from-[#142755] to-indigo-600 bg-clip-text text-transparent">
-            73%
+            -
           </span>
         </div>
 
@@ -138,7 +138,7 @@ export function TopNavigation({ currentView, onViewChange, darkMode, onToggleDar
               <User className="w-4 h-4 text-white" />
             </div>
             <div className="text-left">
-              <p className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>김전략</p>
+              <p className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{(typeof window !== 'undefined' && localStorage.getItem('userName')) || '사용자'}</p>
             </div>
           </button>
 

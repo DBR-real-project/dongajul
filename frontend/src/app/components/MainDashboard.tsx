@@ -148,22 +148,20 @@ export function MainDashboard({ activeTab, onTabChange, onNavigateToRisk, onArti
     );
   };
 
-  const allItems = language === 'en' ? [
-    { id: 1, status: 'Success', strategy: 'Digital Transformation', riskLevel: 'Low', industry: 'Entertainment', company: 'Netflix', title: 'Customer Experience Innovation through Digital Transformation', strategySum: 'Building personalized content recommendation system based on customer data', riskSum: 'High initial investment but positive long-term ROI', keywords: ['Digital Transformation', 'Customer Experience', 'Recommendation System', 'Netflix'] },
-    { id: 4, status: 'Success', strategy: 'Ecosystem', riskLevel: 'Medium', industry: 'Technology', company: 'Apple', title: 'Building Exclusive Ecosystem in Platform Economy', strategySum: 'Two-sided platform strategy with developer-user lock-in effect', riskSum: 'Regulatory risks and potential competitive platform entry', keywords: ['Ecosystem', 'Platform', 'Apple', 'Lock-in Effect'] },
-    { id: 3, status: 'Failure', strategy: 'M&A', riskLevel: 'High', industry: 'Photography', company: 'Kodak', title: 'Liquidity Crisis from Excessive Business Diversification', strategySum: 'Portfolio diversification through unrelated business acquisitions', riskSum: 'Lack of synergy, excessive integration costs, weakened core competency', keywords: ['M&A', 'Diversification', 'Kodak', 'Liquidity Crisis'] },
-    { id: 5, status: 'Failure', strategy: 'Market Entry', riskLevel: 'High', industry: 'Retail', company: 'Target', title: 'Inventory Management Failure from Market Volatility Misprediction', strategySum: 'Market share expansion through aggressive inventory acquisition', riskSum: 'Inventory disposal losses from demand forecasting errors', keywords: ['Market Entry', 'Inventory Management', 'Target', 'Forecasting Error'] },
-    { id: 6, status: 'Success', strategy: 'Innovation', riskLevel: 'Low', industry: 'Technology', company: 'Tesla', title: 'Industry Innovation through EV Market Leadership', strategySum: 'Market leadership secured by combining battery tech and autonomous driving', riskSum: 'Quality control issues from production scaling', keywords: ['Innovation', 'EV', 'Tesla', 'Autonomous Driving'] },
-    { id: 7, status: 'Success', strategy: 'Digital Transformation', riskLevel: 'Medium', industry: 'Finance', company: 'Goldman Sachs', title: 'Traditional Financial Institution Digital Banking Transformation', strategySum: 'Mobile-first platform and fintech collaboration', riskSum: 'Legacy system integration and security risks', keywords: ['Digital Transformation', 'Finance', 'Goldman Sachs', 'Fintech'] },
-    { id: 8, status: 'Failure', strategy: 'Market Entry', riskLevel: 'High', industry: 'Technology', company: 'Google+', title: 'SNS Market Entry Failure Case', strategySum: 'Late mover entry strategy lacking differentiation', riskSum: 'Failed to overcome network effects, user churn', keywords: ['SNS', 'Market Entry', 'Google Plus', 'Network Effects'] },
-  ] : [
-    { id: 1, status: '성공', strategy: '디지털전환', riskLevel: 'Low', industry: '엔터테인먼트', company: 'Netflix', title: '디지털 트렌스포메이션을 통한 고객 경험 혁신', strategySum: '고객 데이터 기반 맞춤형 콘텐츠 추천 시스템 구축', riskSum: '초기 투자비용 높으나 장기 ROI 긍정적', keywords: ['디지털전환', '고객경험', '추천시스템', '넷플릭스'] },
-    { id: 4, status: '성공', strategy: '생태계구축', riskLevel: 'Medium', industry: '기술', company: 'Apple', title: '플랫폼 경제 내 독점적 생태계 구축', strategySum: '개발자-사용자 양면 플랫폼 전략으로 락인 효과', riskSum: '규제 리스크 및 경쟁 플랫폼 진입 가능성', keywords: ['생태계', '플랫폼', '애플', '락인효과'] },
-    { id: 3, status: '실패', strategy: 'M&A', riskLevel: 'High', industry: '사진/이미징', company: 'Kodak', title: '무리한 사업 다각화에 따른 유동성 위기', strategySum: '비관련 사업 인수를 통한 포트폴리오 다각화', riskSum: '시너지 부족, 통합 비용 과다, 핵심역량 약화', keywords: ['M&A', '다각화', '코닥', '유동성위기'] },
-    { id: 5, status: '실패', strategy: '시장진입', riskLevel: 'High', industry: '유통', company: 'Target', title: '시장 변동성 예측 실패로 재고 관리 부실', strategySum: '공격적 재고 확보를 통한 시장점유율 확대', riskSum: '수요 예측 오류로 재고 처분 손실 발생', keywords: ['시장진입', '재고관리', '타겟', '예측오류'] },
-    { id: 6, status: '성공', strategy: '혁신', riskLevel: 'Low', industry: '기술', company: 'Tesla', title: '전기차 시장 선점을 통한 산업 혁신', strategySum: '배터리 기술과 자율주행 결합으로 시장 리더십 확보', riskSum: '생산 확대에 따른 품질 관리 이슈', keywords: ['혁신', '전기차', '테슬라', '자율주행'] },
-    { id: 7, status: '성공', strategy: '디지털전환', riskLevel: 'Medium', industry: '금융', company: 'Goldman Sachs', title: '전통 금융기관의 디지털 뱅킹 전환', strategySum: '모바일 우선 플랫폼 구축과 핀테크 협업', riskSum: '레거시 시스템 통합 및 보안 리스크', keywords: ['디지털전환', '금융', '골드만삭스', '핀테크'] },
-    { id: 8, status: '실패', strategy: '시장진입', riskLevel: 'High', industry: '기술', company: 'Google+', title: 'SNS 시장 진입 실패 사례', strategySum: '후발주자로 차별화 부족한 진입 전략', riskSum: '네트워크 효과 극복 실패, 사용자 이탈', keywords: ['SNS', '시장진입', '구글플러스', '네트워크효과'] },
+  // TODO: GET /api/articles 연동 후 실제 DBR 기사 목록으로 교체
+  const allItems = [
+    {
+      id: 0,
+      status: '성공',
+      strategy: '디지털전환',
+      riskLevel: 'Low' as const,
+      industry: 'DBR',
+      company: 'DBR 아티클',
+      title: '(디자인 예시) 백엔드 연동 시 DBR 기사 제목이 표시됩니다',
+      strategySum: 'GET /api/articles 연동 후 실제 DBR 기사 요약이 표시됩니다',
+      riskSum: 'AI 서버 분석 결과로 리스크 요약이 채워집니다',
+      keywords: ['DBR', '연동필요'],
+    },
   ];
 
   const filteredItems = allItems.filter(item => {
@@ -221,8 +219,8 @@ export function MainDashboard({ activeTab, onTabChange, onNavigateToRisk, onArti
               </div>
               <div className={`text-xs font-medium ${darkMode ? 'text-gray-500' : 'text-gray-400'} uppercase tracking-wide`}>{text.successRate}</div>
             </div>
-            <div className={`text-3xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'} mb-1`}>68%</div>
-            <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>지난달 대비 +5.2%</div>
+            <div className={`text-3xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'} mb-1`}>-</div>
+            <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>DB 연동 후 표시</div>
           </div>
 
           <div className={`group relative ${darkMode ? 'bg-gradient-to-br from-gray-800/40 to-gray-800/20' : 'bg-gradient-to-br from-amber-50 to-white'} p-5 rounded-2xl backdrop-blur-sm hover:shadow-lg transition-all duration-300`}>
@@ -232,8 +230,8 @@ export function MainDashboard({ activeTab, onTabChange, onNavigateToRisk, onArti
               </div>
               <div className={`text-xs font-medium ${darkMode ? 'text-gray-500' : 'text-gray-400'} uppercase tracking-wide`}>{text.avgRisk}</div>
             </div>
-            <div className={`text-3xl font-bold ${darkMode ? 'text-amber-400' : 'text-amber-600'} mb-1`}>보통</div>
-            <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>안정적인 추세</div>
+            <div className={`text-3xl font-bold ${darkMode ? 'text-amber-400' : 'text-amber-600'} mb-1`}>-</div>
+            <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>DB 연동 후 표시</div>
           </div>
 
           <div className={`group relative ${darkMode ? 'bg-gradient-to-br from-gray-800/40 to-gray-800/20' : 'bg-gradient-to-br from-indigo-50 to-white'} p-5 rounded-2xl backdrop-blur-sm hover:shadow-lg transition-all duration-300`}>
@@ -243,8 +241,8 @@ export function MainDashboard({ activeTab, onTabChange, onNavigateToRisk, onArti
               </div>
               <div className={`text-xs font-medium ${darkMode ? 'text-gray-500' : 'text-gray-400'} uppercase tracking-wide`}>{text.totalCasesLabel}</div>
             </div>
-            <div className={`text-3xl font-bold ${darkMode ? 'text-indigo-400' : 'text-indigo-600'} mb-1`}>24.5K</div>
-            <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>이번 주 +1.2K</div>
+            <div className={`text-3xl font-bold ${darkMode ? 'text-indigo-400' : 'text-indigo-600'} mb-1`}>-</div>
+            <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>DB 연동 후 표시</div>
           </div>
         </div>
 

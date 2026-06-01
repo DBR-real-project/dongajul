@@ -183,32 +183,8 @@ export function StrategyWorkspace({ activeTab, onTabChange, onNotificationClick,
 
   const [currentContext, setCurrentContext] = useState(text.currentContext);
   const [selectedCategory, setSelectedCategory] = useState(language === 'en' ? 'Digital Marketing' : '디지털 마케팅');
-  const [strategies, setStrategies] = useState<Strategy[]>([
-    {
-      id: 1,
-      name: text.strategies.socialMedia,
-      keywords: [text.keywords.sns, text.keywords.targetAd, text.keywords.genZ],
-      content: text.strategies.socialMediaContent,
-      files: [{ name: language === 'en' ? 'ad_materials.png' : '광고_소재.png', type: 'image' }],
-      metrics: { conversion: 8.5, roi: 320, growth: 45, cost: 5000, engagement: 12.3 },
-    },
-    {
-      id: 2,
-      name: text.strategies.contentMarketing,
-      keywords: [text.keywords.blog, text.keywords.seo, text.keywords.traffic],
-      content: text.strategies.contentMarketingContent,
-      files: [{ name: language === 'en' ? 'content_plan.pdf' : '콘텐츠_계획.pdf', type: 'pdf' }],
-      metrics: { conversion: 6.2, roi: 180, growth: 28, cost: 3000, engagement: 8.7 },
-    },
-    {
-      id: 3,
-      name: text.strategies.influencer,
-      keywords: [text.keywords.influencer, text.keywords.sponsorship, text.keywords.viral],
-      content: text.strategies.influencerContent,
-      files: [],
-      metrics: { conversion: 7.8, roi: 250, growth: 38, cost: 4000, engagement: 15.2 },
-    },
-  ]);
+  // TODO: 사용자가 등록한 전략 목록 — 백엔드 연동 전까지 빈 배열
+  const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [expandedStrategy, setExpandedStrategy] = useState<number | null>(null);
   const [editingStrategy, setEditingStrategy] = useState<number | null>(null);
   const [newKeyword, setNewKeyword] = useState('');
@@ -226,32 +202,6 @@ export function StrategyWorkspace({ activeTab, onTabChange, onNotificationClick,
   });
 
   useEffect(() => {
-    setStrategies([
-      {
-        id: 1,
-        name: text.strategies.socialMedia,
-        keywords: [text.keywords.sns, text.keywords.targetAd, text.keywords.genZ],
-        content: text.strategies.socialMediaContent,
-        files: [{ name: language === 'en' ? 'ad_materials.png' : '광고_소재.png', type: 'image' }],
-        metrics: { conversion: 8.5, roi: 320, growth: 45, cost: 5000, engagement: 12.3 },
-      },
-      {
-        id: 2,
-        name: text.strategies.contentMarketing,
-        keywords: [text.keywords.blog, text.keywords.seo, text.keywords.traffic],
-        content: text.strategies.contentMarketingContent,
-        files: [{ name: language === 'en' ? 'content_plan.pdf' : '콘텐츠_계획.pdf', type: 'pdf' }],
-        metrics: { conversion: 6.2, roi: 180, growth: 28, cost: 3000, engagement: 8.7 },
-      },
-      {
-        id: 3,
-        name: text.strategies.influencer,
-        keywords: [text.keywords.influencer, text.keywords.sponsorship, text.keywords.viral],
-        content: text.strategies.influencerContent,
-        files: [],
-        metrics: { conversion: 7.8, roi: 250, growth: 38, cost: 4000, engagement: 15.2 },
-      },
-    ]);
     setCurrentContext(text.currentContext);
   }, [language]);
 

@@ -8,57 +8,27 @@ interface ArticleDetailProps {
   darkMode?: boolean; // 가독성 선제 조치를 위한 다크모드 옵션 추가
 }
 
-// 아티클 상세 데이터를 보관하는 데이터 레이어 객체
-const articleDetails: Record<number, any> = {
-  1: {
-    title: '넷플릭스의 데이터 기반 콘텐츠 전략',
-    company: 'Netflix',
-    category: 'success',
-    industry: '엔터테인먼트',
-    date: '2026.04.15',
-    summary: '빅데이터 분석을 통한 오리지널 콘텐츠 제작으로 구독자 2억 명 돌파',
-    background: '넷픽스는 2007년 스트리밍 서비스를 시작한 이후, 전통적인 콘텐츠 배급사에서 제작사로 전환하는 대담한 결정을 내렸습니다. 2013년 첫 오리지널 시리즈 "하우스 오브 카드"를 시작으로 데이터 기반 콘텐츠 제작 전략을 본격화했습니다.',
-    strategy: ['시청 데이터 분석을 통한 콘텐츠 기획 및 제작 결정', '지역별 취향을 고려한 글로벌 콘텐츠 전략', 'A/B 테스팅을 통한 썸네일, 예고편 최적화', '알고리즘 기반 개인화 추천 시스템 고도화'],
-    results: ['2020년 기준 구독자 2억 명 돌파', '오리지널 콘텐츠 투자 대비 높은 시청률 달성', '에미상 등 주요 시상식에서 다수 수상', '콘텐츠 제작 효율성 30% 향상'],
-    keyInsights: ['데이터 분석을 통해 제작 리스크를 최소화하고 성공 확률을 높임', '고객 행동 패턴을 깊이 이해하여 맞춤형 경험 제공', '전통적인 방송사와 달리 시청률이 아닌 완주율을 핵심 지표로 활용', '글로벌 데이터를 활용하되 로컬 콘텐츠의 중요성도 인식'],
-    lessons: ['데이터는 의사결정의 도구이지 창의성을 대체하는 것이 아님', '고객 데이터 수집과 분석 인프라에 대한 지속적인 투자 필요', '데이터 기반 의사결정 문화를 조직 전체에 확산시키는 것이 중요', '개인정보 보호와 데이터 활용 사이의 균형 유지 필요'],
-    // 지표 분석 레이아웃을 위한 수치 데이터 추가
-    metrics: [
-      { name: '효율성', score: 85 },
-      { name: '성장률', score: 92 },
-      { name: 'ROI', score: 78 },
-      { name: '리스크', score: 30 },
-      { name: '고객참여', score: 95 }
-    ]
-  },
-  3: {
-    title: '코닥의 디지털 전환 실패',
-    company: 'Kodak',
-    category: 'failure',
-    industry: '사진/이미징',
-    date: '2026.04.05',
-    summary: '디지털 카메라를 최초 개발했으나 필름 사업 고수로 몰락',
-    background: '코닥은 1975년 세계 최초로 디지털 카메라를 개발한 회사였습니다. 하지만 필름 사업에서 발생하는 높은 수익성을 포기하지 못하고 디지털 전환을 미루다가 결국 2012년 파산 보호를 신청하게 되었습니다.',
-    strategy: ['디지털 카메라 기술을 개발했지만 상용화를 미룸', '필름 사업의 높은 마진율에 의존', '디지털 시장 진입을 늦추고 방어적 전략 채택', '조직 내부의 저항과 기존 사업 보호 우선'],
-    results: ['2000년대 초 시장 점유율 급락', '2012년 파산 보호 신청', '직원 수 14만 명에서 수천 명으로 감소', '디지털 카메라 시장을 경쟁사에게 내어줌'],
-    keyInsights: ['기술 혁신을 이루었어도 사업화하지 않으면 의미 없음', '기존 수익 모델에 대한 집착이 혁신의 최대 장애물', '조직 내부의 저항을 극복하는 리더십의 중요성', '시장 변화를 인지했지만 행동으로 옮기지 못한 전형적 사례'],
-    lessons: ['혁신 기술은 보유만으로는 부족하며 과감한 사업화가 필요', '단기 수익보다 장기 생존을 우선시하는 전략적 결단 필요', '기존 사업 부서와 신사업 부서를 분리하여 자율성 부여', '경영진이 솔선수범하여 변화를 주도해야 함'],
-    metrics: [
-      { name: '효율성', score: 40 },
-      { name: '성장률', score: 15 },
-      { name: 'ROI', score: 25 },
-      { name: '리스크', score: 85 },
-      { name: '고객참여', score: 35 }
-    ]
-  }
-};
+// TODO: GET /api/articles/:id 응답으로 교체
+const articleDetails: Record<number, any> = {};
 
 // 상징색 연동을 위한 브랜드 상수 설정 (CompareView 스타일 상속)
 const BRAND_NAVY = '#0B2F61'; // 성공/혁신 지표용
 const BRAND_GOLD = '#C8994B'; // 위험/실패 지표용
 
 export function ArticleDetail({ articleId, onBack, darkMode = false }: ArticleDetailProps) {
-  const article = articleDetails[articleId] || articleDetails[1];
+  const article = articleDetails[articleId] || null;
+
+  if (!article) {
+    return (
+      <div className={`h-full flex items-center justify-center ${darkMode ? 'bg-[#0A0E1A] text-gray-400' : 'bg-[#FAFBFC] text-gray-500'}`}>
+        <div className="text-center">
+          <p className="text-sm font-medium mb-4">기사 데이터를 불러올 수 없습니다.</p>
+          <button onClick={onBack} className="px-4 py-2 bg-[#0B2F61] text-white rounded-xl text-sm font-bold">목록으로</button>
+        </div>
+      </div>
+    );
+  }
+
   const isSuccess = article.category === 'success';
 
   // 차트 컴포넌트 가독성을 높이기 위한 메인 색상 분기

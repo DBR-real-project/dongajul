@@ -45,13 +45,8 @@ export function SearchHistory({
       modalConfirm: '삭제하기',
       modalCancel: '취소',
       toastMessage: '키워드로 다시 검색을 시작합니다.',
-      historyData: [
-        { id: 1, query: '디지털 전환 성공 사례 및 글로벌 벤치마킹', time: '2시간 전', results: 24, category: '엔터테인먼트' },
-        { id: 2, query: '플랫폼 경제 독점 사례 및 규제 동향', time: '5시간 전', results: 18, category: '기술/IT' },
-        { id: 3, query: '글로벌 제조 공급망 재무 리스크 분석', time: '1일 전', results: 42, category: '금융/재무' },
-        { id: 4, query: '신규 모빌리티 시장 진입 전략 수립', time: '2일 전', results: 31, category: '제조' },
-        { id: 5, query: '온오프라인 옴니채널 공급망 관리 실패 사례', time: '3일 전', results: 15, category: '유통/물류' },
-      ]
+      // TODO: GET /api/diagnosis/history 응답으로 교체
+      historyData: [] as { id: number; query: string; time: string; results: number; category: string }[]
     },
     en: {
       currentContext: 'Digital Transformation Project',
@@ -67,13 +62,7 @@ export function SearchHistory({
       modalConfirm: 'Delete',
       modalCancel: 'Cancel',
       toastMessage: 'Starting re-search for the keyword.',
-      historyData: [
-        { id: 1, query: 'Digital Transformation Success Cases', time: '2 hours ago', results: 24, category: 'Entertainment' },
-        { id: 2, query: 'Platform Economy Monopoly Cases', time: '5 hours ago', results: 18, category: 'Technology' },
-        { id: 3, query: 'Financial Risk Analysis', time: '1 day ago', results: 42, category: 'Finance' },
-        { id: 4, query: 'Market Entry Strategy', time: '2 days ago', results: 31, category: 'Manufacturing' },
-        { id: 5, query: 'Supply Chain Management Failures', time: '3 days ago', results: 15, category: 'Retail' },
-      ]
+      historyData: [] as { id: number; query: string; time: string; results: number; category: string }[]
     }
   };
   

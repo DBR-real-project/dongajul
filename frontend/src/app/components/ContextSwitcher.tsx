@@ -43,17 +43,8 @@ export function ContextSwitcher({ onSelect, currentContext, darkMode = false, la
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // 아이템 목 데이터 유지
-  const [items] = useState<ContextItem[]>([
-    { id: '1', name: '디지털 전환 프로젝트', type: 'project', lastUsed: new Date(), isFavorite: true },
-    { id: '2', name: '소셜미디어 마케팅', type: 'strategy', lastUsed: new Date(Date.now() - 3600000) },
-    { id: '3', name: 'Q2 전략 워크스페이스', type: 'workspace', lastUsed: new Date(Date.now() - 7200000) },
-    { id: '4', name: '글로벌 확장 전략', type: 'strategy', isFavorite: true },
-    { id: '5', name: '리스크 분석 대시보드', type: 'workspace', isFavorite: true },
-    { id: '6', name: 'M&A 검토 프로젝트', type: 'project' },
-    { id: '7', name: '비용 절감 전략', type: 'strategy' },
-    { id: '8', name: '고객 분석 워크스페이스', type: 'workspace' },
-  ]);
+  // TODO: 사용자 프로젝트/전략/워크스페이스 목록 API 연동 후 교체
+  const [items] = useState<ContextItem[]>([]);
 
   const recentItems = items.filter(i => i.lastUsed).sort((a, b) =>
     (b.lastUsed?.getTime() || 0) - (a.lastUsed?.getTime() || 0)
