@@ -10,13 +10,12 @@ const pool = mysql.createPool({
   connectionLimit: 10,
 });
 
-pool.getConnection()
-  .then(conn => {
-    console.log('✅ DB 연결 성공');
-    conn.release();
-  })
-  .catch(err => {
-    console.error('❌ DB 연결 실패:', err.message);
-  });
+// 로그인
+const db = mysql.createPool({
+  host: 'localhost',
+  user: 'root',
+  password: '비밀번호',
+  database: 'your_db'
+});
 
-module.exports = pool;
+module.exports = db;
