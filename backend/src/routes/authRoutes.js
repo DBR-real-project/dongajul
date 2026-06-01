@@ -15,4 +15,8 @@ router.get('/kakao/callback', authController.kakaoCallback);
 router.get('/google', authController.googleLogin);
 router.get('/google/callback', authController.googleCallback);
 
+// 네이버 로그인
+router.get('/naver', authController.naverLogin);
+router.get('/naver/callback', authController.naverCallback);
+
 module.exports = router;
