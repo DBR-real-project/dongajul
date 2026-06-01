@@ -7,7 +7,7 @@ const makeToken = (user) => {
     {
       user_id: user.user_id,
       email: user.email,
-      name: user.name,
+      name: user.nickname || user.name || user.email?.split('@')[0],
     },
     process.env.JWT_SECRET,
     { expiresIn: '1d' }

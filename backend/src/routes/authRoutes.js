@@ -1,9 +1,5 @@
 const express = require('express');
-const { login } = require('../controllers/authController');
-
 const router = express.Router();
-
-router.post('/login', login);
 const authController = require('../controllers/authController');
 
 // 이메일 로그인
