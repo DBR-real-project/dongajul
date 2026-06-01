@@ -21,13 +21,11 @@ export function TopNavigation({ currentView, onViewChange, darkMode, onToggleDar
     { id: 'dashboard', icon: LayoutDashboard, label: 'AI 채팅' },
     { id: 'analysis', icon: BarChart3, label: '데이터 분석' },
     { id: 'compare', icon: GitCompare, label: '비교 분석' },
-    { id: 'strategy', icon: Layers, label: '전략 워크스페이스' },
     { id: 'history', icon: History, label: '히스토리' },
   ] : [
     { id: 'dashboard', icon: LayoutDashboard, label: 'AI Chat' },
     { id: 'analysis', icon: BarChart3, label: 'Data Analysis' },
     { id: 'compare', icon: GitCompare, label: 'Compare' },
-    { id: 'strategy', icon: Layers, label: 'Strategy Workspace' },
     { id: 'history', icon: History, label: 'History' },
   ];
 
