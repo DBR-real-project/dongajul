@@ -14,7 +14,7 @@ const makeToken = (user) => {
   );
 };
 
-// 이메일 로그인
+// 로그인
 const loginUser = async (email, password) => {
   const user = await findUserByEmail(email);
   if (!user) throw new Error('USER_NOT_FOUND');
