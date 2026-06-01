@@ -1,6 +1,5 @@
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
-import { FlipCard } from './FlipCard';
 
 interface SignupScreenProps {
   onSignup: (email: string, password: string, name: string) => void;
@@ -72,9 +71,6 @@ export function SignupScreen({ onSignup, onBackToLogin }: SignupScreenProps) {
           위기를 기회로 바꾸는 가장 <span className="text-[#E5BA73] font-medium">견고한 비즈니스 전략</span>을 제시합니다.
         </p>
 
-        <div className="mt-16">
-          <FlipCard isLoggedIn={false} />
-        </div>
       </div>
 
       {/* Decorative Elements */}
