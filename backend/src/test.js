@@ -17,3 +17,8 @@ connection.connect((err) => {
     console.log('✅ DB 연결 성공');
   }
 });
+
+// 카카오 디벨로퍼
+const authRouter = require("./src/routes/authRouter");
+
+app.use("/auth", authRouter);
