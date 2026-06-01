@@ -27,15 +27,6 @@ interface CompareItem {
   riskSum: string;
 }
 
-// 테스트 계정 초기화 (앱 로드 시 1회 실행)
-const TEST_USERS = [
-  { name: '테스트 사용자', email: 'test@test.com', password: '123456' },
-  { name: '김전략', email: 'admin@startq.ai', password: 'admin123' },
-];
-if (!localStorage.getItem('users')) {
-  localStorage.setItem('users', JSON.stringify(TEST_USERS));
-}
-
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('user'));
   const [showSignup, setShowSignup] = useState(false);
@@ -54,27 +45,12 @@ export default function App() {
   }, [darkMode]);
 
   // --- 인증 핸들러 ---
-  const handleLogin = (email: string, password: string) => {
-    const users: any[] = JSON.parse(localStorage.getItem('users') || '[]');
-    const user = users.find(u => u.email === email && u.password === password);
-    if (user) {
-      localStorage.setItem('user', JSON.stringify(user));
-      setIsLoggedIn(true);
-    } else {
-      alert('이메일 또는 비밀번호가 올바르지 않습니다.');
-    }
+  const handleLogin = (user: { id: number; email: string; name: string }) => {
+    localStorage.setItem('user', JSON.stringify(user));
+    setIsLoggedIn(true);
   };
 
-  const handleSignup = (email: string, password: string, name: string) => {
-    const users: any[] = JSON.parse(localStorage.getItem('users') || '[]');
-    if (users.find(u => u.email === email)) {
-      alert('이미 등록된 이메일입니다.');
-      return;
-    }
-    const newUser = { name, email, password };
-    localStorage.setItem('users', JSON.stringify([...users, newUser]));
-    localStorage.setItem('user', JSON.stringify(newUser));
-    setIsLoggedIn(true);
+  const handleSignup = () => {
     setShowSignup(false);
   };
 

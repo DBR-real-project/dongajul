@@ -13,7 +13,7 @@ const findUserByEmail = async (email) => {
 // 회원가입 / 소셜 유저 생성
 const createUser = async (email, password_hash, name) => {
   const [result] = await db.execute(
-    'INSERT INTO users (email, password_hash, name) VALUES (?, ?, ?)',
+    'INSERT INTO users (email, password_hash, nickname) VALUES (?, ?, ?)',
     [email, password_hash, name]
   );
 
