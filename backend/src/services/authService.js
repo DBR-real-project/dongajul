@@ -1,5 +1,18 @@
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const { findUserByEmail, createUser } = require('../models/userModel');
+
+const makeToken = (user) => {
+  return jwt.sign(
+    {
+      user_id: user.user_id,
+      email: user.email,
+      name: user.name,
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: '1d' }
+  );
+};
 
 // 이메일 로그인
 const loginUser = async (email, password) => {
@@ -9,7 +22,9 @@ const loginUser = async (email, password) => {
   const isValid = await bcrypt.compare(password, user.password_hash);
   if (!isValid) throw new Error('INVALID_PASSWORD');
 
-  return user;
+  const token = makeToken(user);
+
+  return { user, token };
 };
 
 // 회원가입
@@ -18,7 +33,15 @@ const registerUser = async (email, password, name) => {
   if (existing) throw new Error('EMAIL_EXISTS');
 
   const hashed = await bcrypt.hash(password, 10);
-  await createUser(email, hashed, name);
+  const user = await createUser(email, hashed, name);
+
+  const token = makeToken(user);
+
+  return { user, token };
 };
 
-module.exports = { loginUser, registerUser };
+module.exports = {
+  loginUser,
+  registerUser,
+  makeToken,
+};
