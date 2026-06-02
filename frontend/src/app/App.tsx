@@ -8,7 +8,9 @@ import { MainDashboard } from './components/MainDashboard';
 import { StrategyWorkspace } from './components/StrategyWorkspace';
 import { SearchHistory } from './components/SearchHistory';
 import { RiskAnalysis } from './components/RiskAnalysis';
+import { DiagnosisInterview } from './components/DiagnosisInterview';
 import { DiagnosisResult, DiagnosisData } from './components/DiagnosisResult';
+import { InsightDashboard } from './components/InsightDashboard';
 import { ArticleDetail } from './components/ArticleDetail';
 import { NotificationView } from './components/NotificationView';
 import { ProfileView } from './components/ProfileView';
@@ -127,26 +129,23 @@ export default function App() {
               onViewInsights={() => setCurrentView('analysis')}
             />
           ) : currentView === 'analysis' ? (
-            <MainDashboard
-              activeTab={activeTab}
-              onTabChange={handleTabChange}
-              onNavigateToRisk={() => setCurrentView('risk')}
+            <InsightDashboard
+              darkMode={darkMode}
               onArticleClick={(id) => { setSelectedArticle(id); navigateTo('article', 'analysis'); }}
-              onCompareClick={(items) => { setComparedItems(items); navigateTo('compare', 'analysis'); }}
-              {...commonProps}
             />
           ) : currentView === 'strategy' ? (
             <StrategyWorkspace activeTab={activeTab} onTabChange={handleTabChange} {...commonProps} darkMode={darkMode} language="ko" />
           ) : currentView === 'history' ? (
-            <SearchHistory activeTab={activeTab} onTabChange={handleTabChange} {...commonProps} />
+            <SearchHistory
+              darkMode={darkMode}
+              onResultByIdClick={(id) => navigateToResultById(id, 'history')}
+            />
           ) : currentView === 'compare' ? (
             <CompareView items={comparedItems} onBack={() => setCurrentView(previousView)} darkMode={darkMode} />
           ) : currentView === 'risk' ? (
-            <RiskAnalysis
-              onBack={() => setCurrentView('analysis')}
-              onArticleClick={(id) => { setSelectedArticle(id); navigateTo('article', 'risk'); }}
+            <DiagnosisInterview
+              darkMode={darkMode}
               onResultClick={(data) => navigateToResult(data, 'risk')}
-              {...commonProps}
             />
           ) : currentView === 'result' ? (
             <DiagnosisResult
