@@ -7,10 +7,14 @@ const axios = require('axios');
 const AI_SERVER_URL = process.env.AI_SERVER_URL || 'http://localhost:8000';
 
 exports.diagnose = async (req, res) => {
+  console.log('프론트에서 받은 body:', req.body);
+
   const { text, industry, area, top_k = 5 } = req.body;
 
   if (!text || !text.trim()) {
-    return res.status(400).json({ error: '전략 텍스트를 입력해주세요.' });
+    return res.status(400).json({
+      error: '전략 텍스트를 입력해주세요.',
+    });
   }
 
   try {
@@ -19,16 +23,19 @@ exports.diagnose = async (req, res) => {
       top_k,
     });
 
-    // ai_server 응답 구조:
-    // { risk_score, risk_level, cluster_id, cluster_name, similar_articles: [...] }
     return res.json(aiResponse.data);
   } catch (err) {
     console.error('[diagnoseController] AI 서버 오류:', err.message);
 
     if (err.code === 'ECONNREFUSED') {
-      return res.status(503).json({ error: 'AI 서버에 연결할 수 없습니다. ai_server가 실행 중인지 확인하세요.' });
+      return res.status(503).json({
+        error: 'AI 서버에 연결할 수 없습니다. ai_server가 실행 중인지 확인하세요.',
+      });
     }
 
-    return res.status(500).json({ error: '진단 처리 중 오류가 발생했습니다.', detail: err.message });
+    return res.status(500).json({
+      error: '진단 처리 중 오류가 발생했습니다.',
+      detail: err.message,
+    });
   }
 };
