@@ -109,7 +109,7 @@ export function SignupScreen({ onSignup, onBackToLogin }: SignupScreenProps) {
               회원가입
             </h2>
             <p className="text-sm text-gray-500">
-              STRAND AI와 함께 데이터를 인사이트로 전환하세요
+              동아줄 AI와 함께 전략 리스크를 진단하세요
             </p>
           </div>
 
