@@ -222,4 +222,3 @@ def get_clusters():
     if _clusters is None:
         raise HTTPException(status_code=503, detail="모델 로딩 중")
     return _clusters.to_dict(orient="records")
-                                                                                                                                            
