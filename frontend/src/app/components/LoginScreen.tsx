@@ -71,13 +71,13 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
         {/* Left Side - Branding & Background */}
         <div className="relative z-10 flex flex-col justify-center px-12 lg:px-20">
           <h1 className="text-6xl font-extrabold tracking-tight text-white mb-4 select-none">
-            STRAND <span className="text-[#E5BA73]">45</span>
+            동아줄 <span className="text-[#E5BA73]">AI</span>
           </h1>
-          <p className="text-2xl font-medium text-gray-300 mb-8 select-none">지능형 전략 분석 플랫폼</p>
+          <p className="text-2xl font-medium text-gray-300 mb-8 select-none">AI 전략 리스크 진단 플랫폼</p>
           <p className="text-lg text-blue-100/90 max-w-xl leading-relaxed font-light select-none">
-            흩어진 <span className="text-[#E5BA73] font-medium">데이터 가닥</span>들을 엮어,
+            DBR·HBR <span className="text-[#E5BA73] font-medium">13,335건 성공·실패 사례</span>를 분석해
             <br />
-            가장 <span className="text-[#E5BA73] font-medium">견고한 비즈니스 궤도</span>를 제시합니다.
+            당신의 전략이 가진 <span className="text-[#E5BA73] font-medium">리스크를 정확히 진단</span>합니다.
           </p>
 
         </div>
@@ -94,7 +94,7 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
                 로그인
               </h1>
               <p className="text-sm text-gray-500">
-                STRAND 45 플랫폼에 오신 것을 환영합니다
+                동아줄 AI 플랫폼에 오신 것을 환영합니다
               </p>
             </div>
 

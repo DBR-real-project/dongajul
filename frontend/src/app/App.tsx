@@ -118,23 +118,13 @@ export default function App() {
       />
 
       <div className="flex-1 flex overflow-hidden">
-        {currentView === 'dashboard' && (
-          <div className="w-[400px] border-r border-gray-200 dark:border-gray-800 flex-shrink-0">
-            <GlobalHeader
-              darkMode={darkMode}
-              onToggleDarkMode={() => setDarkMode((d: boolean) => !d)}
-              onNotificationClick={() => setCurrentView('notifications')}
-              onSearch={setAiSearchQuery}
-            />
-          </div>
-        )}
 
         <main className="flex-1 overflow-hidden">
           {currentView === 'dashboard' ? (
             <EnterpriseDashboard
               darkMode={darkMode}
-              searchQuery={aiSearchQuery}
-              onCompareClick={(items) => { setComparedItems(items); navigateTo('compare', 'dashboard'); }}
+              onStartDiagnosis={() => setCurrentView('risk')}
+              onViewInsights={() => setCurrentView('analysis')}
             />
           ) : currentView === 'analysis' ? (
             <MainDashboard
