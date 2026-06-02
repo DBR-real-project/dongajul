@@ -35,20 +35,22 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [artRes, clusterRes] = await Promise.all([
-          fetch('http://localhost:3001/api/articles?limit=20'),
-          fetch('http://localhost:8000/clusters'),
-        ]);
+        const artRes = await fetch('http://localhost:3001/api/articles?limit=20');
         if (artRes.ok) {
           const artData = await artRes.json();
           setArticles(Array.isArray(artData) ? artData : artData.articles || []);
         }
+      } catch (e) {
+        console.error('아티클 로드 실패:', e);
+      }
+      try {
+        const clusterRes = await fetch('http://localhost:3001/api/clusters');
         if (clusterRes.ok) {
           const clData = await clusterRes.json();
           setClusters(Array.isArray(clData) ? clData.slice(0, 6) : []);
         }
       } catch (e) {
-        console.error('데이터 로드 실패:', e);
+        console.error('클러스터 로드 실패:', e);
       } finally {
         setLoading(false);
       }
@@ -166,10 +168,12 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
         ) : (
           <div className="space-y-3">
             {filtered.map((article) => (
-              <div
+              <a
                 key={article.article_id}
-                onClick={() => onArticleClick?.(article.article_id)}
-                className={`group ${darkMode ? 'bg-gray-800/50 border-gray-700/40 hover:bg-gray-800/80' : 'bg-white border-gray-100 hover:shadow-md'} border rounded-2xl p-5 cursor-pointer transition-all`}
+                href={article.url || '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`group ${darkMode ? 'bg-gray-800/50 border-gray-700/40 hover:bg-gray-800/80' : 'bg-white border-gray-100 hover:shadow-md'} border rounded-2xl p-5 transition-all block`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
@@ -209,7 +213,7 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
                   </div>
                   <ExternalLink className={`w-4 h-4 flex-shrink-0 ${darkMode ? 'text-gray-600' : 'text-gray-300'} group-hover:text-[#142755] transition-colors`} />
                 </div>
-              </div>
+              </a>
             ))}
           </div>
         )}
