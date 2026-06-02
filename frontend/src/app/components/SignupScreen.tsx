@@ -78,13 +78,13 @@ export function SignupScreen({ onSignup, onBackToLogin }: SignupScreenProps) {
       {/* Left Side - Branding & Background (STRAND AI Identity) */}
       <div className="relative z-10 flex flex-col justify-center px-12 lg:px-20">
         <h1 className="text-6xl font-extrabold tracking-tight text-white mb-4">
-          STRAND <span className="text-[#E5BA73]">AI</span>
+          동아줄 <span className="text-[#E5BA73]">AI</span>
         </h1>
-        <p className="text-2xl font-medium text-gray-300 mb-8">지능형 전략 분석 플랫폼</p>
+        <p className="text-2xl font-medium text-gray-300 mb-8">AI 전략 리스크 진단 플랫폼</p>
         <p className="text-lg text-blue-100/90 max-w-xl leading-relaxed font-light">
-          흩어진 <span className="text-[#E5BA73] font-medium">데이터 가닥</span>들을 정교하게 엮어,
+          13,335건 <span className="text-[#E5BA73] font-medium">성공·실패 사례</span>를 바탕으로
           <br />
-          위기를 기회로 바꾸는 가장 <span className="text-[#E5BA73] font-medium">견고한 비즈니스 전략</span>을 제시합니다.
+          당신의 전략 리스크를 <span className="text-[#E5BA73] font-medium">AI가 정확히 진단</span>합니다.
         </p>
 
       </div>
