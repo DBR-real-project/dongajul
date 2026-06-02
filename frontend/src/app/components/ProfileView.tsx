@@ -69,15 +69,37 @@ export function ProfileView({ onBack, darkMode: propDarkMode }: ProfileViewProps
   });
 
   // 사용자 데이터 로드
-  useEffect(() => {
-    const user = localStorage.getItem('user');
-    if (user) {
-      const parsedUser = JSON.parse(user);
-      setUserData(parsedUser);
-      setEditNickname(parsedUser.nickname || '');
-      setEditEmail(parsedUser.email || '');
+useEffect(() => {
+  const fetchProfile = async () => {
+    const token = localStorage.getItem('accessToken'); // 로그인 시 저장한 JWT 토큰
+    if (!token) return;
+
+    try {
+      const res = await fetch('http://localhost:3001/api/profile', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`, // 백엔드 auth 미들웨어 확인용
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = await res.json();
+
+      if (data.success && data.user) {
+        // 서버 DB에서 가져온 데이터로 상태 업데이트
+        setUserData(data.user);
+        setEditNickname(data.user.nickname || '');
+        setEditEmail(data.user.email || '');
+        
+        // (선택) 로컬 스토리지도 최신 정보로 동기화
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
+    } catch (err) {
+      console.error("DB 프로필 로드 실패:", err);
     }
-  }, []);
+  };
+
+  fetchProfile();
+}, []);
 
   const showToast = (message: string) => {
     setToast(message);
@@ -127,32 +149,59 @@ export function ProfileView({ onBack, darkMode: propDarkMode }: ProfileViewProps
     }, 500);
   };
 
-  const handleSaveProfile = () => {
-    if (!editNickname.trim() || !editEmail.trim()) {
-      showToast('닉네임과 이메일 주소는 필수 항목입니다');
+  // 1. 프로필 저장 (DB 연동 버전)
+  const handleSaveProfile = async () => {
+    // 닉네임 유효성 검사
+    if (!editNickname.trim()) {
+      showToast('닉네임은 필수 항목입니다');
       return;
     }
 
-    const updatedUser = {
-      ...userData,
-      nickname: editNickname,
-      email: editEmail,
-    };
-
-    localStorage.setItem('user', JSON.stringify(updatedUser));
-    setUserData(updatedUser);
-
-    const users = JSON.parse(localStorage.getItem('users') || '[]') as LocalUser[];
-    const userIndex = users.findIndex((u) => u.email === userData?.email);
-    if (userIndex !== -1) {
-      users[userIndex] = { ...users[userIndex], nickname: editNickname, email: editEmail };
-      localStorage.setItem('users', JSON.stringify(users));
+    // [보강 포인트] LocalStorage에서 토큰 꺼내기 및 검증
+    const token = localStorage.getItem('token');
+    
+    // 토큰이 아예 없거나, 문자열 "null"로 저장되어 있는 경우 차단
+    if (!token || token === 'null') {
+      console.error("저장 실패: 유효한 인증 토큰이 없습니다.");
+      showToast('로그인 세션이 만료되었습니다. 다시 로그인해 주세요.');
+      return; 
     }
 
-    showToast('프로필 기본 정보가 가공 저장되었습니다');
-    setActivePanel(null);
-  };
+    try {
+    const res = await fetch('http://localhost:3001/api/profile', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        nickname: editNickname.trim()
+      })
+    });
 
+    const data = await res.json();
+
+    if (data.success) {
+      setUserData(data.user);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      
+      // ★ [추가] 상단바 닉네임 연동을 위해 userName 키 업데이트
+      localStorage.setItem('userName', editNickname.trim());
+      // ★ [추가] 상단바에 "이름 바뀌었으니 새로고침해!"라고 신호 보냄
+      window.dispatchEvent(new Event('storage'));
+
+      showToast('프로필 정보가 DB에 영구 저장되었습니다');
+      setActivePanel(null); // 모달 닫기
+    } else {
+      showToast(data.message || '저장 실패');
+    }
+  } catch (err) {
+    console.error("DB 업데이트 에러:", err);
+    showToast('서버 통신 중 오류가 발생했습니다');
+  }
+};
+
+  // 2. 비밀번호 재설정 (기존 로직 유지)
   const handleResetPassword = () => {
     if (!resetEmail.trim() || !resetEmail.includes('@')) {
       showToast('정상적인 이메일 구조를 입력하세요');
@@ -163,19 +212,20 @@ export function ProfileView({ onBack, darkMode: propDarkMode }: ProfileViewProps
     const user = users.find((u) => u.email === resetEmail);
 
     if (user) {
-      showToast('인증 재설정 토큰 링크가 기입하신 메일로 발송되었습니다');
+      showToast('인증 재설정 토큰 링크가 메일로 발송되었습니다');
       setResetEmail('');
       setActivePanel(null);
     } else {
-      showToast('시스템 데이터베이스에 등록되지 않은 이메일 계정입니다');
-    }
-  };
+      showToast('등록되지 않은 이메일 계정입니다');
+    } // <--- 여기에 닫는 중괄호가 빠져있었습니다!
+  }; // <--- 함수 종료 중괄호
 
+  // 3. 2단계 인증 토글 (기존 로직 유지)
   const handleToggleTwoFactor = () => {
     const newValue = !twoFactorEnabled;
     setTwoFactorEnabled(newValue);
     localStorage.setItem('twoFactorEnabled', JSON.stringify(newValue));
-    showToast(newValue ? '2단계 고밀도 인증 보안이 가동되었습니다' : '2단계 보안 인증이 차단 해제되었습니다');
+    showToast(newValue ? '2단계 보안이 가동되었습니다' : '2단계 보안이 해제되었습니다');
   };
 
   return (
