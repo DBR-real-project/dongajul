@@ -3,6 +3,10 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 
+const authRoutes = require('./src/routes/authRoutes');
+const diagnoseRoutes = require('./src/routes/diagnoseRoutes');
+const articleRoutes = require('./src/routes/articleRoutes');
+
 const app = express();
 
 // ── 환경 변수 기본값 ─────────────────────────────────────────────────
@@ -30,6 +34,13 @@ const semanticMapRoutes = require('./src/routes/semanticMapRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/diagnose', diagnoseRoutes);
+// 인증: 이메일 로그인/회원가입 + 카카오/구글/네이버 OAuth
+app.use('/api/auth', authRoutes);
+
+// AI 전략 진단 → ai_server(8000) 브릿지
+app.use('/api/diagnose', diagnoseRoutes);
+
+// DBR 기사 목록/상세
 app.use('/api/articles', articleRoutes);
 app.use('/api/history', historyRoutes);
 app.use('/api/clusters', clustersRoutes);
@@ -74,6 +85,8 @@ app.listen(PORT, () => {
   console.log(`✅ Backend running on http://localhost:${PORT}`);
   console.log(`✅ Frontend origin: ${FRONTEND_URL}`);
   console.log(`✅ Auth routes: http://localhost:${PORT}/api/auth`);
+  console.log(`✅ Diagnose routes: http://localhost:${PORT}/api/diagnose`);
+  console.log(`✅ Article routes: http://localhost:${PORT}/api/articles`);
   console.log(`✅ History routes: http://localhost:${PORT}/api/history`);
   console.log(`✅ Clusters routes: http://localhost:${PORT}/api/clusters`);
   console.log(`✅ Semantic map routes: http://localhost:${PORT}/api/semantic-map`);
