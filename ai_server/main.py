@@ -116,27 +116,21 @@ def diagnose(req: DiagnoseRequest):
     if _sbert_faiss is None or _sbert_risk is None or _faiss_index is None or _risk_model is None:
         raise HTTPException(status_code=503, detail="모델 로딩 중입니다. 잠시 후 재시도하세요.")
 
-    # 1. FAISS 검색용 임베딩 (384차원)
-    q_emb_faiss = _sbert_faiss.encode(
-        [req.text],
-        normalize_embeddings=True,
-        convert_to_numpy=True,
-    ).astype(np.float32)
-
-    # 2. 리스크 스코어용 임베딩 (768차원)
+    # 1. 768차원 임베딩 (FAISS 검색 + 리스크 스코어 공통)
     q_emb_risk = _sbert_risk.encode(
         [req.text],
         normalize_embeddings=True,
         convert_to_numpy=True,
     ).astype(np.float32)
 
-    # 3. FAISS 검색
-    scores, ids = _faiss_index.search(q_emb_faiss, req.top_k)
+    # 2. FAISS 검색 (768차원 인덱스)
+    scores, ids = _faiss_index.search(q_emb_risk, req.top_k)
 
     # 4. 리스크 스코어 = P(failure)
-    classes = list(_risk_model.classes_)
+    _model = _risk_model["model"]
+    classes = list(_model.classes_)
     fail_col = classes.index(0)
-    risk_score = float(_risk_model.predict_proba(q_emb_risk)[0, fail_col])
+    risk_score = float(_model.predict_proba(q_emb_risk)[0, fail_col])
 
     # 4. 유사 사례 구성
     similar: list[SimilarArticle] = []
@@ -228,3 +222,4 @@ def get_clusters():
     if _clusters is None:
         raise HTTPException(status_code=503, detail="모델 로딩 중")
     return _clusters.to_dict(orient="records")
+                                                                                                                                            
