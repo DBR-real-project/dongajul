@@ -35,20 +35,22 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [artRes, clusterRes] = await Promise.all([
-          fetch('http://localhost:3001/api/articles?limit=20'),
-          fetch('http://localhost:8000/clusters'),
-        ]);
+        const artRes = await fetch('http://localhost:3001/api/articles?limit=20');
         if (artRes.ok) {
           const artData = await artRes.json();
           setArticles(Array.isArray(artData) ? artData : artData.articles || []);
         }
+      } catch (e) {
+        console.error('아티클 로드 실패:', e);
+      }
+      try {
+        const clusterRes = await fetch('http://localhost:3001/api/clusters');
         if (clusterRes.ok) {
           const clData = await clusterRes.json();
           setClusters(Array.isArray(clData) ? clData.slice(0, 6) : []);
         }
       } catch (e) {
-        console.error('데이터 로드 실패:', e);
+        console.error('클러스터 로드 실패:', e);
       } finally {
         setLoading(false);
       }
