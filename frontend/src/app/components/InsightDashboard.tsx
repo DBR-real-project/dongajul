@@ -168,10 +168,12 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
         ) : (
           <div className="space-y-3">
             {filtered.map((article) => (
-              <div
+              <a
                 key={article.article_id}
-                onClick={() => onArticleClick?.(article.article_id)}
-                className={`group ${darkMode ? 'bg-gray-800/50 border-gray-700/40 hover:bg-gray-800/80' : 'bg-white border-gray-100 hover:shadow-md'} border rounded-2xl p-5 cursor-pointer transition-all`}
+                href={article.url || '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`group ${darkMode ? 'bg-gray-800/50 border-gray-700/40 hover:bg-gray-800/80' : 'bg-white border-gray-100 hover:shadow-md'} border rounded-2xl p-5 transition-all block`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
@@ -211,7 +213,7 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
                   </div>
                   <ExternalLink className={`w-4 h-4 flex-shrink-0 ${darkMode ? 'text-gray-600' : 'text-gray-300'} group-hover:text-[#142755] transition-colors`} />
                 </div>
-              </div>
+              </a>
             ))}
           </div>
         )}
