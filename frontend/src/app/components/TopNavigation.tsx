@@ -1,4 +1,4 @@
-import { User, Moon, Sun, Bell, LayoutDashboard, BarChart3, Layers, GitCompare, History, LogOut } from 'lucide-react';
+import { User, Moon, Sun, Bell, LayoutDashboard, BarChart3, GitCompare, History, LogOut, Shield } from 'lucide-react';
 import { useState } from 'react';
 
 interface TopNavigationProps {
@@ -20,11 +20,13 @@ export function TopNavigation({ currentView, onViewChange, darkMode, onToggleDar
   const menuItems = language === 'ko' ? [
     { id: 'dashboard', icon: LayoutDashboard, label: 'AI 채팅' },
     { id: 'analysis', icon: BarChart3, label: '데이터 분석' },
+    { id: 'risk', icon: Shield, label: '리스크 분석' },
     { id: 'compare', icon: GitCompare, label: '비교 분석' },
     { id: 'history', icon: History, label: '히스토리' },
   ] : [
     { id: 'dashboard', icon: LayoutDashboard, label: 'AI Chat' },
     { id: 'analysis', icon: BarChart3, label: 'Data Analysis' },
+    { id: 'risk', icon: Shield, label: 'Risk Analysis' },
     { id: 'compare', icon: GitCompare, label: 'Compare' },
     { id: 'history', icon: History, label: 'History' },
   ];
