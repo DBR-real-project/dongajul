@@ -8,12 +8,13 @@ import { MainDashboard } from './components/MainDashboard';
 import { StrategyWorkspace } from './components/StrategyWorkspace';
 import { SearchHistory } from './components/SearchHistory';
 import { RiskAnalysis } from './components/RiskAnalysis';
+import { DiagnosisResult, DiagnosisData } from './components/DiagnosisResult';
 import { ArticleDetail } from './components/ArticleDetail';
 import { NotificationView } from './components/NotificationView';
 import { ProfileView } from './components/ProfileView';
 import { CompareView } from './components/CompareView';
 
-export type ViewType = 'dashboard' | 'analysis' | 'strategy' | 'compare' | 'history' | 'settings' | 'risk' | 'article' | 'notifications' | 'profile';
+export type ViewType = 'dashboard' | 'analysis' | 'strategy' | 'compare' | 'history' | 'settings' | 'risk' | 'article' | 'notifications' | 'profile' | 'result';
 export type TabType = 'dashboard' | 'strategy' | 'history';
 
 interface CompareItem {
@@ -37,6 +38,8 @@ export default function App() {
   const [previousView, setPreviousView] = useState<ViewType>('dashboard');
   const [darkMode, setDarkMode] = useState(() => JSON.parse(localStorage.getItem('darkMode') || 'false'));
   const [aiSearchQuery, setAiSearchQuery] = useState('');
+  const [diagnosisResult, setDiagnosisResult] = useState<DiagnosisData | null>(null);
+  const [diagnosisId, setDiagnosisId] = useState<number | undefined>(undefined);
 
   // 다크모드 body 클래스 적용
   useEffect(() => {
@@ -81,6 +84,18 @@ export default function App() {
   const navigateTo = (view: ViewType, from?: ViewType) => {
     if (from) setPreviousView(from);
     setCurrentView(view);
+  };
+
+  const navigateToResult = (data: DiagnosisData, from: ViewType = 'risk') => {
+    setDiagnosisResult(data);
+    setDiagnosisId(undefined);
+    navigateTo('result', from);
+  };
+
+  const navigateToResultById = (id: number, from: ViewType = 'history') => {
+    setDiagnosisResult(null);
+    setDiagnosisId(id);
+    navigateTo('result', from);
   };
 
   // --- 비인증 화면 ---
@@ -141,7 +156,15 @@ export default function App() {
             <RiskAnalysis
               onBack={() => setCurrentView('analysis')}
               onArticleClick={(id) => { setSelectedArticle(id); navigateTo('article', 'risk'); }}
+              onResultClick={(data) => navigateToResult(data, 'risk')}
               {...commonProps}
+            />
+          ) : currentView === 'result' ? (
+            <DiagnosisResult
+              resultData={diagnosisResult ?? undefined}
+              diagnosisId={diagnosisId}
+              onBack={() => setCurrentView(previousView || 'risk')}
+              darkMode={darkMode}
             />
           ) : currentView === 'article' && selectedArticle !== null ? (
             <ArticleDetail articleId={selectedArticle} onBack={() => setCurrentView(previousView || 'analysis')} />
