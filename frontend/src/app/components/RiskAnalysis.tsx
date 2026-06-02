@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ArrowLeft, Shield, AlertTriangle, ExternalLink, Bell, User, TrendingUp, TrendingDown, Activity } from 'lucide-react';
 
 interface RiskAnalysisProps {
@@ -38,7 +39,74 @@ export function RiskAnalysis({ onBack, onArticleClick, onNotificationClick, onPr
       viewDetail: 'View Details',
     }
   };
+
   const text = language === 'en' ? t.en : t.ko;
+
+  const [strategyText, setStrategyText] = useState('');
+  const [result, setResult] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+
+  const handleAnalyze = async () => {
+    if (!strategyText.trim()) {
+      setError('전략 텍스트를 입력해주세요.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+
+      const response = await fetch(`${API_BASE_URL}/api/diagnose`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: strategyText,
+          top_k: 5,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || data.message || '분석 요청 실패');
+      }
+
+      console.log('진단 결과:', data);
+      setResult(data);
+    } catch (err: any) {
+      console.error('진단 요청 실패:', err);
+      setError(err.message || '진단 요청 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const similarArticles = result?.similar_articles || [];
+
+  const successArticles = similarArticles
+    .filter((item: any) => item.label === 'success' || item.type === 'success')
+    .slice(0, 3)
+    .map((item: any) => ({
+      id: item.id || item.article_id || item.article_no || 0,
+      similarity: item.similarity ?? item.score ?? '-',
+      title: item.title || item.article_title || '제목 없음',
+      tags: item.tags || ['#DBR', '#성공사례'],
+    }));
+
+  const failureArticles = similarArticles
+    .filter((item: any) => item.label === 'failure' || item.type === 'failure')
+    .slice(0, 3)
+    .map((item: any) => ({
+      id: item.id || item.article_id || item.article_no || 0,
+      similarity: item.similarity ?? item.score ?? '-',
+      title: item.title || item.article_title || '제목 없음',
+      tags: item.tags || ['#DBR', '#실패사례'],
+    }));
 
   return (
     <div className={`h-full overflow-y-auto ${darkMode ? 'bg-[#0A0E1A]' : 'bg-[#FAFBFC]'} pb-24`}>
@@ -52,22 +120,38 @@ export function RiskAnalysis({ onBack, onArticleClick, onNotificationClick, onPr
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
+
               <div>
-                <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{text.title}</h1>
+                <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                  {text.title}
+                </h1>
                 <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mt-0.5`}>
                   Real-time risk assessment and strategy analysis
                 </p>
               </div>
             </div>
+
             <div className="flex items-center gap-3">
-              <button className="px-5 py-2.5 bg-gradient-to-r from-[#142755] to-[#444655] text-white rounded-xl font-semibold text-sm transition-all shadow-lg hover:shadow-xl duration-300">
-                {text.runAnalysis}
+              <button
+                onClick={handleAnalyze}
+                disabled={loading}
+                className="px-5 py-2.5 bg-gradient-to-r from-[#142755] to-[#444655] text-white rounded-xl font-semibold text-sm transition-all shadow-lg hover:shadow-xl duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? '분석 중...' : text.runAnalysis}
               </button>
-              <button onClick={onNotificationClick} className={`p-2.5 ${darkMode ? 'text-gray-400 hover:text-white hover:bg-gray-800/60' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'} relative rounded-lg transition-all`}>
+
+              <button
+                onClick={onNotificationClick}
+                className={`p-2.5 ${darkMode ? 'text-gray-400 hover:text-white hover:bg-gray-800/60' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'} relative rounded-lg transition-all`}
+              >
                 <Bell className="w-5 h-5" />
                 <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white dark:ring-gray-900"></span>
               </button>
-              <button onClick={onProfileClick} className={`p-2.5 ${darkMode ? 'text-gray-400 hover:text-white hover:bg-gray-800/60' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'} rounded-lg transition-all`}>
+
+              <button
+                onClick={onProfileClick}
+                className={`p-2.5 ${darkMode ? 'text-gray-400 hover:text-white hover:bg-gray-800/60' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'} rounded-lg transition-all`}
+              >
                 <User className="w-5 h-5" />
               </button>
             </div>
@@ -76,6 +160,39 @@ export function RiskAnalysis({ onBack, onArticleClick, onNotificationClick, onPr
       </header>
 
       <div className="px-6 py-6 max-w-[1600px] mx-auto space-y-6">
+
+        {/* Strategy Input */}
+        <div className={`${
+          darkMode
+            ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30'
+            : 'bg-white'
+        } p-6 rounded-2xl ${
+          darkMode
+            ? 'shadow-xl shadow-gray-900/20'
+            : 'shadow-sm'
+        }`}>
+          <h2 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-3`}>
+            전략 입력
+          </h2>
+
+          <textarea
+            value={strategyText}
+            onChange={(e) => setStrategyText(e.target.value)}
+            placeholder="분석할 전략 내용을 입력하세요."
+            className={`w-full min-h-[140px] p-4 rounded-xl border resize-none outline-none ${
+              darkMode
+                ? 'bg-gray-900/40 border-gray-700 text-white placeholder-gray-500'
+                : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'
+            }`}
+          />
+
+          {error && (
+            <p className="mt-3 text-sm text-red-500 font-medium">
+              {error}
+            </p>
+          )}
+        </div>
+
         {/* Risk Index Card */}
         <div className={`${
           darkMode
@@ -107,6 +224,7 @@ export function RiskAnalysis({ onBack, onArticleClick, onNotificationClick, onPr
                   <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.3"/>
                 </filter>
               </defs>
+
               <path
                 d="M 20 100 A 80 80 0 0 1 180 100"
                 fill="none"
@@ -115,35 +233,54 @@ export function RiskAnalysis({ onBack, onArticleClick, onNotificationClick, onPr
                 strokeLinecap="round"
                 filter="url(#gaugeShadow)"
               />
+
               <line
                 x1="100" y1="100" x2="140" y2="50"
                 stroke={darkMode ? '#A9AABC' : '#142755'}
                 strokeWidth="4"
                 strokeLinecap="round"
               />
+
               <circle cx="100" cy="100" r="8" fill={darkMode ? '#A9AABC' : '#142755'} />
+
               <text
                 x="100" y="80"
                 textAnchor="middle"
                 className={`text-4xl font-bold ${darkMode ? 'fill-white' : 'fill-gray-900'}`}
               >
-                -
+                {result?.risk_score ?? '-'}
               </text>
+
               <text
                 x="100" y="98"
                 textAnchor="middle"
                 className={`text-sm font-semibold ${darkMode ? 'fill-gray-400' : 'fill-gray-500'}`}
               >
-                분석 필요
+                {result?.risk_level || '분석 필요'}
               </text>
             </svg>
           </div>
 
           <div className="grid grid-cols-3 gap-6">
             {[
-              { label: text.riskPossibility, value: '-', icon: TrendingDown, color: 'green' },
-              { label: text.industryAvg, value: '-', icon: Activity, color: 'blue' },
-              { label: text.industryGrade, value: '-', icon: TrendingUp, color: 'purple' },
+              {
+                label: text.riskPossibility,
+                value: result?.risk_score !== undefined ? `${result.risk_score}%` : '-',
+                icon: TrendingDown,
+                color: 'green'
+              },
+              {
+                label: text.industryAvg,
+                value: result?.cluster_name || '-',
+                icon: Activity,
+                color: 'blue'
+              },
+              {
+                label: text.industryGrade,
+                value: result?.risk_level || '-',
+                icon: TrendingUp,
+                color: 'purple'
+              },
             ].map(({ label, value, icon: Icon, color }) => (
               <div
                 key={label}
@@ -158,9 +295,11 @@ export function RiskAnalysis({ onBack, onArticleClick, onNotificationClick, onPr
                     'text-purple-500'
                   }`} />
                 </div>
+
                 <div className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-2`}>
                   {label}
                 </div>
+
                 <div className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                   {value}
                 </div>
@@ -175,19 +314,27 @@ export function RiskAnalysis({ onBack, onArticleClick, onNotificationClick, onPr
             <div className={`p-2 rounded-lg ${darkMode ? 'bg-green-500/10' : 'bg-green-100'}`}>
               <Shield className={`w-5 h-5 ${darkMode ? 'text-green-400' : 'text-green-600'}`} />
             </div>
+
             <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
               {text.successCases}
             </h3>
           </div>
 
-          {/* TODO: POST /api/diagnose 응답의 similar_articles (label=success) Top3로 교체 */}
           <div className="space-y-3">
-            {[
-              { id: 1, similarity: '-', title: '(예시) 분석 실행 후 유사 성공 사례가 표시됩니다', tags: ['#DBR', '#성공사례'] },
-            ].map((item) => (
+            {(successArticles.length > 0
+              ? successArticles
+              : [
+                  {
+                    id: 0,
+                    similarity: '-',
+                    title: '(예시) 분석 실행 후 유사 성공 사례가 표시됩니다',
+                    tags: ['#DBR', '#성공사례']
+                  },
+                ]
+            ).map((item: any) => (
               <div
                 key={item.id}
-                onClick={() => onArticleClick(item.id)}
+                onClick={() => item.id && onArticleClick(item.id)}
                 className={`group relative ${
                   darkMode
                     ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30'
@@ -206,11 +353,13 @@ export function RiskAnalysis({ onBack, onArticleClick, onNotificationClick, onPr
                       <Shield className="w-3.5 h-3.5" />
                       <span>{text.similarity}: {item.similarity}%</span>
                     </div>
+
                     <h4 className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-3 leading-relaxed group-hover:text-[#142755] dark:group-hover:text-[#A9AABC] transition-colors`}>
                       {item.title}
                     </h4>
+
                     <div className="flex flex-wrap gap-2">
-                      {item.tags.map((tag) => (
+                      {item.tags.map((tag: string) => (
                         <span
                           key={tag}
                           className={`px-2.5 py-1 ${
@@ -222,6 +371,7 @@ export function RiskAnalysis({ onBack, onArticleClick, onNotificationClick, onPr
                       ))}
                     </div>
                   </div>
+
                   <ExternalLink className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-500'} flex-shrink-0 ml-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform`} />
                 </div>
               </div>
@@ -235,19 +385,27 @@ export function RiskAnalysis({ onBack, onArticleClick, onNotificationClick, onPr
             <div className={`p-2 rounded-lg ${darkMode ? 'bg-red-500/10' : 'bg-red-100'}`}>
               <AlertTriangle className={`w-5 h-5 ${darkMode ? 'text-red-400' : 'text-red-600'}`} />
             </div>
+
             <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
               {text.riskCases}
             </h3>
           </div>
 
-          {/* TODO: POST /api/diagnose 응답의 similar_articles (label=failure) Top3로 교체 */}
           <div className="space-y-3">
-            {[
-              { id: 3, similarity: '-', title: '(예시) 분석 실행 후 유사 실패 사례가 표시됩니다', tags: ['#DBR', '#실패사례'] },
-            ].map((item) => (
+            {(failureArticles.length > 0
+              ? failureArticles
+              : [
+                  {
+                    id: 0,
+                    similarity: '-',
+                    title: '(예시) 분석 실행 후 유사 실패 사례가 표시됩니다',
+                    tags: ['#DBR', '#실패사례']
+                  },
+                ]
+            ).map((item: any) => (
               <div
                 key={item.id}
-                onClick={() => onArticleClick(item.id)}
+                onClick={() => item.id && onArticleClick(item.id)}
                 className={`group relative ${
                   darkMode
                     ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30'
@@ -266,11 +424,13 @@ export function RiskAnalysis({ onBack, onArticleClick, onNotificationClick, onPr
                       <AlertTriangle className="w-3.5 h-3.5" />
                       <span>RISK {text.similarity}: {item.similarity}%</span>
                     </div>
+
                     <h4 className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-3 leading-relaxed group-hover:text-red-500 transition-colors`}>
                       {item.title}
                     </h4>
+
                     <div className="flex flex-wrap gap-2">
-                      {item.tags.map((tag) => (
+                      {item.tags.map((tag: string) => (
                         <span
                           key={tag}
                           className={`px-2.5 py-1 ${
@@ -282,12 +442,14 @@ export function RiskAnalysis({ onBack, onArticleClick, onNotificationClick, onPr
                       ))}
                     </div>
                   </div>
+
                   <AlertTriangle className={`w-5 h-5 ${darkMode ? 'text-red-400' : 'text-red-600'} flex-shrink-0 ml-4 group-hover:scale-110 transition-transform`} />
                 </div>
               </div>
             ))}
           </div>
         </div>
+
       </div>
     </div>
   );
