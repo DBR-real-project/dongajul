@@ -44,6 +44,18 @@ exports.register = async (req, res) => {
   }
 };
 
+// 카카오 로그인 페이지로 이동
+exports.kakaoLogin = (req, res) => {
+  const kakaoAuthUrl =
+    'https://kauth.kakao.com/oauth/authorize?' +
+    new URLSearchParams({
+      client_id: process.env.KAKAO_REST_API_KEY,
+      redirect_uri: process.env.KAKAO_REDIRECT_URI,
+      response_type: 'code',
+    });
+  res.redirect(kakaoAuthUrl);
+};
+
 // 카카오 callback 처리
 exports.kakaoCallback = async (req, res) => {
   const code = req.query.code;

@@ -8,7 +8,8 @@ router.post('/login', authController.login);
 // 회원가입
 router.post('/register', authController.register);
 
-// 카카오 로그인 callback
+// 카카오 로그인
+router.get('/kakao', authController.kakaoLogin);
 router.get('/kakao/callback', authController.kakaoCallback);
 
 // 구글 로그인
