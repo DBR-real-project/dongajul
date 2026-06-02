@@ -49,6 +49,23 @@ export default function App() {
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
   }, [darkMode]);
 
+  // 소셜 로그인 콜백 토큰 처리
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const user = { id: payload.user_id, email: payload.email, name: payload.name };
+        localStorage.setItem('user', JSON.stringify(user));
+        setIsLoggedIn(true);
+        window.history.replaceState({}, '', '/');
+      } catch (e) {
+        console.error('토큰 파싱 실패:', e);
+      }
+    }
+  }, []);
+
   // --- 인증 핸들러 ---
   const handleLogin = (user: { id: number; email: string; name: string }) => {
     localStorage.setItem('user', JSON.stringify(user));
