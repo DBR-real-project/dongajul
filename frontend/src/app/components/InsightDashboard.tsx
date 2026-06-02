@@ -1,187 +1,218 @@
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
-import { TrendingUp, TrendingDown, Target, Lightbulb, ArrowLeft } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { BarChart2, TrendingUp, AlertTriangle, Shield, ExternalLink, Search, Clock, RefreshCw } from 'lucide-react';
 
-interface InsightDashboardProps {
-  onBack: () => void;
+interface Article {
+  article_id: number;
+  title: string;
+  url?: string;
+  summary?: string;
+  category?: string;
+  source?: string;
+  published_at?: string;
+  label?: string;
 }
 
-// TODO: GET /api/stats 응답으로 교체
-const categoryData: { name: string; value: number; color: string }[] = [];
-const industryData: { industry: string; success: number; failure: number }[] = [];
-const trendData: { year: string; success: number; failure: number }[] = [];
-const successFactors: { factor: string; count: number }[] = [];
-const failureFactors: { factor: string; count: number }[] = [];
+interface Cluster {
+  cluster_id: number;
+  cluster_name: string;
+  article_count: number;
+  top_keywords: string;
+}
 
-export function InsightDashboard({ onBack }: InsightDashboardProps) {
+interface InsightDashboardProps {
+  darkMode?: boolean;
+  onArticleClick?: (id: number) => void;
+}
+
+export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDashboardProps) {
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [clusters, setClusters] = useState<Cluster[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<'all' | 'success' | 'failure'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [artRes, clusterRes] = await Promise.all([
+          fetch('http://localhost:3001/api/articles?limit=20'),
+          fetch('http://localhost:8000/clusters'),
+        ]);
+        if (artRes.ok) {
+          const artData = await artRes.json();
+          setArticles(Array.isArray(artData) ? artData : artData.articles || []);
+        }
+        if (clusterRes.ok) {
+          const clData = await clusterRes.json();
+          setClusters(Array.isArray(clData) ? clData.slice(0, 6) : []);
+        }
+      } catch (e) {
+        console.error('데이터 로드 실패:', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const filtered = articles.filter(a => {
+    const matchLabel = filter === 'all' || a.label === filter;
+    const matchSearch = !searchQuery || a.title.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchLabel && matchSearch;
+  });
+
+  const stats = [
+    { label: 'DBR·HBR 아티클', value: '13,335', icon: BarChart2, color: 'blue' },
+    { label: '성공 사례', value: '11,858', icon: TrendingUp, color: 'green' },
+    { label: '실패 사례', value: '1,279', icon: AlertTriangle, color: 'red' },
+    { label: '전략 클러스터', value: '12', icon: Shield, color: 'indigo' },
+  ];
+
+  const colorMap: Record<string, string> = {
+    blue: 'bg-blue-500/10 text-blue-500',
+    green: 'bg-green-500/10 text-green-500',
+    red: 'bg-red-500/10 text-red-500',
+    indigo: 'bg-indigo-500/10 text-indigo-500',
+  };
+
   return (
-    <div className="px-4 py-4">
-      <button
-        onClick={onBack}
-        className="flex items-center gap-2 text-gray-600 active:text-[#EA0029] transition-colors mb-4"
-      >
-        <ArrowLeft className="w-5 h-5" />
-        <span style={{ fontSize: '14px' }}>홈으로</span>
-      </button>
-
-      <div className="mb-6">
-        <h1 className="mb-1 text-gray-900" style={{ fontSize: '20px' }}>인사이트 대시보드</h1>
-        <p className="text-gray-600" style={{ fontSize: '13px' }}>성공과 실패 사례 분석</p>
-      </div>
-
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex flex-col items-center">
-            <Target className="w-6 h-6 text-[#EA0029] mb-2" />
-            <div className="text-2xl mb-1 text-gray-900">-</div>
-            <div className="text-xs text-gray-500">전체</div>
+    <div className={`h-full overflow-y-auto ${darkMode ? 'bg-[#0A0E1A]' : 'bg-[#F8FAFC]'} pb-20`}>
+      {/* 헤더 */}
+      <div className={`sticky top-0 z-40 border-b px-6 py-4 ${darkMode ? 'bg-[#0A0E1A]/90 backdrop-blur-xl border-gray-800/50' : 'bg-white/90 backdrop-blur-xl border-gray-200/50'}`}>
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
+          <div>
+            <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>경영 인사이트</h1>
+            <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'} mt-0.5`}>DBR·HBR 성공·실패 사례 데이터베이스</p>
           </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg border-2 border-green-200 p-4">
-          <div className="flex flex-col items-center">
-            <TrendingUp className="w-6 h-6 text-green-600 mb-2" />
-            <div className="text-2xl mb-1 text-green-900">-</div>
-            <div className="text-xs text-green-700">성공</div>
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg border-2 border-red-200 p-4">
-          <div className="flex flex-col items-center">
-            <TrendingDown className="w-6 h-6 text-red-600 mb-2" />
-            <div className="text-2xl mb-1 text-red-900">-</div>
-            <div className="text-xs text-red-700">실패</div>
-          </div>
+          <button onClick={() => window.location.reload()} className={`p-2 rounded-xl ${darkMode ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-500'} transition-all`}>
+            <RefreshCw className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
-        <h2 className="mb-3 text-gray-900" style={{ fontSize: '15px' }}>성공/실패 비율</h2>
-        <ResponsiveContainer width="100%" height={200}>
-          <PieChart>
-            <Pie
-              data={categoryData}
-              cx="50%"
-              cy="50%"
-              labelLine={false}
-              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-              outerRadius={70}
-              fill="#8884d8"
-              dataKey="value"
-            >
-              {categoryData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
+      <div className="max-w-5xl mx-auto px-6 py-6 space-y-6">
+        {/* KPI */}
+        <div className="grid grid-cols-4 gap-4">
+          {stats.map(({ label, value, icon: Icon, color }) => (
+            <div key={label} className={`${darkMode ? 'bg-gray-800/50 border-gray-700/40' : 'bg-white border-gray-100'} border rounded-2xl p-4 shadow-sm`}>
+              <div className={`w-9 h-9 ${colorMap[color]} rounded-xl flex items-center justify-center mb-3`}>
+                <Icon className="w-4 h-4" />
+              </div>
+              <div className={`text-2xl font-extrabold ${darkMode ? 'text-white' : 'text-gray-900'} mb-0.5`}>{value}</div>
+              <div className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* 클러스터 */}
+        {clusters.length > 0 && (
+          <div className={`${darkMode ? 'bg-gray-800/50 border-gray-700/40' : 'bg-white border-gray-100'} border rounded-2xl p-5 shadow-sm`}>
+            <h3 className={`text-base font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>전략 클러스터 분포</h3>
+            <div className="grid grid-cols-3 gap-3">
+              {clusters.map((c) => (
+                <div key={c.cluster_id} className={`${darkMode ? 'bg-gray-900/40 border-gray-700' : 'bg-gray-50 border-gray-200'} border rounded-xl p-3`}>
+                  <div className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-gray-800'} mb-1`}>{c.cluster_name}</div>
+                  <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{Number(c.article_count).toLocaleString()}건</div>
+                  {c.top_keywords && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {c.top_keywords.split(',').slice(0, 3).map((kw: string) => (
+                        <span key={kw} className={`px-1.5 py-0.5 text-[10px] rounded ${darkMode ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>
+                          {kw.trim()}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               ))}
-            </Pie>
-            <Tooltip />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
-
-      <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
-        <h2 className="mb-3 text-gray-900" style={{ fontSize: '15px' }}>산업별 분포</h2>
-        <ResponsiveContainer width="100%" height={250}>
-          <BarChart data={industryData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="industry" tick={{ fontSize: 10 }} />
-            <YAxis tick={{ fontSize: 10 }} />
-            <Tooltip />
-            <Legend wrapperStyle={{ fontSize: '12px' }} />
-            <Bar dataKey="success" fill="#16a34a" name="성공" />
-            <Bar dataKey="failure" fill="#dc2626" name="실패" />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
-        <h2 className="mb-3 text-gray-900" style={{ fontSize: '15px' }}>연도별 추이</h2>
-        <ResponsiveContainer width="100%" height={200}>
-          <LineChart data={trendData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="year" tick={{ fontSize: 10 }} />
-            <YAxis tick={{ fontSize: 10 }} />
-            <Tooltip />
-            <Legend wrapperStyle={{ fontSize: '12px' }} />
-            <Line type="monotone" dataKey="success" stroke="#16a34a" strokeWidth={2} name="성공" />
-            <Line type="monotone" dataKey="failure" stroke="#dc2626" strokeWidth={2} name="실패" />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-
-      <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border-2 border-green-200 mb-4">
-        <div className="flex items-center gap-2 mb-3">
-          <TrendingUp className="w-5 h-5 text-green-600" />
-          <h2 className="text-gray-900" style={{ fontSize: '15px' }}>성공 요인</h2>
-        </div>
-        <div className="space-y-2">
-          {successFactors.map((item, index) => (
-            <div key={index} className="bg-white rounded-lg p-3">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs text-gray-900">{item.factor}</span>
-                <span className="px-2 py-0.5 bg-green-600 text-white rounded-full text-xs">
-                  {item.count}
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-1.5">
-                <div
-                  className="bg-green-600 h-1.5 rounded-full transition-all"
-                  style={{ width: `${(item.count / 5) * 100}%` }}
-                />
-              </div>
             </div>
+          </div>
+        )}
+
+        {/* 검색 + 필터 */}
+        <div className="flex items-center gap-3">
+          <div className={`flex-1 flex items-center gap-2 px-4 py-2.5 rounded-xl border ${darkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white border-gray-200'}`}>
+            <Search className={`w-4 h-4 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="아티클 검색..."
+              className={`flex-1 text-sm bg-transparent focus:outline-none ${darkMode ? 'text-white placeholder-gray-600' : 'text-gray-900 placeholder-gray-400'}`}
+            />
+          </div>
+          {(['all', 'success', 'failure'] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${filter === f
+                ? f === 'success' ? 'bg-green-500 text-white' : f === 'failure' ? 'bg-red-500 text-white' : 'bg-[#142755] text-white'
+                : darkMode ? 'bg-gray-800 text-gray-400 border border-gray-700' : 'bg-white text-gray-600 border border-gray-200'
+              }`}
+            >
+              {f === 'all' ? '전체' : f === 'success' ? '성공' : '실패'}
+            </button>
           ))}
         </div>
-      </div>
 
-      <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-4 border-2 border-red-200 mb-4">
-        <div className="flex items-center gap-2 mb-3">
-          <TrendingDown className="w-5 h-5 text-red-600" />
-          <h2 className="text-gray-900" style={{ fontSize: '15px' }}>실패 요인</h2>
-        </div>
-        <div className="space-y-2">
-          {failureFactors.map((item, index) => (
-            <div key={index} className="bg-white rounded-lg p-3">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs text-gray-900">{item.factor}</span>
-                <span className="px-2 py-0.5 bg-red-600 text-white rounded-full text-xs">
-                  {item.count}
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-1.5">
-                <div
-                  className="bg-red-600 h-1.5 rounded-full transition-all"
-                  style={{ width: `${(item.count / 3) * 100}%` }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg p-4 border-2 border-amber-200 mb-4">
-        <div className="flex items-center gap-2 mb-3">
-          <Lightbulb className="w-5 h-5 text-amber-600" />
-          <h2 className="text-gray-900" style={{ fontSize: '15px' }}>핵심 인사이트</h2>
-        </div>
-        <div className="space-y-3">
-          <div className="bg-white rounded-lg p-3 border-l-4 border-green-600">
-            <h3 className="mb-2 text-green-900" style={{ fontSize: '13px' }}>성공의 공통점</h3>
-            <ul className="space-y-1 text-xs text-gray-700">
-              <li>• 데이터 기반 의사결정</li>
-              <li>• 고객 니즈 깊은 이해</li>
-              <li>• 강점의 새로운 확장</li>
-              <li>• 지속적 혁신 정신</li>
-            </ul>
+        {/* 아티클 목록 */}
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="w-8 h-8 border-4 border-[#142755] border-t-transparent rounded-full animate-spin" />
           </div>
-          <div className="bg-white rounded-lg p-3 border-l-4 border-red-600">
-            <h3 className="mb-2 text-red-900" style={{ fontSize: '13px' }}>실패의 공통점</h3>
-            <ul className="space-y-1 text-xs text-gray-700">
-              <li>• 변화 인지 후 행동 지연</li>
-              <li>• 기존 모델 과도한 집착</li>
-              <li>• 조직 경직성과 저항</li>
-              <li>• 기술 보유 사업화 실패</li>
-            </ul>
+        ) : filtered.length === 0 ? (
+          <div className={`text-center py-16 ${darkMode ? 'text-gray-500' : 'text-gray-400'} text-sm`}>
+            아티클이 없습니다.
           </div>
-        </div>
+        ) : (
+          <div className="space-y-3">
+            {filtered.map((article) => (
+              <div
+                key={article.article_id}
+                onClick={() => onArticleClick?.(article.article_id)}
+                className={`group ${darkMode ? 'bg-gray-800/50 border-gray-700/40 hover:bg-gray-800/80' : 'bg-white border-gray-100 hover:shadow-md'} border rounded-2xl p-5 cursor-pointer transition-all`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-lg ${
+                        article.label === 'success'
+                          ? darkMode ? 'bg-green-500/10 text-green-400' : 'bg-green-50 text-green-700'
+                          : article.label === 'failure'
+                          ? darkMode ? 'bg-red-500/10 text-red-400' : 'bg-red-50 text-red-700'
+                          : darkMode ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        {article.label === 'success' ? '✅ 성공' : article.label === 'failure' ? '⚠️ 실패' : '중립'}
+                      </span>
+                      {article.source && (
+                        <span className={`px-2 py-0.5 text-xs rounded-lg ${darkMode ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>
+                          {article.source}
+                        </span>
+                      )}
+                      {article.category && (
+                        <span className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>{article.category}</span>
+                      )}
+                    </div>
+                    <h4 className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2 leading-relaxed group-hover:text-[#142755] transition-colors line-clamp-2`}>
+                      {article.title}
+                    </h4>
+                    {article.summary && (
+                      <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'} line-clamp-2 leading-relaxed`}>
+                        {article.summary}
+                      </p>
+                    )}
+                    {article.published_at && (
+                      <div className={`flex items-center gap-1 mt-2 text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                        <Clock className="w-3 h-3" />
+                        {new Date(article.published_at).toLocaleDateString('ko-KR')}
+                      </div>
+                    )}
+                  </div>
+                  <ExternalLink className={`w-4 h-4 flex-shrink-0 ${darkMode ? 'text-gray-600' : 'text-gray-300'} group-hover:text-[#142755] transition-colors`} />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
