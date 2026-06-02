@@ -1,12 +1,10 @@
 /**
  * src/app/components/ProfileView.tsx - 프로필/설정 화면
  * * 수정 포인트:
- * - 영어 분기(language prop 및 관련 다국어 스왑 로직) 완전 제거 및 한국어 고정
- * - 테마 인테리어 전격 동기화: #0B2F61(로고 딥 네이비), #C8994B(보조 웜 골드 변수) 정밀 반영
- * - 마크업 다듬기: 모달 창 및 폼 컨트롤 인풋 포커스 라운딩 처리(rounded-xl) 최적화
+ * - ProfileView 헤더의 z-index를 z-50에서 z-10으로 낮춰서 글로벌 헤더 드롭다운이 뒤로 숨는(가려지는) 레이어 겹침 현상 해결
  */
 
-import { ArrowLeft, User, Mail, Building2, Briefcase, Settings, LogOut, Bell, Lock, X, Check, Eye, Shield, Globe, Moon, Sun, ChevronRight, Edit2 } from 'lucide-react';
+import { ArrowLeft, User, Mail, Shield, Settings, Bell, Lock, X, Check, Moon, Sun, ChevronRight, Edit2, Clock } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 interface ProfileViewProps {
@@ -16,33 +14,32 @@ interface ProfileViewProps {
 
 type SettingsPanel = 'notification' | 'security' | 'environment' | 'editProfile' | 'resetPassword' | null;
 
+// DB 스키마에 맞춘 UserData 인터페이스
 interface UserData {
-  name: string;
+  user_id?: number;
   email: string;
-  company?: string;
-  department?: string;
-  provider?: string;
-  position?: string;
+  nickname: string;
+  user_type?: string;
+  subscription_type?: string;
+  created_at?: string;
+  last_login_at?: string | null;
 }
 
-interface User {
-  name: string;
+// 로컬 스토리지 데이터용 인터페이스
+interface LocalUser {
+  nickname: string;
   email: string;
-  password: string;
+  password?: string;
 }
 
 export function ProfileView({ onBack, darkMode: propDarkMode }: ProfileViewProps) {
   const [activePanel, setActivePanel] = useState<SettingsPanel>(null);
   const [toast, setToast] = useState<string | null>(null);
-  // [로그아웃 모달 상태 추가]
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
-  // 사용자 정보 상태 관리
+  // DB 구조 기반 상태 관리
   const [userData, setUserData] = useState<UserData | null>(null);
-  const [editName, setEditName] = useState('');
+  const [editNickname, setEditNickname] = useState('');
   const [editEmail, setEditEmail] = useState('');
-  const [editCompany, setEditCompany] = useState('');
-  const [editDepartment, setEditDepartment] = useState('');
 
   // 알림 설정 상태
   const [pushEnabled, setPushEnabled] = useState(() => {
@@ -63,7 +60,6 @@ export function ProfileView({ onBack, darkMode: propDarkMode }: ProfileViewProps
     return saved !== null ? JSON.parse(saved) : false;
   });
 
-  // 비밀번호 찾기 이메일
   const [resetEmail, setResetEmail] = useState('');
 
   // 환경 설정 상태 (다크모드 제어)
@@ -72,16 +68,14 @@ export function ProfileView({ onBack, darkMode: propDarkMode }: ProfileViewProps
     return saved !== null ? JSON.parse(saved) : (propDarkMode || false);
   });
 
-  // 사용자 데이터 마이그레이션 로드
+  // 사용자 데이터 로드
   useEffect(() => {
     const user = localStorage.getItem('user');
     if (user) {
       const parsedUser = JSON.parse(user);
       setUserData(parsedUser);
-      setEditName(parsedUser.name || '');
+      setEditNickname(parsedUser.nickname || '');
       setEditEmail(parsedUser.email || '');
-      setEditCompany(parsedUser.company || '');
-      setEditDepartment(parsedUser.department || '');
     }
   }, []);
 
@@ -111,7 +105,7 @@ export function ProfileView({ onBack, darkMode: propDarkMode }: ProfileViewProps
       return;
     }
 
-    const users = JSON.parse(localStorage.getItem('users') || '[]') as User[];
+    const users = JSON.parse(localStorage.getItem('users') || '[]') as LocalUser[];
     const userIndex = users.findIndex((u) => u.email === userData?.email);
     if (userIndex !== -1) {
       users[userIndex].password = newPassword;
@@ -134,26 +128,24 @@ export function ProfileView({ onBack, darkMode: propDarkMode }: ProfileViewProps
   };
 
   const handleSaveProfile = () => {
-    if (!editName.trim() || !editEmail.trim()) {
-      showToast('성명과 이메일 주소는 필수 항목입니다');
+    if (!editNickname.trim() || !editEmail.trim()) {
+      showToast('닉네임과 이메일 주소는 필수 항목입니다');
       return;
     }
 
     const updatedUser = {
       ...userData,
-      name: editName,
+      nickname: editNickname,
       email: editEmail,
-      company: editCompany,
-      department: editDepartment,
     };
 
     localStorage.setItem('user', JSON.stringify(updatedUser));
     setUserData(updatedUser);
 
-    const users = JSON.parse(localStorage.getItem('users') || '[]') as User[];
+    const users = JSON.parse(localStorage.getItem('users') || '[]') as LocalUser[];
     const userIndex = users.findIndex((u) => u.email === userData?.email);
     if (userIndex !== -1) {
-      users[userIndex] = { ...users[userIndex], name: editName, email: editEmail };
+      users[userIndex] = { ...users[userIndex], nickname: editNickname, email: editEmail };
       localStorage.setItem('users', JSON.stringify(users));
     }
 
@@ -167,8 +159,8 @@ export function ProfileView({ onBack, darkMode: propDarkMode }: ProfileViewProps
       return;
     }
 
-    const users = JSON.parse(localStorage.getItem('users') || '[]') as User[];
-    const user = users.find((u: any) => u.email === resetEmail);
+    const users = JSON.parse(localStorage.getItem('users') || '[]') as LocalUser[];
+    const user = users.find((u) => u.email === resetEmail);
 
     if (user) {
       showToast('인증 재설정 토큰 링크가 기입하신 메일로 발송되었습니다');
@@ -186,15 +178,11 @@ export function ProfileView({ onBack, darkMode: propDarkMode }: ProfileViewProps
     showToast(newValue ? '2단계 고밀도 인증 보안이 가동되었습니다' : '2단계 보안 인증이 차단 해제되었습니다');
   };
 
-  // [수정] 실제 로그아웃 처리 함수
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    window.location.reload();
-  };
-
   return (
     <div className={`h-full overflow-y-auto ${darkMode ? 'bg-[#0A0E1A]' : 'bg-[#f5f5f5]'} relative`}>
-      <header className={`${darkMode ? 'bg-[#0A0E1A] border-gray-800/50' : 'bg-white border-gray-200'} border-b sticky top-0 z-50`}>
+      {/* 수정됨: z-50 -> z-10 으로 변경하여 메인 화면 상단 헤더의 로그아웃 드롭다운을 가리지 않게 수정 
+      */}
+      <header className={`${darkMode ? 'bg-[#0A0E1A] border-gray-800/50' : 'bg-white border-gray-200'} border-b sticky top-0 z-10`}>
         <div className="px-6 py-4">
           <div className="flex items-center gap-3">
             <button onClick={onBack} className="p-1 hover:bg-slate-100 rounded-lg transition-colors">
@@ -218,8 +206,8 @@ export function ProfileView({ onBack, darkMode: propDarkMode }: ProfileViewProps
           <div className="w-16 h-16 bg-gradient-to-br from-[#0B2F61] to-[#3B547E] text-white rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-md">
             <User className="w-7 h-7 text-[#C8994B]" />
           </div>
-          <h2 className={`text-base font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-0.5`}>{userData?.name || '-'}</h2>
-          <p className={`text-xs font-semibold ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{userData?.department || '-'} · {userData?.position || '-'}</p>
+          <h2 className={`text-base font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-0.5`}>{userData?.nickname || '-'}</h2>
+          <p className={`text-xs font-semibold uppercase tracking-wider ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{userData?.user_type || 'User'} 타입 계정</p>
         </div>
 
         {/* 세부 계정 파라미터 세그먼트 */}
@@ -228,8 +216,8 @@ export function ProfileView({ onBack, darkMode: propDarkMode }: ProfileViewProps
           <div className="space-y-4">
             {[
               { Icon: Mail, label: '이메일 계정 주소', value: userData?.email || '-', border: false },
-              { Icon: Building2, label: '소속 법인 기관명', value: userData?.company || '-', border: true },
-              { Icon: Briefcase, label: '담당 실무 소속부서', value: userData?.department || '-', border: true },
+              { Icon: Shield, label: '계정 권한 (User Type)', value: userData?.user_type || '-', border: true },
+              { Icon: Clock, label: '계정 생성일 (Created At)', value: userData?.created_at?.split(' ')[0] || '-', border: true },
             ].map(({ Icon, label, value, border }) => (
               <div key={label} className={`flex items-center gap-3 pt-3 ${border ? (darkMode ? 'border-t border-gray-800' : 'border-t border-slate-100') : ''}`}>
                 <div className={`p-2 rounded-lg ${darkMode ? 'bg-blue-950/40 text-blue-400' : 'bg-slate-50 text-[#0B2F61]'}`}>
@@ -247,8 +235,8 @@ export function ProfileView({ onBack, darkMode: propDarkMode }: ProfileViewProps
         {/* 결제 구독 관리 스테이지 */}
         <div className={`${darkMode ? 'bg-gray-800/40 border-gray-700/40' : 'bg-white border-slate-200'} p-5 rounded-2xl border shadow-sm flex items-center justify-between`}>
           <div>
-            <h3 className={`text-xs font-bold uppercase tracking-wider mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>라이선스 등급</h3>
-            <div className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-0.5`}>{userData?.subscription || '-'}</div>
+            <h3 className={`text-xs font-bold uppercase tracking-wider mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>라이선스 등급 (Subscription)</h3>
+            <div className={`text-sm font-bold uppercase ${darkMode ? 'text-white' : 'text-gray-900'} mb-0.5`}>{userData?.subscription_type || '-'}</div>
             <div className="text-[10px] text-gray-400 font-medium">-</div>
           </div>
           <span className="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs rounded-xl font-bold shadow-inner">
@@ -278,39 +266,6 @@ export function ProfileView({ onBack, darkMode: propDarkMode }: ProfileViewProps
             </button>
           ))}
         </div>
-
-        {/* [수정] 로그아웃 액션 버튼 */}
-        <button
-          onClick={() => setShowLogoutConfirm(true)}
-          className={`w-full ${darkMode ? 'bg-gray-800/20 hover:bg-red-950/40 border-red-900/50 text-red-400' : 'bg-white hover:bg-red-50 border-red-200 text-red-600'} p-4 rounded-2xl shadow-sm flex items-center justify-center gap-2 transition-all border font-bold text-xs sm:text-sm`}
-        >
-          <LogOut className="w-4 h-4" />
-          <span>보안 인증 세션 로그아웃</span>
-        </button>
-
-        {/* [수정] 로그아웃 모달 UI */}
-        {showLogoutConfirm && (
-          <>
-            <div className="fixed inset-0 bg-black/40 z-[100] backdrop-blur-sm" onClick={() => setShowLogoutConfirm(false)} />
-            <div className="fixed inset-0 z-[101] flex items-center justify-center p-4">
-              <div className={`${darkMode ? 'bg-[#1a1f2e]' : 'bg-white'} w-full max-w-sm rounded-3xl p-6 shadow-2xl border ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 bg-red-50 text-red-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm">
-                    <LogOut className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h3 className={`font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>로그아웃</h3>
-                    <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>정말로 보안 세션을 종료하시겠습니까?</p>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={() => setShowLogoutConfirm(false)} className={`flex-1 py-3 rounded-2xl font-bold text-sm ${darkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>취소</button>
-                  <button onClick={handleLogout} className="flex-1 py-3 rounded-2xl font-bold text-sm bg-red-600 text-white hover:bg-red-700 transition-colors shadow-md">로그아웃</button>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
 
         <div className="text-center pt-2">
           <p className="text-[10px] text-gray-400 font-semibold tracking-wider uppercase">
@@ -350,10 +305,7 @@ export function ProfileView({ onBack, darkMode: propDarkMode }: ProfileViewProps
                         <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-0.5">실시간 인프라 푸시 토글</h4>
                         <p className="text-xs text-gray-500">분석 완료 트래킹 및 핵심 시각화 지표 수렴 시 실시간 브라우저 팝업 송출</p>
                       </div>
-                      <button
-                        onClick={() => setPushEnabled(!pushEnabled)}
-                        className={`relative w-12 h-6 rounded-full transition-all duration-300 ${pushEnabled ? 'bg-[#0B2F61]' : 'bg-gray-300'}`}
-                      >
+                      <button onClick={() => setPushEnabled(!pushEnabled)} className={`relative w-12 h-6 rounded-full transition-all duration-300 ${pushEnabled ? 'bg-[#0B2F61]' : 'bg-gray-300'}`}>
                         <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-300 ${pushEnabled ? 'transform translate-x-6' : ''}`} />
                       </button>
                     </div>
@@ -363,10 +315,7 @@ export function ProfileView({ onBack, darkMode: propDarkMode }: ProfileViewProps
                         <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-0.5">핵심 메일링 리포트 토글</h4>
                         <p className="text-xs text-gray-500">주간 종합 성과 트렌드 아카이빙 파일을 지정된 관리자 메일로 정기 전송</p>
                       </div>
-                      <button
-                        onClick={() => setEmailEnabled(!emailEnabled)}
-                        className={`relative w-12 h-6 rounded-full transition-all duration-300 ${emailEnabled ? 'bg-[#0B2F61]' : 'bg-gray-300'}`}
-                      >
+                      <button onClick={() => setEmailEnabled(!emailEnabled)} className={`relative w-12 h-6 rounded-full transition-all duration-300 ${emailEnabled ? 'bg-[#0B2F61]' : 'bg-gray-300'}`}>
                         <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-300 ${emailEnabled ? 'transform translate-x-6' : ''}`} />
                       </button>
                     </div>
@@ -422,25 +371,18 @@ export function ProfileView({ onBack, darkMode: propDarkMode }: ProfileViewProps
                   </div>
                 )}
 
+                {/* 프로필 수정 모달 폼 간소화 (DB 기준) */}
                 {activePanel === 'editProfile' && (
                   <div className={`${darkMode ? 'bg-gray-800/40 border-gray-700' : 'bg-white border-slate-200'} p-5 rounded-xl border space-y-3`}>
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 mb-1">성명</label>
-                      <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className={`w-full px-3 py-2 text-xs border ${darkMode ? 'bg-black border-gray-700 text-white' : 'bg-white border-slate-200'} rounded-xl focus:outline-none`} />
+                      <label className="block text-xs font-bold text-gray-500 mb-1">닉네임 (Nickname)</label>
+                      <input type="text" value={editNickname} onChange={(e) => setEditNickname(e.target.value)} className={`w-full px-3 py-2 text-xs border ${darkMode ? 'bg-black border-gray-700 text-white' : 'bg-white border-slate-200'} rounded-xl focus:outline-none focus:ring-1 focus:ring-[#0B2F61]`} placeholder="홍길동" />
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-gray-500 mb-1">대표 수신 이메일</label>
-                      <input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className={`w-full px-3 py-2 text-xs border ${darkMode ? 'bg-black border-gray-700 text-white' : 'bg-white border-slate-200'} rounded-xl focus:outline-none`} />
+                      <input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className={`w-full px-3 py-2 text-xs border ${darkMode ? 'bg-black border-gray-700 text-white' : 'bg-white border-slate-200'} rounded-xl focus:outline-none focus:ring-1 focus:ring-[#0B2F61]`} placeholder="email@example.com" />
                     </div>
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 mb-1">법인 기관명</label>
-                      <input type="text" value={editCompany} onChange={(e) => setEditCompany(e.target.value)} className={`w-full px-3 py-2 text-xs border ${darkMode ? 'bg-black border-gray-700 text-white' : 'bg-white border-slate-200'} rounded-xl focus:outline-none`} />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 mb-1">실무 부서명</label>
-                      <input type="text" value={editDepartment} onChange={(e) => setEditDepartment(e.target.value)} className={`w-full px-3 py-2 text-xs border ${darkMode ? 'bg-black border-gray-700 text-white' : 'bg-white border-slate-200'} rounded-xl focus:outline-none`} />
-                    </div>
-                    <button onClick={handleSaveProfile} className="w-full py-2.5 bg-[#0B2F61] text-white text-xs font-bold rounded-xl shadow-md">개인 인적 스펙 갱신 저장</button>
+                    <button onClick={handleSaveProfile} className="w-full mt-2 py-2.5 bg-[#0B2F61] text-white text-xs font-bold rounded-xl shadow-md">개인 인적 스펙 갱신 저장</button>
                   </div>
                 )}
               </div>
