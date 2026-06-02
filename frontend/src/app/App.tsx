@@ -8,12 +8,13 @@ import { MainDashboard } from './components/MainDashboard';
 import { StrategyWorkspace } from './components/StrategyWorkspace';
 import { SearchHistory } from './components/SearchHistory';
 import { RiskAnalysis } from './components/RiskAnalysis';
+import { DiagnosisResult, DiagnosisData } from './components/DiagnosisResult';
 import { ArticleDetail } from './components/ArticleDetail';
 import { NotificationView } from './components/NotificationView';
 import { ProfileView } from './components/ProfileView';
 import { CompareView } from './components/CompareView';
 
-export type ViewType = 'dashboard' | 'analysis' | 'strategy' | 'compare' | 'history' | 'settings' | 'risk' | 'article' | 'notifications' | 'profile';
+export type ViewType = 'dashboard' | 'analysis' | 'strategy' | 'compare' | 'history' | 'settings' | 'risk' | 'article' | 'notifications' | 'profile' | 'result';
 export type TabType = 'dashboard' | 'strategy' | 'history';
 
 interface CompareItem {
@@ -37,6 +38,8 @@ export default function App() {
   const [previousView, setPreviousView] = useState<ViewType>('dashboard');
   const [darkMode, setDarkMode] = useState(() => JSON.parse(localStorage.getItem('darkMode') || 'false'));
   const [aiSearchQuery, setAiSearchQuery] = useState('');
+  const [diagnosisResult, setDiagnosisResult] = useState<DiagnosisData | null>(null);
+  const [diagnosisId, setDiagnosisId] = useState<number | undefined>(undefined);
 
   // 다크모드 body 클래스 적용
   useEffect(() => {
@@ -74,13 +77,24 @@ export default function App() {
   };
 
   const handleViewChange = (view: string) => {
-    // compare는 TopNav에서 직접 클릭 시 아이템이 없으므로 analysis로 이동
-    setCurrentView(view === 'compare' ? 'analysis' : view as ViewType);
+    setCurrentView(view as ViewType);
   };
 
   const navigateTo = (view: ViewType, from?: ViewType) => {
     if (from) setPreviousView(from);
     setCurrentView(view);
+  };
+
+  const navigateToResult = (data: DiagnosisData, from: ViewType = 'risk') => {
+    setDiagnosisResult(data);
+    setDiagnosisId(undefined);
+    navigateTo('result', from);
+  };
+
+  const navigateToResultById = (id: number, from: ViewType = 'history') => {
+    setDiagnosisResult(null);
+    setDiagnosisId(id);
+    navigateTo('result', from);
   };
 
   // --- 비인증 화면 ---
@@ -104,23 +118,13 @@ export default function App() {
       />
 
       <div className="flex-1 flex overflow-hidden">
-        {currentView === 'dashboard' && (
-          <div className="w-[400px] border-r border-gray-200 dark:border-gray-800 flex-shrink-0">
-            <GlobalHeader
-              darkMode={darkMode}
-              onToggleDarkMode={() => setDarkMode((d: boolean) => !d)}
-              onNotificationClick={() => setCurrentView('notifications')}
-              onSearch={setAiSearchQuery}
-            />
-          </div>
-        )}
 
         <main className="flex-1 overflow-hidden">
           {currentView === 'dashboard' ? (
             <EnterpriseDashboard
               darkMode={darkMode}
-              searchQuery={aiSearchQuery}
-              onCompareClick={(items) => { setComparedItems(items); navigateTo('compare', 'dashboard'); }}
+              onStartDiagnosis={() => setCurrentView('risk')}
+              onViewInsights={() => setCurrentView('analysis')}
             />
           ) : currentView === 'analysis' ? (
             <MainDashboard
@@ -141,7 +145,15 @@ export default function App() {
             <RiskAnalysis
               onBack={() => setCurrentView('analysis')}
               onArticleClick={(id) => { setSelectedArticle(id); navigateTo('article', 'risk'); }}
+              onResultClick={(data) => navigateToResult(data, 'risk')}
               {...commonProps}
+            />
+          ) : currentView === 'result' ? (
+            <DiagnosisResult
+              resultData={diagnosisResult ?? undefined}
+              diagnosisId={diagnosisId}
+              onBack={() => setCurrentView(previousView || 'risk')}
+              darkMode={darkMode}
             />
           ) : currentView === 'article' && selectedArticle !== null ? (
             <ArticleDetail articleId={selectedArticle} onBack={() => setCurrentView(previousView || 'analysis')} />
