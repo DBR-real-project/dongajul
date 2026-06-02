@@ -1,5 +1,5 @@
 import { User, Moon, Sun, Bell, Home, MessageSquare, Shield, BarChart2, History, LogOut } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface TopNavigationProps {
   currentView: string;
@@ -13,7 +13,24 @@ interface TopNavigationProps {
 
 export function TopNavigation({ currentView, onViewChange, darkMode, onToggleDarkMode, onNotificationClick, language = 'ko', onToggleLanguage }: TopNavigationProps) {
   const [showUserMenu, setShowUserMenu] = useState(false);
-  
+
+  const [userName, setUserName] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('userName') || '사용자';
+    }
+    return '사용자';
+  });
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const storedName = localStorage.getItem('userName');
+      if (storedName) setUserName(storedName);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   // 💡 로그아웃 커스텀 모달 제어를 위한 상태 추가
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
@@ -138,7 +155,7 @@ export function TopNavigation({ currentView, onViewChange, darkMode, onToggleDar
               <User className="w-4 h-4 text-white" />
             </div>
             <div className="text-left">
-              <p className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{(typeof window !== 'undefined' && localStorage.getItem('userName')) || '사용자'}</p>
+              <p className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{userName}</p>
             </div>
           </button>
 
