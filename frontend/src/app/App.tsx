@@ -77,8 +77,7 @@ export default function App() {
   };
 
   const handleViewChange = (view: string) => {
-    // compare는 TopNav에서 직접 클릭 시 아이템이 없으므로 analysis로 이동
-    setCurrentView(view === 'compare' ? 'analysis' : view as ViewType);
+    setCurrentView(view as ViewType);
   };
 
   const navigateTo = (view: ViewType, from?: ViewType) => {
