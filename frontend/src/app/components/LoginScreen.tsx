@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 interface LoginScreenProps {
-  onLogin: (user: { id: number; email: string; name: string }) => void;
+  onLogin: (email: string, token: string) => void;
   onSocialLogin: (provider: string) => void;
   onSignupClick: () => void;
   onForgotPassword?: () => void;
@@ -44,7 +44,7 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
     }
 
     // 3. 기존 로그인 처리 로직 실행
-    onLogin((data as { user: { id: number; email: string; name: string } }).user);
+    onLogin(data.user.email, data.token);
   } else {
     setError((data as { message?: string }).message || '로그인 실패');
       }
