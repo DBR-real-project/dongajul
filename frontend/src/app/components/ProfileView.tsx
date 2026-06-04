@@ -71,7 +71,7 @@ export function ProfileView({ onBack, darkMode: propDarkMode }: ProfileViewProps
   // 사용자 데이터 로드
 useEffect(() => {
   const fetchProfile = async () => {
-    const token = localStorage.getItem('accessToken'); // 로그인 시 저장한 JWT 토큰
+    const token = localStorage.getItem('token'); // 로그인 시 저장한 JWT 토큰
     if (!token) return;
 
     try {

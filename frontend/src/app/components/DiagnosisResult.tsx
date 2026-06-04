@@ -17,6 +17,13 @@ export interface SimilarArticle {
   published_date?: string;
 }
 
+export interface DiagnosisReport {
+  summary: string;
+  risk_factors: string[];
+  improvement: string[];
+  verdict: string;
+}
+
 export interface DiagnosisData {
   diagnosis_id?: number;
   input_text?: string;
@@ -27,6 +34,7 @@ export interface DiagnosisData {
   similar_articles: SimilarArticle[];
   cluster_name?: string;
   created_at?: string;
+  report?: DiagnosisReport;
 }
 
 interface DiagnosisResultProps {
@@ -400,8 +408,70 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, darkMode = fa
             </section>
           )}
 
-          {/* 개선 제안 */}
-          {data.improvement && (
+          {/* GPT AI 진단 리포트 */}
+          {data.report && (
+            <div className={`p-6 rounded-2xl space-y-5 ${
+              darkMode
+                ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30'
+                : 'bg-white shadow-sm'
+            }`}>
+              <div className="flex items-center gap-2 mb-1">
+                <div className={`p-2 rounded-lg ${darkMode ? 'bg-yellow-500/10' : 'bg-yellow-50'}`}>
+                  <Lightbulb className={`w-4 h-4 ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`} />
+                </div>
+                <h3 className={`text-base font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                  AI 전략 진단 리포트
+                </h3>
+              </div>
+
+              {/* 종합 평가 */}
+              <div className={`p-4 rounded-xl ${darkMode ? 'bg-gray-900/40' : 'bg-gray-50'}`}>
+                <p className={`text-xs font-semibold uppercase tracking-widest mb-2 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>종합 평가</p>
+                <p className={`text-sm leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{data.report.summary}</p>
+              </div>
+
+              {/* 리스크 요인 */}
+              {data.report.risk_factors.length > 0 && (
+                <div>
+                  <p className={`text-xs font-semibold uppercase tracking-widest mb-3 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>주요 리스크 요인</p>
+                  <ul className="space-y-2">
+                    {data.report.risk_factors.map((factor, i) => (
+                      <li key={i} className={`flex items-start gap-2.5 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        <AlertTriangle className={`w-4 h-4 mt-0.5 flex-shrink-0 ${darkMode ? 'text-red-400' : 'text-red-500'}`} />
+                        {factor}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* 개선 제언 */}
+              {data.report.improvement.length > 0 && (
+                <div>
+                  <p className={`text-xs font-semibold uppercase tracking-widest mb-3 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>개선 제언</p>
+                  <ul className="space-y-2">
+                    {data.report.improvement.map((item, i) => (
+                      <li key={i} className={`flex items-start gap-2.5 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        <ChevronRight className={`w-4 h-4 mt-0.5 flex-shrink-0 ${darkMode ? 'text-blue-400' : 'text-blue-500'}`} />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* 최종 판정 */}
+              <div className={`px-4 py-3 rounded-xl border ${
+                darkMode ? 'bg-[#0B2F61]/40 border-blue-500/20' : 'bg-[#0B2F61] text-white'
+              }`}>
+                <p className={`text-xs font-semibold mb-1 ${darkMode ? 'text-blue-400' : 'text-blue-200'}`}>최종 판정</p>
+                <p className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-white'}`}>{data.report.verdict}</p>
+              </div>
+            </div>
+          )}
+
+          {/* 개선 제안 (기존 - report 없을 때 fallback) */}
+          {data.improvement && !data.report && (
             <div className={`p-6 rounded-2xl ${
               darkMode
                 ? 'bg-gradient-to-br from-[#0B2F61]/60 to-[#142755]/30 border border-blue-500/10'

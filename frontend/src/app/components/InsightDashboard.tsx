@@ -32,17 +32,7 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const artRes = await fetch('http://localhost:3001/api/articles?limit=20');
-        if (artRes.ok) {
-          const artData = await artRes.json();
-          setArticles(Array.isArray(artData) ? artData : artData.articles || []);
-        }
-      } catch (e) {
-        console.error('아티클 로드 실패:', e);
-      }
+    const fetchClusters = async () => {
       try {
         const clusterRes = await fetch('http://localhost:3001/api/clusters');
         if (clusterRes.ok) {
@@ -51,18 +41,35 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
         }
       } catch (e) {
         console.error('클러스터 로드 실패:', e);
+      }
+    };
+    fetchClusters();
+  }, []);
+
+  useEffect(() => {
+    const fetchArticles = async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({ limit: '20' });
+        if (filter !== 'all') params.append('label', filter);
+        if (searchQuery.trim()) params.append('search', searchQuery.trim());
+        const artRes = await fetch(`http://localhost:3001/api/articles?${params}`);
+        if (artRes.ok) {
+          const artData = await artRes.json();
+          setArticles(Array.isArray(artData) ? artData : artData.articles || []);
+        }
+      } catch (e) {
+        console.error('아티클 로드 실패:', e);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
-  }, []);
 
-  const filtered = articles.filter(a => {
-    const matchLabel = filter === 'all' || a.label === filter;
-    const matchSearch = !searchQuery || a.title.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchLabel && matchSearch;
-  });
+    const timer = setTimeout(fetchArticles, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, filter]);
+
+  const filtered = articles;
 
   const stats = [
     { label: 'DBR·HBR 아티클', value: '13,335', icon: BarChart2, color: 'blue' },

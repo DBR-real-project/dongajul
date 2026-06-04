@@ -2,7 +2,7 @@ const db = require('../config/db');
 
 // GET /api/articles — 기사 목록
 exports.getArticles = async (req, res) => {
-  const { page = 1, limit = 20, label, source, category } = req.query;
+  const { page = 1, limit = 20, label, source, category, search } = req.query;
   const offset = (parseInt(page) - 1) * parseInt(limit);
 
   const conditions = [];
@@ -11,6 +11,7 @@ exports.getArticles = async (req, res) => {
   if (label) { conditions.push('al.label = ?'); params.push(label); }
   if (source) { conditions.push('a.source = ?'); params.push(source); }
   if (category) { conditions.push('a.category = ?'); params.push(category); }
+  if (search) { conditions.push('(a.title LIKE ? OR a.summary LIKE ?)'); params.push(`%${search}%`, `%${search}%`); }
 
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
