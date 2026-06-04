@@ -162,6 +162,7 @@ export function RiskAnalysis({ onBack, onArticleClick, onResultClick, onNotifica
       </header>
 
       <div className="px-6 py-6 max-w-[1600px] mx-auto space-y-6">
+      
 
         {/* 전략 입력 */}
         <div className={`${darkMode ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30 shadow-xl shadow-gray-900/20' : 'bg-white shadow-sm'} p-6 rounded-2xl`}>
@@ -321,6 +322,87 @@ export function RiskAnalysis({ onBack, onArticleClick, onResultClick, onNotifica
           </div>
         </div>
 
+        {/* GPT 전략 분석 리포트 */}
+        <div className={`${darkMode ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30 shadow-xl shadow-gray-900/20' : 'bg-white shadow-sm'} p-6 rounded-2xl`}>
+          <div className="flex items-center gap-3 mb-5">
+            <div className={`p-2 rounded-lg ${darkMode ? 'bg-indigo-500/10' : 'bg-indigo-100'}`}>
+              <Activity className={`w-5 h-5 ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`} />
+            </div>
+
+            <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+              GPT 전략 분석 리포트
+            </h3>
+          </div>
+
+          <div className="space-y-5">
+            <div>
+              <h4 className={`text-sm font-bold ${darkMode ? 'text-gray-200' : 'text-gray-800'} mb-2`}>
+                전략 요약
+              </h4>
+
+              <p className={`text-sm leading-relaxed ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                {report?.summary || '분석 실행 후 전략 요약이 표시됩니다.'}
+              </p>
+            </div>
+
+            <div>
+              <h4 className={`text-sm font-bold ${darkMode ? 'text-gray-200' : 'text-gray-800'} mb-2`}>
+                주요 리스크
+              </h4>
+
+              <ul className="space-y-2">
+                {(riskFactors.length > 0
+                  ? riskFactors
+                  : ['분석 실행 후 주요 리스크가 표시됩니다.']
+                ).map((item: string, index: number) => (
+                  <li
+                    key={index}
+                    className={`text-sm leading-relaxed flex gap-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}
+                  >
+                    <span className="text-red-500 font-bold">•</span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <h4 className={`text-sm font-bold ${darkMode ? 'text-gray-200' : 'text-gray-800'} mb-2`}>
+                개선 제안
+              </h4>
+
+              <ul className="space-y-2">
+                {(improvement.length > 0
+                  ? improvement
+                  : ['분석 실행 후 개선 제안이 표시됩니다.']
+                ).map((item: string, index: number) => (
+                  <li
+                    key={index}
+                    className={`text-sm leading-relaxed flex gap-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}
+                  >
+                    <span className="text-green-500 font-bold">•</span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className={`p-4 rounded-xl ${
+              darkMode
+                ? 'bg-gray-900/40 border border-gray-700'
+                : 'bg-gray-50 border border-gray-200'
+            }`}>
+              <h4 className={`text-sm font-bold ${darkMode ? 'text-gray-200' : 'text-gray-800'} mb-2`}>
+                최종 진단
+              </h4>
+
+              <p className={`text-sm font-medium leading-relaxed ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                {report?.verdict || '분석 실행 후 최종 진단이 표시됩니다.'}
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Risk Cases */}
         <div>
           <div className="flex items-center gap-3 mb-5">
@@ -367,91 +449,6 @@ export function RiskAnalysis({ onBack, onArticleClick, onResultClick, onNotifica
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-
-        {/* GPT 전략 분석 리포트 */}
-        <div className={`${darkMode ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30 shadow-xl shadow-gray-900/20' : 'bg-white shadow-sm'} p-6 rounded-2xl`}>
-          <div className="flex items-center gap-3 mb-5">
-            <div className={`p-2 rounded-lg ${darkMode ? 'bg-indigo-500/10' : 'bg-indigo-100'}`}>
-              <Activity className={`w-5 h-5 ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`} />
-            </div>
-
-            <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-              GPT 전략 분석 리포트
-            </h3>
-          </div>
-
-          <div className="space-y-5">
-            {/* 전략 요약 */}
-            <div>
-              <h4 className={`text-sm font-bold ${darkMode ? 'text-gray-200' : 'text-gray-800'} mb-2`}>
-                전략 요약
-              </h4>
-
-              <p className={`text-sm leading-relaxed ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                {report?.summary || '분석 실행 후 전략 요약이 표시됩니다.'}
-              </p>
-            </div>
-
-            {/* 주요 리스크 */}
-            <div>
-              <h4 className={`text-sm font-bold ${darkMode ? 'text-gray-200' : 'text-gray-800'} mb-2`}>
-                주요 리스크
-              </h4>
-
-              <ul className="space-y-2">
-                {(riskFactors.length > 0
-                  ? riskFactors
-                  : ['분석 실행 후 주요 리스크가 표시됩니다.']
-                ).map((item: string, index: number) => (
-                  <li
-                    key={index}
-                    className={`text-sm leading-relaxed flex gap-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}
-                  >
-                    <span className="text-red-500 font-bold">•</span>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* 개선 제안 */}
-            <div>
-              <h4 className={`text-sm font-bold ${darkMode ? 'text-gray-200' : 'text-gray-800'} mb-2`}>
-                개선 제안
-              </h4>
-
-              <ul className="space-y-2">
-                {(improvement.length > 0
-                  ? improvement
-                  : ['분석 실행 후 개선 제안이 표시됩니다.']
-                ).map((item: string, index: number) => (
-                  <li
-                    key={index}
-                    className={`text-sm leading-relaxed flex gap-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}
-                  >
-                    <span className="text-green-500 font-bold">•</span>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* 최종 진단 */}
-            <div className={`p-4 rounded-xl ${
-              darkMode
-                ? 'bg-gray-900/40 border border-gray-700'
-                : 'bg-gray-50 border border-gray-200'
-            }`}>
-              <h4 className={`text-sm font-bold ${darkMode ? 'text-gray-200' : 'text-gray-800'} mb-2`}>
-                최종 진단
-              </h4>
-
-              <p className={`text-sm font-medium leading-relaxed ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                {report?.verdict || '분석 실행 후 최종 진단이 표시됩니다.'}
-              </p>
-            </div>
           </div>
         </div>
 
