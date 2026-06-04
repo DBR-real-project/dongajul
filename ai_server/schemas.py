@@ -1,38 +1,44 @@
-"""Pydantic 요청/응답 스키마"""
 from __future__ import annotations
+
+from typing import Optional
+
 from pydantic import BaseModel, Field
 
 
 class DiagnoseRequest(BaseModel):
-    text: str = Field(..., min_length=10, description="진단할 전략 텍스트")
-    top_k: int = Field(default=5, ge=1, le=20, description="유사 사례 반환 수")
+    text: str = Field(..., description="사용자 전략 텍스트")
+    top_k: int = Field(default=5, description="유사 사례 검색 개수")
 
 
 class SimilarArticle(BaseModel):
     rank: int
     title: str
     url: str
-    label: str          # success / failure / neutral
+    label: str
     similarity: float
-    summary: str | None
-    category: str | None
-    published_date: str | None
-    source: str | None
+    summary: Optional[str] = None
+    category: Optional[str] = None
+    published_date: Optional[str] = None
+    source: Optional[str] = None
 
 
 class DiagnoseResponse(BaseModel):
-    risk_score: float           # P(failure), 0~1
-    risk_level: str             # low / medium / high
+    risk_score: float
+    risk_level: str
     similar_articles: list[SimilarArticle]
-    query_cluster_id: int | None  # 쿼리가 속하는 클러스터
+    query_cluster_id: Optional[int] = None
 
 
 class DiagnosisReport(BaseModel):
-    summary: str                   # 전략 전반 2~3문장 요약 평가
-    risk_factors: list[str]        # 주요 리스크 요인 목록
-    improvement: list[str]         # 구체적 개선 제언 목록
-    verdict: str                   # 최종 한 줄 진단
+    summary: str
+    risk_factors: list[str]
+    improvement: list[str]
+    verdict: str
 
 
-class ReportResponse(DiagnoseResponse):
-    report: DiagnosisReport        # GPT 진단 리포트
+class ReportResponse(BaseModel):
+    risk_score: float
+    risk_level: str
+    similar_articles: list[SimilarArticle]
+    query_cluster_id: Optional[int] = None
+    report: DiagnosisReport
