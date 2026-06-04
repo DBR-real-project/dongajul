@@ -11,6 +11,7 @@ router.post('/register', authController.register);
 // 카카오 로그인
 router.get('/kakao', authController.kakaoLogin);
 router.get('/kakao/callback', authController.kakaoCallback);
+router.get('/kakao', authController.kakaoLogin);
 
 // 구글 로그인
 router.get('/google', authController.googleLogin);
