@@ -60,10 +60,8 @@ export default function App() {
   };
 
   const handleSocialLogin = (provider: string) => {
-    const socialUser = { name: `${provider} 사용자`, email: `user@${provider}.com`, provider };
-    localStorage.setItem('user', JSON.stringify(socialUser));
-    setIsLoggedIn(true);
-  };
+  window.location.href = `http://localhost:3001/api/auth/${provider}`;
+};
 
   const handleLogout = () => {
     localStorage.removeItem('user');
