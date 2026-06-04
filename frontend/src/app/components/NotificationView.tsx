@@ -6,7 +6,7 @@
  */
 
 import { ArrowLeft, Bell, TrendingUp, AlertTriangle, Info, CheckCircle, Crown } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LucideIcon } from 'lucide-react';
 
 interface NotificationViewProps {
@@ -33,13 +33,75 @@ interface Notification {
 }
 
 export function NotificationView({ onBack, onNavigate, darkMode = false }: NotificationViewProps) {
-  // TODO: 알림 API 연동 후 실제 데이터로 교체
   const [activeNotifications, setActiveNotifications] = useState<Notification[]>([]);
-
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [toast, setToast] = useState<{ show: boolean; message: string }>({ show: false, message: '' });
 
+  const token = localStorage.getItem('accessToken') || localStorage.getItem('token'); // 토큰 가져오기
+
+  // ─────────────────────────────────────────────
+  // 1. API로부터 알림 데이터 불러오기
+  // ─────────────────────────────────────────────
+  const fetchNotifications = async () => {
+    try {
+      const res = await fetch('http://localhost:3001/api/notifications', {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const result = await res.json();
+
+      if (result.success) {
+        // DB 데이터를 UI 형식으로 변환 (매핑)
+        const mappedData = result.data.map((noti: any) => {
+          // 타입별로 아이콘과 색상을 다르게 설정하는 로직
+          let config = {
+            Icon: Bell,
+            bg: 'bg-blue-50 dark:bg-blue-900/20',
+            iconColor: 'text-blue-500',
+            border: 'blue'
+          };
+
+          if (noti.notification_type === '보안') {
+            config = { Icon: AlertTriangle, bg: 'bg-red-50 dark:bg-red-900/20', iconColor: 'text-red-500', border: 'red' };
+          } else if (noti.notification_type === '업그레이드') {
+            config = { Icon: TrendingUp, bg: 'bg-green-50 dark:bg-green-900/20', iconColor: 'text-green-500', border: 'green' };
+          }
+
+          return {
+            id: noti.notification_id,
+            title: noti.notification_type,
+            desc: noti.message,
+            time: new Date(noti.created_at).toLocaleDateString(), 
+            read: noti.is_read === 1,
+            ...config,
+            action: '자세히 보기',
+            actionColor: config.iconColor,
+            detailContent: noti.message,
+            targetView: 'Dashboard'
+          };
+        });
+
+        // 읽지 않은 알림만 필터링해서 보여줌
+        setActiveNotifications(mappedData.filter((n: any) => !n.read));
+      }
+    } catch (err) {
+      console.error("알림 로딩 실패:", err);
+    }
+  };
+
+  // ─────────────────────────────────────────────
+  // 2. 컴포넌트 로드 시 최초 1회 실행
+  // ─────────────────────────────────────────────
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  // ─────────────────────────────────────────────
+  // 3. 기존 함수들 (내용만 수정)
+  // ─────────────────────────────────────────────
   const triggerToast = (message: string) => {
     setToast({ show: true, message });
     setTimeout(() => setToast({ show: false, message: '' }), 3000);
@@ -51,25 +113,29 @@ export function NotificationView({ onBack, onNavigate, darkMode = false }: Notif
 
   const handlePageNavigation = (targetView: string, params?: any) => {
     setSelectedNotification(null);
-    if (onNavigate) {
-      onNavigate(targetView, params);
-    } else {
-      triggerToast(`'${targetView}' 메뉴 경로로 내비게이션을 수행합니다.`);
+    if (onNavigate) onNavigate(targetView, params);
+  };
+
+  // 모두 읽음 처리 API 연동
+  const handleMarkAllAsRead = async () => {
+    try {
+      const res = await fetch('http://localhost:3001/api/notifications/read-all', {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setActiveNotifications([]); 
+        triggerToast('모든 알림을 읽음 처리했습니다. ✨');
+      }
+    } catch (err) {
+      triggerToast('처리 중 오류가 발생했습니다.');
     }
   };
 
-  const handleMarkAllAsRead = () => {
-    setActiveNotifications([]); 
-    triggerToast('모든 알림을 성공적으로 읽음 처리하고 소거했습니다. ✨');
-  };
-
-  const handleUpgrade = () => {
-    setShowUpgradeModal(true);
-  };
-
+  const handleUpgrade = () => setShowUpgradeModal(true);
   const handleConfirmUpgrade = () => {
     setShowUpgradeModal(false);
-    triggerToast('STRAND 프리미엄 플랜으로 업그레이드 완료되었습니다! 👑');
+    triggerToast('업그레이드 완료되었습니다! 👑');
   };
 
   return (
