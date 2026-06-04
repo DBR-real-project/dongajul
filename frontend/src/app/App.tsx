@@ -160,9 +160,17 @@ export default function App() {
           ) : currentView === 'compare' ? (
             <CompareView items={comparedItems} onBack={() => setCurrentView(previousView)} darkMode={darkMode} />
           ) : currentView === 'risk' ? (
-            <DiagnosisInterview
-              darkMode={darkMode}
+            <RiskAnalysis
+              onBack={() => setCurrentView('dashboard')}
+              onArticleClick={(id) => {
+                setSelectedArticle(id);
+                navigateTo('article', 'risk');
+              }}
               onResultClick={(data) => navigateToResult(data, 'risk')}
+              onNotificationClick={() => setCurrentView('notifications')}
+              onProfileClick={() => setCurrentView('profile')}
+              darkMode={darkMode}
+              language="ko"
             />
           ) : currentView === 'result' ? (
             <DiagnosisResult
