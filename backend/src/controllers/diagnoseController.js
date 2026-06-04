@@ -12,12 +12,19 @@ exports.diagnose = async (req, res) => {
 
   try {
     // 1. AI 서버 호출
-    const aiResponse = await axios.post(`${AI_SERVER_URL}/diagnose`, {
+    // 기존: /diagnose
+    // 변경: /report
+    // 이유: /report가 risk_score + similar_articles + report를 같이 반환함
+    const aiResponse = await axios.post(`${AI_SERVER_URL}/report`, {
       text: text.trim(),
       top_k,
-    }, { timeout: 30000 });
+    }, { timeout: 60000 });
 
     const data = aiResponse.data;
+
+    // AI 서버 응답 확인용 로그
+    console.log('[AI 응답 전체]', data);
+    console.log('[AI 응답 report]', data.report);
 
     // 2. cluster_name 조회
     let cluster_name = null;
@@ -40,13 +47,22 @@ exports.diagnose = async (req, res) => {
 
   } catch (err) {
     console.error('[diagnoseController] 오류:', err.message);
+    console.error('[AI 서버 응답 상태]', err.response?.status);
+    console.error('[AI 서버 응답 데이터]', err.response?.data);
+
     if (err.code === 'ECONNREFUSED') {
       return res.status(503).json({ error: 'AI 서버에 연결할 수 없습니다.' });
     }
+
     if (err.code === 'ECONNABORTED') {
       return res.status(504).json({ error: 'AI 서버 응답 시간이 초과되었습니다.' });
     }
-    return res.status(500).json({ error: '진단 처리 중 오류가 발생했습니다.', detail: err.message });
+
+    return res.status(500).json({
+      error: '진단 처리 중 오류가 발생했습니다.',
+      detail: err.message,
+      ai_error: err.response?.data
+    });
   }
 };
 

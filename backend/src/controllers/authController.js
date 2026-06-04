@@ -56,39 +56,59 @@ exports.kakaoLogin = (req, res) => {
   res.redirect(kakaoAuthUrl);
 };
 
-// 카카오 callback 처리
+// 카카오 callback 처리 (수정본: 무조건 돌아가게)
 exports.kakaoCallback = async (req, res) => {
   const code = req.query.code;
+  
   try {
+    // 1. 카카오 서버에 보낼 데이터 (client_secret은 비활성화 상태면 아예 빼야 작동함)
+    const payload = {
+      grant_type: 'authorization_code',
+      client_id: process.env.KAKAO_REST_API_KEY,
+      redirect_uri: process.env.KAKAO_REDIRECT_URI,
+      code,
+    };
+
+    // 만약 .env에 KAKAO_CLIENT_SECRET을 진짜로 세팅했다면 그때만 추가
+    if (process.env.KAKAO_CLIENT_SECRET) {
+      payload.client_secret = process.env.KAKAO_CLIENT_SECRET;
+    }
+
+    // 2. 토큰 받아오기
     const tokenResult = await axios.post(
       'https://kauth.kakao.com/oauth/token',
-      new URLSearchParams({
-        grant_type: 'authorization_code',
-        client_id: process.env.KAKAO_REST_API_KEY,
-        redirect_uri: process.env.KAKAO_REDIRECT_URI,
-        code,
-      }),
+      new URLSearchParams(payload),
       { headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' } }
     );
     const accessToken = tokenResult.data.access_token;
+
+    // 3. 유저 정보 받아오기
     const userResult = await axios.get('https://kapi.kakao.com/v2/user/me', {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
+    
     const kakaoUser = userResult.data;
-    const email = kakaoUser.kakao_account?.email;
+    const kakaoId = kakaoUser.id;
+    const email = kakaoUser.kakao_account?.email || `kakao_${kakaoId}@kakao.local`;
     const name = kakaoUser.kakao_account?.profile?.nickname || '카카오사용자';
-    if (!email) {
-      return res.status(400).send('카카오 계정에서 이메일을 가져올 수 없습니다.');
-    }
-    let user = await findUserByEmail(email);
+
+    // (참고: 카카오에서 이메일 제공 동의를 안 받고 깡통으로 넘어올 수도 있어서 임시 방어코드)
+    const finalEmail = email || `kakao_${kakaoUser.id}@temp.com`;
+
+    // 4. DB 저장 및 토큰 발급
+    let user = await findUserByEmail(finalEmail);
     if (!user) {
-      user = await createUser(email, null, name);
+      user = await createUser(finalEmail, null, name);
     }
+    
     const token = authService.makeToken(user);
     res.redirect(`${process.env.FRONTEND_URL}?token=${token}`);
+
   } catch (err) {
+    // 에러가 났을 때 터미널에서 정확한 원인을 보기 위한 로그
+    console.log('🚨 [카카오 로그인 에러 상세 원인] 🚨');
     console.error(err.response?.data || err.message);
-    res.status(500).send('카카오 로그인 실패');
+    res.status(500).send('카카오 로그인 실패: 터미널 로그를 확인하세요.');
   }
 };
 
