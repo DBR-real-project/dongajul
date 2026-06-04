@@ -36,10 +36,34 @@ export function ProfileView({ onBack, darkMode: propDarkMode }: ProfileViewProps
   const [activePanel, setActivePanel] = useState<SettingsPanel>(null);
   const [toast, setToast] = useState<string | null>(null);
 
-  // DB 구조 기반 상태 관리
-  const [userData, setUserData] = useState<UserData | null>(null);
-  const [editNickname, setEditNickname] = useState('');
-  const [editEmail, setEditEmail] = useState('');
+  // 1. 전체 데이터 객체 상태 초기화
+// 1. 전체 데이터 객체 상태 초기화 (수정됨)
+const [userData, setUserData] = useState<UserData | null>(() => {
+  const saved = localStorage.getItem('user');
+  if (saved) {
+    try {
+      return JSON.parse(saved); // 로컬스토리지에 저장된 값이 있으면 즉시 사용
+    } catch {
+      return null;
+    }
+  }
+  return null;
+});
+
+// 2. 개별 입력 필드 상태 초기화
+const [editNickname, setEditNickname] = useState(() => {
+  // 'userName' 키가 따로 있다면 그걸 먼저 쓰고, 없으면 'user' 객체 안에서 가져옵니다.
+  const savedName = localStorage.getItem('userName');
+  if (savedName) return savedName;
+  
+  const savedUser = localStorage.getItem('user');
+  return savedUser ? JSON.parse(savedUser).nickname : '';
+});
+
+const [editEmail, setEditEmail] = useState(() => {
+  const savedUser = localStorage.getItem('user');
+  return savedUser ? JSON.parse(savedUser).email : '';
+});
 
   // 알림 설정 상태
   const [pushEnabled, setPushEnabled] = useState(() => {
@@ -71,32 +95,39 @@ export function ProfileView({ onBack, darkMode: propDarkMode }: ProfileViewProps
   // 사용자 데이터 로드
 useEffect(() => {
   const fetchProfile = async () => {
-    const token = localStorage.getItem('accessToken'); // 로그인 시 저장한 JWT 토큰
-    if (!token) return;
+  // 로그인 시 저장한 토큰 키값이 'accessToken'인지 'token'인지 확인 필요!
+  const token = localStorage.getItem('accessToken') || localStorage.getItem('token'); 
+  if (!token) return;
 
-    try {
-      const res = await fetch('http://localhost:3001/api/profile', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`, // 백엔드 auth 미들웨어 확인용
-          'Content-Type': 'application/json'
-        }
-      });
-      const data = await res.json();
-
-      if (data.success && data.user) {
-        // 서버 DB에서 가져온 데이터로 상태 업데이트
-        setUserData(data.user);
-        setEditNickname(data.user.nickname || '');
-        setEditEmail(data.user.email || '');
-        
-        // (선택) 로컬 스토리지도 최신 정보로 동기화
-        localStorage.setItem('user', JSON.stringify(data.user));
+  try {
+    const res = await fetch('http://localhost:3001/api/profile', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       }
-    } catch (err) {
-      console.error("DB 프로필 로드 실패:", err);
+    });
+    const data = await res.json();
+
+    if (data.success && data.user) {
+      // 1. 서버 데이터와 내 상태(State) 동기화
+      // 서버에서 주는 컬럼명이 user_type인지 role인지 꼭 확인해야 합니다.
+      setUserData(data.user); 
+      setEditNickname(data.user.nickname || '');
+      setEditEmail(data.user.email || '');
+      
+      // 2. 로컬스토리지 최신화 (다음 접속 시 바로 보이게 함)
+      localStorage.setItem('user', JSON.stringify(data.user));
+      if (data.user.nickname) {
+        localStorage.setItem('userName', data.user.nickname);
+      }
+
+      console.log("프로필 로드 성공:", data.user);
     }
-  };
+  } catch (err) {
+    console.error("DB 프로필 로드 실패:", err);
+  }
+};
 
   fetchProfile();
 }, []);
@@ -113,19 +144,47 @@ useEffect(() => {
     setActivePanel(null);
   };
 
-  const handleChangePassword = () => {
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      showToast('모든 필수 입력칸을 기입해 주세요');
-      return;
+  const handleChangePassword = async () => {
+  // 1. 유효성 검사 (입력값 체크)
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    showToast('모든 필수 입력칸을 기입해 주세요');
+    return;
+  }
+  if (newPassword !== confirmPassword) {
+    showToast('새로 지정한 암호가 서로 일치하지 않습니다');
+    return;
+  }
+
+  // 2. 서버(DB)로 데이터 전송 (이 부분이 수정되는 핵심입니다)
+  const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+  
+  try {
+    const res = await fetch('http://localhost:3001/api/profile/password', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ 
+    currentPassword: currentPassword, 
+    newPassword: newPassword 
+  })
+});
+
+    const data = await res.json();
+
+    if (data.success) {
+      showToast('비밀번호가 성공적으로 변경되었습니다');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setActivePanel(null); // 모달 닫기
+    } else {
+      showToast(data.message || '변경 실패');
     }
-    if (newPassword !== confirmPassword) {
-      showToast('새로 지정한 암호가 서로 일치하지 않습니다');
-      return;
-    }
-    if (newPassword.length < 6) {
-      showToast('비밀번호는 보안을 위해 최소 6자 이상 지정해야 합니다');
-      return;
-    }
+  } catch (err) {
+    showToast('서버 통신 중 오류가 발생했습니다');
+  }
 
     const users = JSON.parse(localStorage.getItem('users') || '[]') as LocalUser[];
     const userIndex = users.findIndex((u) => u.email === userData?.email);
