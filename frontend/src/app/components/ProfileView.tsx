@@ -144,19 +144,47 @@ useEffect(() => {
     setActivePanel(null);
   };
 
-  const handleChangePassword = () => {
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      showToast('모든 필수 입력칸을 기입해 주세요');
-      return;
+  const handleChangePassword = async () => {
+  // 1. 유효성 검사 (입력값 체크)
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    showToast('모든 필수 입력칸을 기입해 주세요');
+    return;
+  }
+  if (newPassword !== confirmPassword) {
+    showToast('새로 지정한 암호가 서로 일치하지 않습니다');
+    return;
+  }
+
+  // 2. 서버(DB)로 데이터 전송 (이 부분이 수정되는 핵심입니다)
+  const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+  
+  try {
+    const res = await fetch('http://localhost:3001/api/profile/password', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ 
+    currentPassword: currentPassword, 
+    newPassword: newPassword 
+  })
+});
+
+    const data = await res.json();
+
+    if (data.success) {
+      showToast('비밀번호가 성공적으로 변경되었습니다');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setActivePanel(null); // 모달 닫기
+    } else {
+      showToast(data.message || '변경 실패');
     }
-    if (newPassword !== confirmPassword) {
-      showToast('새로 지정한 암호가 서로 일치하지 않습니다');
-      return;
-    }
-    if (newPassword.length < 6) {
-      showToast('비밀번호는 보안을 위해 최소 6자 이상 지정해야 합니다');
-      return;
-    }
+  } catch (err) {
+    showToast('서버 통신 중 오류가 발생했습니다');
+  }
 
     const users = JSON.parse(localStorage.getItem('users') || '[]') as LocalUser[];
     const userIndex = users.findIndex((u) => u.email === userData?.email);
