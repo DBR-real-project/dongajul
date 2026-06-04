@@ -1,21 +1,21 @@
 """
-⑧ AI 진단 리포트 생성 (LangChain + GPT API + Fewshot 프롬프팅)
+AI 진단 리포트 생성 (LangChain + GPT API + Fewshot 프롬프팅)
 
 사용자 전략 텍스트 + FAISS 유사 사례 + 리스크 스코어를 바탕으로
 GPT가 경영 전략 리스크 진단 리포트를 생성합니다.
-
-환경변수:
-  OPENAI_API_KEY  : OpenAI API 키 (필수)
-  OPENAI_MODEL    : 사용 모델 (기본 gpt-4o-mini)
 """
 from __future__ import annotations
 
 import os
 from typing import Any
 
+from dotenv import load_dotenv
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import ChatPromptTemplate, FewShotChatMessagePromptTemplate
 from langchain_openai import ChatOpenAI
+
+
+load_dotenv()
 
 
 SYSTEM_PROMPT = """당신은 DBR·HBR 기업 사례를 기반으로 전략 리스크를 진단하는 경영 전략 분석 전문가입니다.
@@ -48,7 +48,6 @@ JSON 외의 설명, 마크다운, 코드블록은 절대 포함하지 마세요.
 """
 
 
-# ── Fewshot 예시 ────────────────────────────────────────────────────────────
 EXAMPLES = [
     {
         "input": (
@@ -162,7 +161,14 @@ def _get_chain() -> Any:
 
     if _chain is None:
         model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-        llm = ChatOpenAI(model=model, temperature=0.3)
+
+        llm = ChatOpenAI(
+            model=model,
+            temperature=0.3,
+            timeout=30,
+            max_retries=1,
+        )
+
         _chain = _PROMPT | llm | JsonOutputParser()
 
     return _chain
@@ -172,15 +178,15 @@ def _format_similar_cases(articles: list[dict]) -> str:
     label_kor = {
         "success": "성공",
         "failure": "실패",
-        "neutral": "중립"
+        "neutral": "중립",
     }
 
     lines = []
 
-    for a in articles:
+    for a in articles[:3]:
         lk = label_kor.get(a.get("label", ""), "중립")
         title = str(a.get("title", "") or "")[:80]
-        sim = a.get("similarity", 0)
+        sim = float(a.get("similarity", 0) or 0)
         src = a.get("source", "") or "출처 없음"
         cat = a.get("category", "") or "분류 없음"
         summary = str(a.get("summary", "") or "").strip()
@@ -206,35 +212,24 @@ def generate_report(
     risk_level: str,
     similar_articles: list[dict],
 ) -> dict:
-    """
-    유사 사례 + 리스크 스코어를 받아 GPT 진단 리포트 반환.
-
-    Returns:
-        {
-            "summary": str,
-            "risk_factors": list[str],
-            "improvement": list[str],
-            "verdict": str,
-        }
-    """
-
     chain = _get_chain()
 
     result = chain.invoke({
         "strategy_text": strategy_text,
         "risk_score": f"{risk_score:.2f}",
         "risk_level": risk_level,
-        "k": len(similar_articles),
+        "k": min(len(similar_articles), 3),
         "similar_cases": _format_similar_cases(similar_articles),
     })
 
-    # 필수 키 보정
+    if not isinstance(result, dict):
+        result = {}
+
     result.setdefault("summary", "")
     result.setdefault("risk_factors", [])
     result.setdefault("improvement", [])
     result.setdefault("verdict", "")
 
-    # 프론트 오류 방지용 보정
     if not isinstance(result["risk_factors"], list):
         result["risk_factors"] = []
 

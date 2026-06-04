@@ -2,22 +2,19 @@
 동아줄 FastAPI ML 서비스
 
 엔드포인트
-  POST /diagnose  ← 전략 텍스트 → 리스크 스코어 + 유사 사례 (빠름, ~1s)
-  POST /report    ← /diagnose + GPT 진단 리포트 (느림, ~5s)
-  GET  /health    ← 서버 상태 확인
-  GET  /clusters  ← 클러스터 목록 (시맨틱 맵용)
-
-환경변수 (.env):
-  OPENAI_API_KEY  : GPT API 키 (/report 엔드포인트에 필요)
-  OPENAI_MODEL    : 기본 gpt-4o-mini
+  POST /diagnose
+  POST /report
+  GET  /health
+  GET  /clusters
 
 실행:
-  uvicorn ai_server.main:app --reload --port 8000
+  python -m uvicorn ai_server.main:app --reload --port 8000
 """
 from __future__ import annotations
 
 import pickle
 import sys
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
@@ -25,31 +22,35 @@ from typing import Any
 import faiss
 import numpy as np
 import pandas as pd
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from sentence_transformers import SentenceTransformer
 
-sys.stdout.reconfigure(encoding="utf-8")
-
-from dotenv import load_dotenv
-load_dotenv()
-
+from .reporter import generate_report
 from .schemas import DiagnoseRequest, DiagnoseResponse, ReportResponse, SimilarArticle
 
-# ── 경로 설정 ──────────────────────────────────────────────────────────────
-ROOT    = Path(__file__).resolve().parent.parent
+
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+except Exception:
+    pass
+
+load_dotenv()
+
+
+ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "데이터처리" / "output"
 
-# ── 전역 모델 객체 ──────────────────────────────────────────────────────────
-_sbert_faiss: SentenceTransformer | None = None  # 384차원 — FAISS 검색용
-_sbert_risk:  SentenceTransformer | None = None  # 768차원 — 리스크 스코어용
-_faiss_index: Any                        = None
-_risk_model:  Any                        = None
-_meta:        pd.DataFrame | None        = None
-_umap:        pd.DataFrame | None        = None
-_clusters:    pd.DataFrame | None        = None
+
+_sbert_faiss: SentenceTransformer | None = None
+_sbert_risk: SentenceTransformer | None = None
+_faiss_index: Any = None
+_risk_model: Any = None
+_meta: pd.DataFrame | None = None
+_umap: pd.DataFrame | None = None
+_clusters: pd.DataFrame | None = None
 
 
-# ── 리스크 레벨 분류 ────────────────────────────────────────────────────────
 def _risk_level(score: float) -> str:
     if score >= 0.6:
         return "high"
@@ -58,7 +59,6 @@ def _risk_level(score: float) -> str:
     return "low"
 
 
-# ── lifespan: 앱 시작 시 모델 로드 ─────────────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _sbert_faiss, _sbert_risk, _faiss_index, _risk_model, _meta, _umap, _clusters
@@ -77,7 +77,6 @@ async def lifespan(app: FastAPI):
     else:
         _faiss_index = None
         print(f"[startup] WARNING: FAISS 인덱스 파일 없음: {OUT_DIR / 'faiss.index'}")
-        print("[startup] FAISS 없이 서버를 실행합니다. /diagnose는 503을 반환합니다.")
 
     print("[startup] 리스크 모델 로드 중...")
     if (OUT_DIR / "risk_model.pkl").exists():
@@ -89,7 +88,6 @@ async def lifespan(app: FastAPI):
         print(f"[startup] WARNING: 리스크 모델 파일 없음: {OUT_DIR / 'risk_model.pkl'}")
 
     print("[startup] 메타데이터 로드 중...")
-
     if (OUT_DIR / "articles_meta.parquet").exists():
         _meta = pd.read_parquet(OUT_DIR / "articles_meta.parquet")
         print("[startup] articles_meta.parquet 로드 완료")
@@ -117,17 +115,18 @@ async def lifespan(app: FastAPI):
     print(f"[startup] 완료 — 아티클 {article_count}건, 클러스터 {cluster_count}개")
 
     if _faiss_index is not None:
-        print(f"[startup] FAISS 인덱스 차원: {_faiss_index.d} / 리스크 모델 입력 차원: 768")
+        print(f"[startup] FAISS 인덱스 차원: {_faiss_index.d}")
     else:
-        print("[startup] FAISS 인덱스 없음 — 검색 기반 진단 비활성화")
+        print("[startup] FAISS 인덱스 없음")
 
     import os
     if os.getenv("OPENAI_API_KEY"):
-        print("[startup] OPENAI_API_KEY 확인됨 — /report 엔드포인트 활성화")
+        print("[startup] OPENAI_API_KEY 확인됨 — /report 활성화")
     else:
-        print("[startup] OPENAI_API_KEY 없음 — /report 비활성화 (진단만 가능)")
+        print("[startup] OPENAI_API_KEY 없음 — /report 비활성화")
 
     yield
+
     print("[shutdown] 서버 종료")
 
 
@@ -139,81 +138,97 @@ app = FastAPI(
 )
 
 
-# ── POST /diagnose ──────────────────────────────────────────────────────────
 @app.post("/diagnose", response_model=DiagnoseResponse)
 def diagnose(req: DiagnoseRequest):
-    """
-    사용자 전략 텍스트를 받아:
-    1. SBERT 임베딩
-    2. FAISS 유사 사례 Top-K 검색
-    3. 리스크 스코어 = P(failure)
-    4. 쿼리 클러스터 ID 추론
-    """
     if _sbert_faiss is None or _sbert_risk is None:
         raise HTTPException(
             status_code=503,
-            detail="SentenceTransformer 모델 로딩 중입니다. 잠시 후 재시도하세요."
+            detail="SentenceTransformer 모델 로딩 중입니다. 잠시 후 재시도하세요.",
         )
 
     if _faiss_index is None:
         raise HTTPException(
             status_code=503,
-            detail="FAISS 인덱스가 없어 진단 기능을 사용할 수 없습니다."
+            detail="FAISS 인덱스가 없어 진단 기능을 사용할 수 없습니다.",
         )
 
     if _risk_model is None:
         raise HTTPException(
             status_code=503,
-            detail="리스크 모델이 없어 진단 기능을 사용할 수 없습니다."
+            detail="리스크 모델이 없어 진단 기능을 사용할 수 없습니다.",
         )
 
     if _meta is None:
         raise HTTPException(
             status_code=503,
-            detail="메타데이터가 없어 진단 기능을 사용할 수 없습니다."
+            detail="메타데이터가 없어 진단 기능을 사용할 수 없습니다.",
         )
 
-    # 1. 768차원 임베딩 (FAISS 검색 + 리스크 스코어 공통)
+    q_emb_faiss = _sbert_faiss.encode(
+        [req.text],
+        normalize_embeddings=True,
+        convert_to_numpy=True,
+    ).astype(np.float32)
+
     q_emb_risk = _sbert_risk.encode(
         [req.text],
         normalize_embeddings=True,
         convert_to_numpy=True,
     ).astype(np.float32)
 
-    # 2. FAISS 검색 (768차원 인덱스)
-    scores, ids = _faiss_index.search(q_emb_risk, req.top_k)
+    if _faiss_index.d == q_emb_faiss.shape[1]:
+        scores, ids = _faiss_index.search(q_emb_faiss, req.top_k)
+    elif _faiss_index.d == q_emb_risk.shape[1]:
+        scores, ids = _faiss_index.search(q_emb_risk, req.top_k)
+    else:
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                f"FAISS 인덱스 차원({_faiss_index.d})과 임베딩 차원이 맞지 않습니다. "
+                f"FAISS용({q_emb_faiss.shape[1]}), 리스크용({q_emb_risk.shape[1]})"
+            ),
+        )
 
-    # 3. 리스크 스코어 = P(failure)
     _model = _risk_model["model"]
     classes = list(_model.classes_)
     fail_col = classes.index(0)
     risk_score = float(_model.predict_proba(q_emb_risk)[0, fail_col])
 
-    # 4. 유사 사례 구성
     similar: list[SimilarArticle] = []
-    for rank, (sim, idx) in enumerate(zip(scores[0], ids[0]), start=1):
-        row = _meta.iloc[int(idx)]
-        similar.append(SimilarArticle(
-            rank=rank,
-            title=str(row.get("title", "") or ""),
-            url=str(row.get("url", "") or ""),
-            label=str(row.get("label_name", "") or ""),
-            similarity=round(float(sim), 4),
-            summary=str(row.get("summary", "") or "") or None,
-            category=str(row.get("category", "") or "") or None,
-            published_date=str(row.get("published_date", "") or "") or None,
-            source=str(row.get("source", "") or "") or None,
-        ))
 
-    # 5. 쿼리 클러스터 (가장 가까운 클러스터 중심)
+    for rank, (sim, idx) in enumerate(zip(scores[0], ids[0]), start=1):
+        if int(idx) < 0:
+            continue
+
+        row = _meta.iloc[int(idx)]
+
+        similar.append(
+            SimilarArticle(
+                rank=rank,
+                title=str(row.get("title", "") or ""),
+                url=str(row.get("url", "") or ""),
+                label=str(row.get("label_name", "") or ""),
+                similarity=round(float(sim), 4),
+                summary=str(row.get("summary", "") or "") or None,
+                category=str(row.get("category", "") or "") or None,
+                published_date=str(row.get("published_date", "") or "") or None,
+                source=str(row.get("source", "") or "") or None,
+            )
+        )
+
     query_cluster_id: int | None = None
-    if _umap is not None and _clusters is not None:
-        # 유사 사례들의 클러스터 중 최빈값으로 근사
-        top_idx = ids[0].tolist()
-        cluster_ids = _umap["cluster_id"].iloc[top_idx].tolist()
-        if cluster_ids:
-            from collections import Counter
-            query_cluster_id = int(Counter(cluster_ids).most_common(1)[0][0])
+
+    if _umap is not None and "cluster_id" in _umap.columns:
+        try:
+            top_idx = [int(i) for i in ids[0].tolist() if int(i) >= 0]
+            cluster_ids = _umap["cluster_id"].iloc[top_idx].tolist()
+
+            if cluster_ids:
+                from collections import Counter
+                query_cluster_id = int(Counter(cluster_ids).most_common(1)[0][0])
+        except Exception as e:
+            print(f"[/diagnose] 쿼리 클러스터 계산 실패: {e}")
+            query_cluster_id = None
 
     return DiagnoseResponse(
         risk_score=round(risk_score, 4),
@@ -223,45 +238,53 @@ def diagnose(req: DiagnoseRequest):
     )
 
 
-# ── POST /report ────────────────────────────────────────────────────────────
 @app.post("/report", response_model=ReportResponse)
 def report(req: DiagnoseRequest):
-    """
-    /diagnose 결과 + GPT 진단 리포트를 함께 반환.
-    OPENAI_API_KEY 환경변수가 없으면 503 반환.
-    """
     import os
+
     if not os.getenv("OPENAI_API_KEY"):
         raise HTTPException(
             status_code=503,
-            detail="OPENAI_API_KEY가 설정되지 않았습니다. .env 파일을 확인하세요."
+            detail="OPENAI_API_KEY가 설정되지 않았습니다. .env 파일을 확인하세요.",
         )
 
-    # /diagnose 와 동일한 로직으로 결과 먼저 생성
-    diag = diagnose(req)
+    try:
+        start = time.time()
+        diag = diagnose(req)
+        print(f"[/report] diagnose 완료: {time.time() - start:.2f}초")
 
-    # GPT 진단 리포트 생성
-    from .reporter import generate_report
-    from .schemas import DiagnosisReport
+        articles_dict = [a.model_dump() for a in diag.similar_articles]
 
-    articles_dict = [a.model_dump() for a in diag.similar_articles]
-    raw = generate_report(
-        strategy_text=req.text,
-        risk_score=diag.risk_score,
-        risk_level=diag.risk_level,
-        similar_articles=articles_dict,
-    )
+        start = time.time()
+        raw = generate_report(
+            strategy_text=req.text,
+            risk_score=diag.risk_score,
+            risk_level=diag.risk_level,
+            similar_articles=articles_dict,
+        )
+        print(f"[/report] GPT 리포트 완료: {time.time() - start:.2f}초")
 
-    return ReportResponse(
-        risk_score=diag.risk_score,
-        risk_level=diag.risk_level,
-        similar_articles=diag.similar_articles,
-        query_cluster_id=diag.query_cluster_id,
-        report=DiagnosisReport(**raw),
-    )
+        from .schemas import DiagnosisReport
+
+        return ReportResponse(
+            risk_score=diag.risk_score,
+            risk_level=diag.risk_level,
+            similar_articles=diag.similar_articles,
+            query_cluster_id=diag.query_cluster_id,
+            report=DiagnosisReport(**raw),
+        )
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        print(f"[/report] 오류: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"/report 처리 중 오류 발생: {str(e)}",
+        )
 
 
-# ── GET /health ─────────────────────────────────────────────────────────────
 @app.get("/health")
 def health():
     return {
@@ -275,10 +298,9 @@ def health():
     }
 
 
-# ── GET /clusters ───────────────────────────────────────────────────────────
 @app.get("/clusters")
 def get_clusters():
-    """시맨틱 맵 렌더링용 클러스터 정보 반환."""
     if _clusters is None:
         raise HTTPException(status_code=503, detail="클러스터 정보가 없습니다.")
+
     return _clusters.to_dict(orient="records")
