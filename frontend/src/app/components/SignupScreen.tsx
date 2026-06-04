@@ -2,7 +2,7 @@ import { ArrowLeft } from 'lucide-react';
 import React, { useState } from 'react';
 
 interface SignupScreenProps {
-  onSignup: () => void;
+  onSignup: (email: string, token: string) => void;
   onBackToLogin: () => void;
 }
 
@@ -14,7 +14,6 @@ export function SignupScreen({ onSignup, onBackToLogin }: SignupScreenProps) {
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [error, setError] = useState('');
 
-  // 2. 에러 해결 포인트: React.FormEvent 대신 권장 표준인 React.SubmitEvent 사용
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
@@ -47,15 +46,27 @@ export function SignupScreen({ onSignup, onBackToLogin }: SignupScreenProps) {
     try {
       const res = await fetch('http://localhost:3001/api/auth/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          name,
+        }),
       });
+
       const data = await res.json();
+
       if (res.ok) {
-        alert('회원가입이 완료되었습니다. 로그인해주세요.');
-        onSignup();
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+
+        alert('회원가입이 완료되었습니다.');
+
+        onSignup(data.user.email, data.token);
       } else {
-        setError((data as { message?: string }).message || '회원가입 실패');
+        setError(data.message || '회원가입 실패');
       }
     } catch (err) {
       console.error(err);
@@ -80,13 +91,14 @@ export function SignupScreen({ onSignup, onBackToLogin }: SignupScreenProps) {
         <h1 className="text-6xl font-extrabold tracking-tight text-white mb-4">
           동아줄 <span className="text-[#E5BA73]">AI</span>
         </h1>
-        <p className="text-2xl font-medium text-gray-300 mb-8">AI 전략 리스크 진단 플랫폼</p>
+        <p className="text-2xl font-medium text-gray-300 mb-8">
+          AI 전략 리스크 진단 플랫폼
+        </p>
         <p className="text-lg text-blue-100/90 max-w-xl leading-relaxed font-light">
           13,335건 <span className="text-[#E5BA73] font-medium">성공·실패 사례</span>를 바탕으로
           <br />
           당신의 전략 리스크를 <span className="text-[#E5BA73] font-medium">AI가 정확히 진단</span>합니다.
         </p>
-
       </div>
 
       {/* Decorative Elements */}
@@ -180,7 +192,10 @@ export function SignupScreen({ onSignup, onBackToLogin }: SignupScreenProps) {
                 onChange={(e) => setAgreeTerms(e.target.checked)}
                 className="w-4 h-4 mt-0.5 rounded border-gray-300 text-[#142755] focus:ring-[#142755] cursor-pointer"
               />
-              <label id="agree-terms" className="ml-2 text-sm text-gray-600 cursor-pointer select-none">
+              <label
+                htmlFor="agree-terms"
+                className="ml-2 text-sm text-gray-600 cursor-pointer select-none"
+              >
                 이용약관 및 개인정보 처리방침에 동의합니다
               </label>
             </div>
