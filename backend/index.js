@@ -42,6 +42,9 @@ const semanticMapRoutes = require('./src/routes/semanticMapRoutes');
 // 내 정보 조회
 const profileRoutes = require('./src/routes/profileRoutes');
 
+// 알람 센터
+const notificationRoutes = require('./src/routes/notificationRoutes');
+
 // ── API 라우트 연결 ───────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api/diagnose', diagnoseRoutes);
@@ -50,6 +53,7 @@ app.use('/api/history', historyRoutes);
 app.use('/api/clusters', clustersRoutes);
 app.use('/api/semantic-map', semanticMapRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // ── 기본 라우트 ───────────────────────────────────────────────────────
 app.get('/', (req, res) => {
