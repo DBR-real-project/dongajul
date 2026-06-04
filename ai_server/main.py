@@ -70,20 +70,56 @@ async def lifespan(app: FastAPI):
     _sbert_risk = SentenceTransformer("jhgan/ko-sroberta-multitask")
 
     print("[startup] FAISS 인덱스 로드 중...")
-    index_bytes = (OUT_DIR / "faiss.index").read_bytes()
-    _faiss_index = faiss.deserialize_index(np.frombuffer(index_bytes, dtype=np.uint8))
+    if (OUT_DIR / "faiss.index").exists():
+        index_bytes = (OUT_DIR / "faiss.index").read_bytes()
+        _faiss_index = faiss.deserialize_index(np.frombuffer(index_bytes, dtype=np.uint8))
+        print("[startup] FAISS 인덱스 로드 완료")
+    else:
+        _faiss_index = None
+        print(f"[startup] WARNING: FAISS 인덱스 파일 없음: {OUT_DIR / 'faiss.index'}")
+        print("[startup] FAISS 없이 서버를 실행합니다. /diagnose는 503을 반환합니다.")
 
     print("[startup] 리스크 모델 로드 중...")
-    with open(OUT_DIR / "risk_model.pkl", "rb") as f:
-        _risk_model = pickle.load(f)
+    if (OUT_DIR / "risk_model.pkl").exists():
+        with open(OUT_DIR / "risk_model.pkl", "rb") as f:
+            _risk_model = pickle.load(f)
+        print("[startup] 리스크 모델 로드 완료")
+    else:
+        _risk_model = None
+        print(f"[startup] WARNING: 리스크 모델 파일 없음: {OUT_DIR / 'risk_model.pkl'}")
 
     print("[startup] 메타데이터 로드 중...")
-    _meta     = pd.read_parquet(OUT_DIR / "articles_meta.parquet")
-    _umap     = pd.read_parquet(OUT_DIR / "umap_coords.parquet")
-    _clusters = pd.read_parquet(OUT_DIR / "cluster_info.parquet")
 
-    print(f"[startup] 완료 — 아티클 {len(_meta)}건, 클러스터 {len(_clusters)}개")
-    print(f"[startup] FAISS 인덱스 차원: {_faiss_index.d} / 리스크 모델 입력 차원: 768")
+    if (OUT_DIR / "articles_meta.parquet").exists():
+        _meta = pd.read_parquet(OUT_DIR / "articles_meta.parquet")
+        print("[startup] articles_meta.parquet 로드 완료")
+    else:
+        _meta = None
+        print(f"[startup] WARNING: articles_meta.parquet 없음: {OUT_DIR / 'articles_meta.parquet'}")
+
+    if (OUT_DIR / "umap_coords.parquet").exists():
+        _umap = pd.read_parquet(OUT_DIR / "umap_coords.parquet")
+        print("[startup] umap_coords.parquet 로드 완료")
+    else:
+        _umap = None
+        print(f"[startup] WARNING: umap_coords.parquet 없음: {OUT_DIR / 'umap_coords.parquet'}")
+
+    if (OUT_DIR / "cluster_info.parquet").exists():
+        _clusters = pd.read_parquet(OUT_DIR / "cluster_info.parquet")
+        print("[startup] cluster_info.parquet 로드 완료")
+    else:
+        _clusters = None
+        print(f"[startup] WARNING: cluster_info.parquet 없음: {OUT_DIR / 'cluster_info.parquet'}")
+
+    article_count = len(_meta) if _meta is not None else 0
+    cluster_count = len(_clusters) if _clusters is not None else 0
+
+    print(f"[startup] 완료 — 아티클 {article_count}건, 클러스터 {cluster_count}개")
+
+    if _faiss_index is not None:
+        print(f"[startup] FAISS 인덱스 차원: {_faiss_index.d} / 리스크 모델 입력 차원: 768")
+    else:
+        print("[startup] FAISS 인덱스 없음 — 검색 기반 진단 비활성화")
 
     import os
     if os.getenv("OPENAI_API_KEY"):
@@ -113,8 +149,29 @@ def diagnose(req: DiagnoseRequest):
     3. 리스크 스코어 = P(failure)
     4. 쿼리 클러스터 ID 추론
     """
-    if _sbert_faiss is None or _sbert_risk is None or _faiss_index is None or _risk_model is None:
-        raise HTTPException(status_code=503, detail="모델 로딩 중입니다. 잠시 후 재시도하세요.")
+    if _sbert_faiss is None or _sbert_risk is None:
+        raise HTTPException(
+            status_code=503,
+            detail="SentenceTransformer 모델 로딩 중입니다. 잠시 후 재시도하세요."
+        )
+
+    if _faiss_index is None:
+        raise HTTPException(
+            status_code=503,
+            detail="FAISS 인덱스가 없어 진단 기능을 사용할 수 없습니다."
+        )
+
+    if _risk_model is None:
+        raise HTTPException(
+            status_code=503,
+            detail="리스크 모델이 없어 진단 기능을 사용할 수 없습니다."
+        )
+
+    if _meta is None:
+        raise HTTPException(
+            status_code=503,
+            detail="메타데이터가 없어 진단 기능을 사용할 수 없습니다."
+        )
 
     # 1. 768차원 임베딩 (FAISS 검색 + 리스크 스코어 공통)
     q_emb_risk = _sbert_risk.encode(
@@ -126,7 +183,7 @@ def diagnose(req: DiagnoseRequest):
     # 2. FAISS 검색 (768차원 인덱스)
     scores, ids = _faiss_index.search(q_emb_risk, req.top_k)
 
-    # 4. 리스크 스코어 = P(failure)
+    # 3. 리스크 스코어 = P(failure)
     _model = _risk_model["model"]
     classes = list(_model.classes_)
     fail_col = classes.index(0)
@@ -210,6 +267,9 @@ def health():
     return {
         "status": "ok",
         "models_loaded": _sbert_faiss is not None and _sbert_risk is not None,
+        "faiss_loaded": _faiss_index is not None,
+        "risk_model_loaded": _risk_model is not None,
+        "metadata_loaded": _meta is not None,
         "article_count": len(_meta) if _meta is not None else 0,
         "cluster_count": len(_clusters) if _clusters is not None else 0,
     }
@@ -220,5 +280,5 @@ def health():
 def get_clusters():
     """시맨틱 맵 렌더링용 클러스터 정보 반환."""
     if _clusters is None:
-        raise HTTPException(status_code=503, detail="모델 로딩 중")
+        raise HTTPException(status_code=503, detail="클러스터 정보가 없습니다.")
     return _clusters.to_dict(orient="records")
