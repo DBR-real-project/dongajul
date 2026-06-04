@@ -25,18 +25,28 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
+        body: JSON.stringify({ email, password }),
       });
 
       const data = await res.json();
 
-      if (res.ok) {
-        onLogin((data as { user: { id: number; email: string; name: string } }).user);
-      } else {
-        setError((data as { message?: string }).message || '로그인 실패');
+  if (res.ok) {
+    // 1. 서버가 준 토큰을 'token'이라는 이름으로 지갑에 넣기
+    const tokenValue = data.token || data.accessToken;
+    if (tokenValue) {
+      localStorage.setItem('token', tokenValue);
+    }
+
+    // 2. 서버가 준 사용자 이름(또는 닉네임)을 'userName'이라는 이름으로 저장
+    // 서버 응답 구조에 따라 data.user.name 또는 data.user.nickname 일 수 있습니다.
+    if (data.user && (data.user.name || data.user.nickname)) {
+      localStorage.setItem('userName', data.user.name || data.user.nickname);
+    }
+
+    // 3. 기존 로그인 처리 로직 실행
+    onLogin((data as { user: { id: number; email: string; name: string } }).user);
+  } else {
+    setError((data as { message?: string }).message || '로그인 실패');
       }
     } catch (err) {
       console.error(err);
@@ -170,7 +180,7 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
               <div className="grid grid-cols-3 gap-3">
                 <button
                   type="button"
-                  onClick={() => onSocialLogin('kakao')}
+                  onClick={() => { window.location.href = 'http://localhost:3001/api/auth/kakao'; }}
                   className="flex flex-col items-center justify-center py-2.5 bg-[#FEE500] hover:bg-[#FDD835] rounded-lg transition-all border border-transparent shadow-sm"
                 >
                   <span className="text-xl mb-0.5">💬</span>
@@ -178,7 +188,7 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
                 </button>
                 <button
                   type="button"
-                  onClick={() => onSocialLogin('naver')}
+                  onClick={() => { window.location.href = 'http://localhost:3001/api/auth/naver'; }}
                   className="flex flex-col items-center justify-center py-2.5 bg-[#03C75A] hover:bg-[#02B350] rounded-lg transition-all border border-transparent shadow-sm"
                 >
                   <span className="text-lg text-white mb-0.5 font-black leading-none">N</span>
@@ -186,7 +196,7 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
                 </button>
                 <button
                   type="button"
-                  onClick={() => onSocialLogin('google')}
+                  onClick={() => { window.location.href = 'http://localhost:3001/api/auth/google'; }}
                   className="flex flex-col items-center justify-center py-2.5 bg-gray-50 hover:bg-gray-100 rounded-lg transition-all border border-gray-200 shadow-sm"
                 >
                   <span className="text-xl mb-0.5 font-bold text-gray-700">G</span>

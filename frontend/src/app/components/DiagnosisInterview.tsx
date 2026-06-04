@@ -37,7 +37,11 @@ export function DiagnosisInterview({ onResultClick, darkMode = false }: Diagnosi
       const res = await fetch('http://localhost:3001/api/diagnose', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: fullText, top_k: 5 }),
+        body: JSON.stringify({
+          text: fullText,
+          top_k: 5,
+          user_id: JSON.parse(localStorage.getItem('user') || '{}').id || null,
+        }),
       });
       const data: DiagnosisData = await res.json();
       if (!res.ok) throw new Error((data as any).error || '분석 실패');
