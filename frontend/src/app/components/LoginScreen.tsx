@@ -44,7 +44,7 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
     }
 
     // 3. 기존 로그인 처리 로직 실행
-    onLogin(data.user.email, data.token);
+    onLogin(data.user.email, tokenValue);
   } else {
     setError((data as { message?: string }).message || '로그인 실패');
       }
@@ -54,15 +54,6 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
     }
   };
 
-  const handlePasswordReset = () => {
-    if (!resetEmail.trim() || !resetEmail.includes('@')) {
-      alert('올바른 이메일을 입력해주세요.');
-      return;
-    }
-    alert('비밀번호 재설정 링크가 이메일로 전송되었습니다.');
-    setResetEmail('');
-    setShowResetModal(false);
-  };
 
   return (
     <>
@@ -152,13 +143,6 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
                   />
                   <span className="ml-2 text-gray-600">로그인 유지</span>
                 </label>
-                <button
-                  type="button"
-                  onClick={() => setShowResetModal(true)}
-                  className="text-[#142755] hover:text-[#1f3a7a] font-medium hover:underline transition-colors"
-                >
-                  비밀번호 찾기
-                </button>
               </div>
 
               <button
@@ -231,26 +215,42 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
             <p className="text-sm text-gray-500 mb-5 leading-relaxed">
               등록된 이메일로 비밀번호 재설정 링크를 보내드립니다.
             </p>
-            <input
-              type="email"
-              value={resetEmail}
-              onChange={(e) => setResetEmail(e.target.value)}
-              placeholder="example@company.com"
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg mb-5 focus:outline-none focus:ring-2 focus:ring-[#142755] text-gray-900 placeholder-gray-400"
-            />
+            {resetStatus === 'done' ? (
+              <div className="mb-5 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700 font-medium">
+                ✅ {resetMsg}
+              </div>
+            ) : (
+              <>
+                {resetStatus === 'error' && (
+                  <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600 font-medium">
+                    {resetMsg}
+                  </div>
+                )}
+                <input
+                  type="email"
+                  value={resetEmail}
+                  onChange={(e) => { setResetEmail(e.target.value); setResetStatus('idle'); }}
+                  placeholder="example@company.com"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg mb-5 focus:outline-none focus:ring-2 focus:ring-[#142755] text-gray-900 placeholder-gray-400"
+                />
+              </>
+            )}
             <div className="flex gap-3">
               <button
-                onClick={() => setShowResetModal(false)}
+                onClick={() => { setShowResetModal(false); setResetStatus('idle'); setResetMsg(''); }}
                 className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors text-sm"
               >
-                취소
+                {resetStatus === 'done' ? '닫기' : '취소'}
               </button>
-              <button
-                onClick={handlePasswordReset}
-                className="flex-1 px-4 py-2.5 bg-[#142755] text-white rounded-lg font-medium hover:bg-[#1f3a7a] transition-colors text-sm shadow-md"
-              >
-                전송
-              </button>
+              {resetStatus !== 'done' && (
+                <button
+                  onClick={handlePasswordReset}
+                  disabled={resetStatus === 'loading'}
+                  className="flex-1 px-4 py-2.5 bg-[#142755] text-white rounded-lg font-medium hover:bg-[#1f3a7a] transition-colors text-sm shadow-md disabled:opacity-60"
+                >
+                  {resetStatus === 'loading' ? '전송 중...' : '전송'}
+                </button>
+              )}
             </div>
           </div>
         </>

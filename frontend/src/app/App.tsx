@@ -135,7 +135,6 @@ export default function App() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('userName');
-
     setIsLoggedIn(false);
     setShowSignup(false);
     setCurrentView('dashboard');
@@ -274,6 +273,16 @@ export default function App() {
               queryPoint={diagnosisResult ? {
                 umap_x: (diagnosisResult as any).umap_x,
                 umap_y: (diagnosisResult as any).umap_y,
+                cluster_name: diagnosisResult.cluster_name,
+              } : null}
+            />
+          ) : currentView === 'semantic-map' ? (
+            <SemanticMap
+              darkMode={darkMode}
+              onBack={() => setCurrentView(previousView || 'dashboard')}
+              queryPoint={diagnosisResult?.query_umap_x != null ? {
+                umap_x: diagnosisResult.query_umap_x!,
+                umap_y: diagnosisResult.query_umap_y!,
                 cluster_name: diagnosisResult.cluster_name,
               } : null}
             />

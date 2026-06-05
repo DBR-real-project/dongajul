@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ArrowRight, ArrowLeft, Shield, CheckCircle, Building2, Target, FileText, Loader2 } from 'lucide-react';
 import { DiagnosisData } from './DiagnosisResult';
 import { apiFetch } from '../utils/api';
+import { apiFetch } from '../utils/api';
 
 interface DiagnosisInterviewProps {
   onResultClick: (data: DiagnosisData) => void;

@@ -36,6 +36,8 @@ export interface DiagnosisData {
   cluster_name?: string;
   created_at?: string;
   report?: DiagnosisReport;
+  query_umap_x?: number;
+  query_umap_y?: number;
 }
 
 interface DiagnosisResultProps {

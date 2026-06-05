@@ -183,34 +183,50 @@ ai_server/
 
 ---
 
-## 현재 상태 (2026-06-05 세션2)
+## 현재 상태 (2026-06-05 세션2 — 최종)
 
 **NLP 파이프라인 전체 완료**: ① 전처리 → ② 라벨링 → ③ 임베딩+FAISS → ④ 리스크 모델 → ⑤ UMAP+K-means
-**FastAPI ML 서비스 완료**: POST /diagnose, GET /health, GET /clusters (테스트 통과)
-**네이버 데이터 파이프라인 완료**: 55,465건 전처리→라벨링→임베딩 (모델학습 전용, FAISS 미포함)
+**FastAPI ML 서비스 완료**: POST /diagnose, GET /report (GPT RAG), GET /health, GET /clusters
+**RAG 완료**: FAISS 유사 사례 검색 → GPT few-shot 리포트 생성 (reporter.py)
 
-**모델 성능 개선 완료** (2026-05-27):
-  → 임베딩: multilingual-MiniLM(384) → ko-sroberta-multitask(768)
-  → 라벨링: TF-IDF Stage2 → SBERT 센트로이드 재분류 (failure DBR 4.7%→12.2%)
-  → 분류기: LR → MLP (LR/LightGBM/XGBoost/MLP/Ensemble 비교 후 채택)
-  → Test ROC-AUC=0.9784 / Failure Precision=0.71 / Recall=0.88 / F1=0.78
+---
 
-**자동 라벨 검수 완료** (2026-05-27):
-  → MLP P(failure)<0.20 기준으로 failure→neutral 자동 교정
-  → DBR 187건 + HBR 9건 = 196건 교정
-  → 라벨 교정 후 재학습: AUC 0.9771→0.9784 (↑)
-  → 스크립트: 데이터처리/label_verify.py
+### 오늘 완료한 작업 (2026-06-05)
 
-**UMAP+K-means 재실행 완료** (2026-05-27, 768차원 기준):
-  → 12개 클러스터 재구성 (AI/디지털, HR/리더십, 마케팅/브랜드, ESG/위기 등)
-  → umap_coords.parquet, cluster_info.parquet 갱신
+**1. 공통 API 유틸 (`frontend/src/app/utils/api.ts`)**
+- `apiFetch` 래퍼: Authorization 헤더 자동 첨부
+- 401 응답 시 localStorage 클리어 + 자동 로그아웃(reload)
+- 전체 컴포넌트에서 `localhost:3001` 하드코딩 → `apiFetch` 교체
+  (DiagnosisInterview, DiagnosisResult, SearchHistory, NotificationView, ProfileView, InsightDashboard)
 
-**소셜 로그인 OAuth 완료** (2026-06-04):
-  → 카카오: REST API 키 갱신, Redirect URI 등록, 이메일 없을 시 kakao_{id}@kakao.local 대체
-  → 네이버: 새 앱 등록 (Client ID: 2djsU62p1ASOTLFgwC06), Redirect URI 등록
-  → 구글: 새 프로젝트(dongajul) 생성, OAuth 클라이언트 등록, Redirect URI 등록
-  → .env KAKAO_REST_API_KEY=5774f46feca99d381273b11b028e9764 갱신
-  → 스크립트: backend/src/controllers/authController.js
+**2. 버그 수정**
+- SearchHistory: API 응답 `{success, data:[]}` 파싱 오류 → `json.data` 로 수정
+- 회원가입 `alert()` 제거 → 바로 자동 로그인
 
-**보안 패치 완료** (2026-06-04):
-  → frontend react-router 취약점 패치 (
+**3. 시맨틱 맵 UI 완료**
+- `SemanticMap.tsx`: Recharts ScatterChart, 성공/실패/중립 색상, 필터, 클러스터 목록
+- 백엔드 `semanticMapRepository.js`: `article_vectors` 직접 조회 (success 400 + failure 200 + neutral 200 랜덤 샘플)
+- TopNavigation에 '시맨틱 맵' 메뉴 추가
+- 진단 결과 화면에 '시맨틱 맵에서 보기' 버튼 추가
+- App.tsx에 `semantic-map` 뷰 연결
+
+**4. AI 서버 UMAP 쿼리 포인트**
+- `schemas.py`: `DiagnoseResponse`, `ReportResponse`에 `query_umap_x/y` 필드 추가
+- `main.py`: top-K 유사 아티클의 umap_x/y 평균 → 쿼리 포인트 근사 좌표 반환
+- 진단 결과에서 시맨틱 맵으로 이동 시 ⭐ 포인트 하이라이트
+
+**5. 기타 개선**
+- `handleLogout`: userName, 상태 전체 초기화
+- `TopNavigation`: `onLogout` prop 연결
+
+---
+
+### ⚠️ 주의사항
+- `npm run build`는 VM에서 dist 폴더 권한 오류(EPERM) — Windows에서 `dist` 폴더 삭제 후 빌드
+- 코드 자체는 정상 (2234 modules transformed 확인)
+- DB에 `article_vectors.umap_x/y` 데이터 있어야 시맨틱 맵 점들 표시됨
+
+### 남은 작업
+1. 비밀번호 찾기 이메일 전송 (nodemailer)
+2. JWT Refresh Token
+3. 기업 구독 결제 플로우

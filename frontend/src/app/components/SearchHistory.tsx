@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Clock, Shield, AlertTriangle, Activity, Trash2, ChevronRight } from 'lucide-react';
 import { TabType } from '../App';
+import { apiFetch } from '../utils/api';
 import { DiagnosisData } from './DiagnosisResult';
 import { apiFetch } from '../utils/api';
 
