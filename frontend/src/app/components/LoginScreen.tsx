@@ -37,10 +37,11 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
       localStorage.setItem('token', tokenValue);
     }
 
-    // 2. 서버가 준 사용자 이름(또는 닉네임)을 'userName'이라는 이름으로 저장
-    // 서버 응답 구조에 따라 data.user.name 또는 data.user.nickname 일 수 있습니다.
-    if (data.user && (data.user.name || data.user.nickname)) {
-      localStorage.setItem('userName', data.user.name || data.user.nickname);
+    // 2. user 전체 저장 (user.id가 있어야 히스토리 조회 가능)
+    if (data.user) {
+      localStorage.setItem('user', JSON.stringify(data.user));
+      const displayName = data.user.nickname || data.user.name || data.user.email || '사용자';
+      localStorage.setItem('userName', displayName);
     }
 
     // 3. 기존 로그인 처리 로직 실행
