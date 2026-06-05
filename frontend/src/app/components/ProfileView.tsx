@@ -6,6 +6,7 @@
 
 import { ArrowLeft, User, Mail, Shield, Settings, Bell, Lock, X, Check, Moon, Sun, ChevronRight, Edit2, Clock } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { apiFetch } from '../utils/api';
 
 interface ProfileViewProps {
   onBack: () => void;
@@ -95,17 +96,8 @@ const [editEmail, setEditEmail] = useState(() => {
   // 사용자 데이터 로드
 useEffect(() => {
   const fetchProfile = async () => {
-    const token = localStorage.getItem('token'); // 로그인 시 저장한 JWT 토큰
-    if (!token) return;
-
   try {
-    const res = await fetch('http://localhost:3001/api/profile', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
+    const res = await apiFetch('/api/profile');
     const data = await res.json();
 
     if (data.success && data.user) {
@@ -154,21 +146,12 @@ useEffect(() => {
     return;
   }
 
-  // 2. 서버(DB)로 데이터 전송 (이 부분이 수정되는 핵심입니다)
-  const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
-  
+  // 2. 서버(DB)로 데이터 전송
   try {
-    const res = await fetch('http://localhost:3001/api/profile/password', {
+    const res = await apiFetch('/api/profile/password', {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ 
-    currentPassword: currentPassword, 
-    newPassword: newPassword 
-  })
-});
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
 
     const data = await res.json();
 
@@ -215,26 +198,10 @@ useEffect(() => {
       return;
     }
 
-    // [보강 포인트] LocalStorage에서 토큰 꺼내기 및 검증
-    const token = localStorage.getItem('token');
-    
-    // 토큰이 아예 없거나, 문자열 "null"로 저장되어 있는 경우 차단
-    if (!token || token === 'null') {
-      console.error("저장 실패: 유효한 인증 토큰이 없습니다.");
-      showToast('로그인 세션이 만료되었습니다. 다시 로그인해 주세요.');
-      return; 
-    }
-
     try {
-    const res = await fetch('http://localhost:3001/api/profile', {
+    const res = await apiFetch('/api/profile', {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        nickname: editNickname.trim()
-      })
+      body: JSON.stringify({ nickname: editNickname.trim() }),
     });
 
     const data = await res.json();

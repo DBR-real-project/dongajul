@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Clock, Shield, AlertTriangle, Activity, Trash2, ChevronRight } from 'lucide-react';
 import { TabType } from '../App';
 import { DiagnosisData } from './DiagnosisResult';
+import { apiFetch } from '../utils/api';
 
 interface DiagnosisHistoryItem {
   diagnosis_id: number;
@@ -35,10 +36,12 @@ export function SearchHistory({ onResultByIdClick, darkMode = false }: SearchHis
       try {
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         if (!user.id) { setLoading(false); return; }
-        const res = await fetch(`http://localhost:3001/api/history?user_id=${user.id}`);
+        const res = await apiFetch(`/api/history?user_id=${user.id}`);
         if (res.ok) {
-          const data = await res.json();
-          setHistory(Array.isArray(data) ? data : []);
+          const json = await res.json();
+          // 응답 형태: { success: true, data: [...] }
+          const rows = Array.isArray(json) ? json : (json.data ?? []);
+          setHistory(rows);
         }
       } catch {
         setHistory([]);

@@ -183,7 +183,7 @@ ai_server/
 
 ---
 
-## 현재 상태 (2026-06-04)
+## 현재 상태 (2026-06-05 세션2)
 
 **NLP 파이프라인 전체 완료**: ① 전처리 → ② 라벨링 → ③ 임베딩+FAISS → ④ 리스크 모델 → ⑤ UMAP+K-means
 **FastAPI ML 서비스 완료**: POST /diagnose, GET /health, GET /clusters (테스트 통과)
@@ -213,26 +213,4 @@ ai_server/
   → 스크립트: backend/src/controllers/authController.js
 
 **보안 패치 완료** (2026-06-04):
-  → frontend react-router 취약점 패치 (→ 7.16.0)
-
-**Git/GitHub 현황**:
-  → Organization: DBR-real-project (github.com/DBR-real-project)
-  → 레포: https://github.com/DBR-real-project/dongajul (Public)
-  → develop 브랜치 최신화 완료 (jyp PR #15 머지 포함)
-  → 활성 브랜치: bg, ch, dy, jyp (jyp는 오늘 머지 완료)
-
-**개발 환경 현황**:
-- Node.js v24.13.1 ✅ 설치됨
-- Docker Desktop ❌ 미설치
-- MySQL 8.0 ✅ 설치됨 (외부 DB: project-db-campus.smhrd.com:3307)
-- Git ✅
-
-**⚠️ 미완료 / 주의사항**:
-- `users` 테이블 `password_hash` 컬럼 NULL 허용 안 됨 → 소셜 로그인 신규 유저 생성 시 에러
-  → 해결: `ALTER TABLE users MODIFY COLUMN password_hash VARCHAR(255) NULL;` 실행 필요
-- 카카오 이메일 동의항목 권한 없음 (비즈니스 앱 아님) → kakao_{id}@kakao.local 대체로 우회 중
-
-**다음 할 일** (우선순위 순):
-1. `ALTER TABLE users MODIFY COLUMN password_hash VARCHAR(255) NULL;` 실행
-2. MySQL에 articles / article_labels / article_vectors / clusters 테이블 데이터 INSERT
-3. ai_server/main.py에 DB 조회 결과 연동
+  → frontend react-router 취약점 패치 (
