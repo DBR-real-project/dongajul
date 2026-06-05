@@ -206,6 +206,20 @@ export function SemanticMap({ darkMode = false, onBack, queryPoint }: SemanticMa
                 <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>데이터 로드 중…</p>
               </div>
             </div>
+          ) : points.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-[480px] gap-4">
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                <Map className={`w-8 h-8 ${darkMode ? 'text-gray-600' : 'text-gray-400'}`} />
+              </div>
+              <div className="text-center">
+                <p className={`text-sm font-semibold ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  시맨틱 맵 데이터가 없습니다
+                </p>
+                <p className={`text-xs mt-1 ${darkMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                  DB에 article_vectors UMAP 좌표 데이터를 먼저 적재해주세요
+                </p>
+              </div>
+            </div>
           ) : (
             <ResponsiveContainer width="100%" height={500}>
               <ScatterChart margin={{ top: 10, right: 20, bottom: 20, left: 10 }}>
