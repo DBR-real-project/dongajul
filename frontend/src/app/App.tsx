@@ -75,6 +75,7 @@ export default function App() {
 
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('userName', user.name || user.email || '사용자');
 
       setIsLoggedIn(true);
       window.history.replaceState({}, '', '/');
@@ -82,6 +83,7 @@ export default function App() {
       console.error('토큰 파싱 실패:', e);
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      localStorage.removeItem('userName');
     }
   }, []);
 
@@ -132,10 +134,16 @@ export default function App() {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('userName');
 
     setIsLoggedIn(false);
     setShowSignup(false);
     setCurrentView('dashboard');
+    setActiveTab('dashboard');
+    setPreviousView('dashboard');
+    setSelectedArticle(null);
+    setDiagnosisResult(null);
+    setDiagnosisId(undefined);
   };
 
   const handleTabChange = (tab: TabType) => {
@@ -204,6 +212,7 @@ export default function App() {
         darkMode={darkMode}
         onToggleDarkMode={() => setDarkMode((d) => !d)}
         onNotificationClick={() => setCurrentView('notifications')}
+        onLogout={handleLogout}
       />
 
       <div className="flex-1 flex overflow-hidden">
