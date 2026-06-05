@@ -224,6 +224,8 @@ def diagnose(req: DiagnoseRequest):
     risk_score = round(0.4 * model_score + 0.6 * case_score, 4)
 
     query_cluster_id: int | None = None
+    query_umap_x: float | None = None
+    query_umap_y: float | None = None
 
     if _umap is not None and "cluster_id" in _umap.columns:
         try:
@@ -233,8 +235,15 @@ def diagnose(req: DiagnoseRequest):
             if cluster_ids:
                 from collections import Counter
                 query_cluster_id = int(Counter(cluster_ids).most_common(1)[0][0])
+
+            # 유사 아티클 umap 좌표 평균 → 쿼리 포인트 근사
+            if top_idx and "umap_x" in _umap.columns:
+                valid_idx = [i for i in top_idx if i < len(_umap)]
+                if valid_idx:
+                    query_umap_x = float(_umap["umap_x"].iloc[valid_idx].mean())
+                    query_umap_y = float(_umap["umap_y"].iloc[valid_idx].mean())
         except Exception as e:
-            print(f"[/diagnose] 쿼리 클러스터 계산 실패: {e}")
+            print(f"[/diagnose] 쿼리 클러스터/UMAP 계산 실패: {e}")
             query_cluster_id = None
 
     return DiagnoseResponse(
@@ -242,6 +251,8 @@ def diagnose(req: DiagnoseRequest):
         risk_level=_risk_level(risk_score),
         similar_articles=similar,
         query_cluster_id=query_cluster_id,
+        query_umap_x=query_umap_x,
+        query_umap_y=query_umap_y,
     )
 
 
@@ -278,72 +289,29 @@ def report(req: DiagnoseRequest):
             risk_level=diag.risk_level,
             similar_articles=diag.similar_articles,
             query_cluster_id=diag.query_cluster_id,
+            query_umap_x=diag.query_umap_x,
+            query_umap_y=diag.query_umap_y,
             report=DiagnosisReport(**raw),
         )
 
-    except HTTPException:
-        raise
-
-    except Exception as e:
-        print(f"[/report] 오류: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"/report 처리 중 오류 발생: {str(e)}",
-        )
+    except Exception as err:
+        print(f"[/report] 오류: {err}")
+        raise HTTPException(status_code=500, detail=str(err))
 
 
 @app.get("/health")
 def health():
     return {
         "status": "ok",
-        "models_loaded": _sbert is not None,
-        "faiss_loaded": _faiss_index is not None,
-        "risk_model_loaded": _risk_model is not None,
-        "metadata_loaded": _meta is not None,
-        "article_count": len(_meta) if _meta is not None else 0,
-        "cluster_count": len(_clusters) if _clusters is not None else 0,
+        "faiss": _faiss_index is not None,
+        "sbert": _sbert is not None,
+        "risk_model": _risk_model is not None,
+        "umap": _umap is not None,
     }
 
 
 @app.get("/clusters")
-def get_clusters():
+def clusters():
     if _clusters is None:
-        raise HTTPException(status_code=503, detail="클러스터 정보가 없습니다.")
-
+        return []
     return _clusters.to_dict(orient="records")
-
-
-# ── POST /search  (RAG 시맨틱 검색) ────────────────────────────────────────
-@app.post("/search")
-def search(req: DiagnoseRequest):
-    """사용자 검색어를 SBERT 임베딩 → FAISS 유사도 검색으로 관련 기사 반환."""
-    if _sbert is None or _faiss_index is None or _meta is None:
-        raise HTTPException(status_code=503, detail="모델 로딩 중입니다.")
-
-    q_emb = _sbert.encode(
-        [req.text],
-        normalize_embeddings=True,
-        convert_to_numpy=True,
-    ).astype(np.float32)
-
-    top_k = min(req.top_k, 20)
-    scores, ids = _faiss_index.search(q_emb, top_k)
-
-    results = []
-    for rank, (sim, idx) in enumerate(zip(scores[0], ids[0]), start=1):
-        if int(idx) < 0:
-            continue
-        row = _meta.iloc[int(idx)]
-        results.append({
-            "rank": rank,
-            "title": str(row.get("title", "") or ""),
-            "url": str(row.get("url", "") or ""),
-            "label": str(row.get("label_name", "") or ""),
-            "similarity": round(float(sim), 4),
-            "summary": str(row.get("summary", "") or "") or None,
-            "category": str(row.get("category", "") or "") or None,
-            "published_date": str(row.get("published_date", "") or "") or None,
-            "source": str(row.get("source", "") or "") or None,
-        })
-
-    return {"results": results, "query": req.text}

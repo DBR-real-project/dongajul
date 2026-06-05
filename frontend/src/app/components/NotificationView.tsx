@@ -6,6 +6,7 @@
  */
 
 import { ArrowLeft, Bell, TrendingUp, AlertTriangle, Info, CheckCircle, Crown } from 'lucide-react';
+import { apiFetch } from '../utils/api';
 import { useState, useEffect } from 'react';
 import { LucideIcon } from 'lucide-react';
 import { apiFetch } from '../utils/api';

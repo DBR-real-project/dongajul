@@ -43,5 +43,5 @@ const registerUser = async (email, password, name) => {
 module.exports = {
   loginUser,
   registerUser,
-  makeToken,
+  makeToken
 };
