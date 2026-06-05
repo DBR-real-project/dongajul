@@ -42,8 +42,7 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "데이터처리" / "output"
 
 
-_sbert_faiss: SentenceTransformer | None = None
-_sbert_risk: SentenceTransformer | None = None
+_sbert: SentenceTransformer | None = None
 _faiss_index: Any = None
 _risk_model: Any = None
 _meta: pd.DataFrame | None = None
@@ -61,13 +60,10 @@ def _risk_level(score: float) -> str:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _sbert_faiss, _sbert_risk, _faiss_index, _risk_model, _meta, _umap, _clusters
+    global _sbert, _faiss_index, _risk_model, _meta, _umap, _clusters
 
-    print("[startup] SentenceTransformer (FAISS용, 384차원) 로드 중...")
-    _sbert_faiss = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
-
-    print("[startup] SentenceTransformer (리스크용, 768차원) 로드 중...")
-    _sbert_risk = SentenceTransformer("jhgan/ko-sroberta-multitask")
+    print("[startup] SentenceTransformer (ko-sroberta, 768차원) 로드 중...")
+    _sbert = SentenceTransformer("jhgan/ko-sroberta-multitask")
 
     print("[startup] FAISS 인덱스 로드 중...")
     if (OUT_DIR / "faiss.index").exists():
@@ -115,7 +111,10 @@ async def lifespan(app: FastAPI):
     print(f"[startup] 완료 — 아티클 {article_count}건, 클러스터 {cluster_count}개")
 
     if _faiss_index is not None:
-        print(f"[startup] FAISS 인덱스 차원: {_faiss_index.d}")
+        sbert_dim = _sbert.get_sentence_embedding_dimension() if _sbert else "?"
+        print(f"[startup] FAISS 인덱스 차원: {_faiss_index.d}  (SBERT 출력: {sbert_dim})")
+        if _faiss_index.d != sbert_dim:
+            print(f"[startup] WARNING: FAISS 차원({_faiss_index.d}) ≠ SBERT 차원({sbert_dim})")
     else:
         print("[startup] FAISS 인덱스 없음")
 
@@ -140,7 +139,7 @@ app = FastAPI(
 
 @app.post("/diagnose", response_model=DiagnoseResponse)
 def diagnose(req: DiagnoseRequest):
-    if _sbert_faiss is None or _sbert_risk is None:
+    if _sbert is None:
         raise HTTPException(
             status_code=503,
             detail="SentenceTransformer 모델 로딩 중입니다. 잠시 후 재시도하세요.",
@@ -164,35 +163,28 @@ def diagnose(req: DiagnoseRequest):
             detail="메타데이터가 없어 진단 기능을 사용할 수 없습니다.",
         )
 
-    q_emb_faiss = _sbert_faiss.encode(
+    q_emb = _sbert.encode(
         [req.text],
         normalize_embeddings=True,
         convert_to_numpy=True,
     ).astype(np.float32)
 
-    q_emb_risk = _sbert_risk.encode(
-        [req.text],
-        normalize_embeddings=True,
-        convert_to_numpy=True,
-    ).astype(np.float32)
-
-    if _faiss_index.d == q_emb_faiss.shape[1]:
-        scores, ids = _faiss_index.search(q_emb_faiss, req.top_k)
-    elif _faiss_index.d == q_emb_risk.shape[1]:
-        scores, ids = _faiss_index.search(q_emb_risk, req.top_k)
-    else:
+    if _faiss_index.d != q_emb.shape[1]:
         raise HTTPException(
             status_code=500,
             detail=(
-                f"FAISS 인덱스 차원({_faiss_index.d})과 임베딩 차원이 맞지 않습니다. "
-                f"FAISS용({q_emb_faiss.shape[1]}), 리스크용({q_emb_risk.shape[1]})"
+                f"FAISS 인덱스 차원({_faiss_index.d})과 SBERT 출력 차원({q_emb.shape[1]})이 맞지 않습니다. "
+                f"embed.py를 다시 실행하세요."
             ),
         )
 
+    scores, ids = _faiss_index.search(q_emb, req.top_k)
+
+    # 모델 기반 P(failure)
     _model = _risk_model["model"]
     classes = list(_model.classes_)
     fail_col = classes.index(0)
-    risk_score = float(_model.predict_proba(q_emb_risk)[0, fail_col])
+    model_score = float(_model.predict_proba(q_emb)[0, fail_col])
 
     similar: list[SimilarArticle] = []
 
@@ -215,6 +207,21 @@ def diagnose(req: DiagnoseRequest):
                 source=str(row.get("source", "") or "") or None,
             )
         )
+
+    # 유사 사례 기반 failure 비율 (가중 평균: 유사도 높은 사례에 더 높은 가중치)
+    if similar:
+        total_sim = sum(a.similarity for a in similar)
+        if total_sim > 0:
+            case_score = sum(
+                a.similarity for a in similar if a.label == "failure"
+            ) / total_sim
+        else:
+            case_score = sum(1 for a in similar if a.label == "failure") / len(similar)
+    else:
+        case_score = 0.0
+
+    # 모델 점수(40%) + 사례 기반 점수(60%) 결합
+    risk_score = round(0.4 * model_score + 0.6 * case_score, 4)
 
     query_cluster_id: int | None = None
 
@@ -289,7 +296,7 @@ def report(req: DiagnoseRequest):
 def health():
     return {
         "status": "ok",
-        "models_loaded": _sbert_faiss is not None and _sbert_risk is not None,
+        "models_loaded": _sbert is not None,
         "faiss_loaded": _faiss_index is not None,
         "risk_model_loaded": _risk_model is not None,
         "metadata_loaded": _meta is not None,
@@ -304,3 +311,39 @@ def get_clusters():
         raise HTTPException(status_code=503, detail="클러스터 정보가 없습니다.")
 
     return _clusters.to_dict(orient="records")
+
+
+# ── POST /search  (RAG 시맨틱 검색) ────────────────────────────────────────
+@app.post("/search")
+def search(req: DiagnoseRequest):
+    """사용자 검색어를 SBERT 임베딩 → FAISS 유사도 검색으로 관련 기사 반환."""
+    if _sbert is None or _faiss_index is None or _meta is None:
+        raise HTTPException(status_code=503, detail="모델 로딩 중입니다.")
+
+    q_emb = _sbert.encode(
+        [req.text],
+        normalize_embeddings=True,
+        convert_to_numpy=True,
+    ).astype(np.float32)
+
+    top_k = min(req.top_k, 20)
+    scores, ids = _faiss_index.search(q_emb, top_k)
+
+    results = []
+    for rank, (sim, idx) in enumerate(zip(scores[0], ids[0]), start=1):
+        if int(idx) < 0:
+            continue
+        row = _meta.iloc[int(idx)]
+        results.append({
+            "rank": rank,
+            "title": str(row.get("title", "") or ""),
+            "url": str(row.get("url", "") or ""),
+            "label": str(row.get("label_name", "") or ""),
+            "similarity": round(float(sim), 4),
+            "summary": str(row.get("summary", "") or "") or None,
+            "category": str(row.get("category", "") or "") or None,
+            "published_date": str(row.get("published_date", "") or "") or None,
+            "source": str(row.get("source", "") or "") or None,
+        })
+
+    return {"results": results, "query": req.text}

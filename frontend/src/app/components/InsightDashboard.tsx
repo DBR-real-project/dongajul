@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BarChart2, TrendingUp, AlertTriangle, Shield, ExternalLink, Search, Clock, RefreshCw } from 'lucide-react';
+import { apiFetch } from '../utils/api';
 
 interface Article {
   article_id: number;
@@ -34,7 +35,7 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
   useEffect(() => {
     const fetchClusters = async () => {
       try {
-        const clusterRes = await fetch('http://localhost:3001/api/clusters');
+        const clusterRes = await apiFetch('/api/clusters');
         if (clusterRes.ok) {
           const clData = await clusterRes.json();
           setClusters(Array.isArray(clData) ? clData.slice(0, 6) : []);
@@ -53,7 +54,7 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
         const params = new URLSearchParams({ limit: '20' });
         if (filter !== 'all') params.append('label', filter);
         if (searchQuery.trim()) params.append('search', searchQuery.trim());
-        const artRes = await fetch(`http://localhost:3001/api/articles?${params}`);
+        const artRes = await apiFetch(`/api/articles?${params}`);
         if (artRes.ok) {
           const artData = await artRes.json();
           setArticles(Array.isArray(artData) ? artData : artData.articles || []);

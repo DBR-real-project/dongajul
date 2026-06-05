@@ -6,12 +6,14 @@ import { EnterpriseDashboard } from './components/EnterpriseDashboard';
 import { StrategyWorkspace } from './components/StrategyWorkspace';
 import { SearchHistory } from './components/SearchHistory';
 import { RiskAnalysis } from './components/RiskAnalysis';
+import { DiagnosisInterview } from './components/DiagnosisInterview';
 import { DiagnosisResult, DiagnosisData } from './components/DiagnosisResult';
 import { InsightDashboard } from './components/InsightDashboard';
 import { ArticleDetail } from './components/ArticleDetail';
 import { NotificationView } from './components/NotificationView';
 import { ProfileView } from './components/ProfileView';
 import { CompareView } from './components/CompareView';
+import { SemanticMap } from './components/SemanticMap';
 
 export type ViewType =
   | 'dashboard'
@@ -24,7 +26,8 @@ export type ViewType =
   | 'article'
   | 'notifications'
   | 'profile'
-  | 'result';
+  | 'result'
+  | 'semantic-map';
 
 export type TabType = 'dashboard' | 'strategy' | 'history';
 
@@ -58,6 +61,7 @@ export default function App() {
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
   }, [darkMode]);
 
+  // 소셜 로그인 콜백 토큰 처리
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
@@ -97,9 +101,7 @@ export default function App() {
     if (!savedUser) {
       localStorage.setItem(
         'user',
-        JSON.stringify({
-          email,
-        })
+        JSON.stringify({ email })
       );
     }
 
@@ -116,9 +118,7 @@ export default function App() {
     if (!savedUser) {
       localStorage.setItem(
         'user',
-        JSON.stringify({
-          email,
-        })
+        JSON.stringify({ email })
       );
     }
 
@@ -255,24 +255,27 @@ export default function App() {
               darkMode={darkMode}
             />
           ) : currentView === 'risk' ? (
-            <RiskAnalysis
-              onBack={() => setCurrentView('dashboard')}
-              onArticleClick={(id: number) => {
-                setSelectedArticle(id);
-                navigateTo('article', 'risk');
-              }}
-              onResultClick={(data: DiagnosisData) => navigateToResult(data, 'risk')}
-              onNotificationClick={() => setCurrentView('notifications')}
-              onProfileClick={() => setCurrentView('profile')}
+            <DiagnosisInterview
               darkMode={darkMode}
-              language="ko"
+              onResultClick={(data: DiagnosisData) => navigateToResult(data, 'risk')}
             />
           ) : currentView === 'result' ? (
             <DiagnosisResult
               resultData={diagnosisResult ?? undefined}
               diagnosisId={diagnosisId}
               onBack={() => setCurrentView(previousView || 'risk')}
+              onSemanticMap={() => navigateTo('semantic-map', 'result')}
               darkMode={darkMode}
+            />
+          ) : currentView === 'semantic-map' ? (
+            <SemanticMap
+              darkMode={darkMode}
+              onBack={() => setCurrentView(previousView || 'dashboard')}
+              queryPoint={diagnosisResult ? {
+                umap_x: (diagnosisResult as any).umap_x,
+                umap_y: (diagnosisResult as any).umap_y,
+                cluster_name: diagnosisResult.cluster_name,
+              } : null}
             />
           ) : currentView === 'article' && selectedArticle !== null ? (
             <ArticleDetail
@@ -305,3 +308,4 @@ export default function App() {
     </div>
   );
 }
+ 

@@ -8,6 +8,7 @@
 import { ArrowLeft, Bell, TrendingUp, AlertTriangle, Info, CheckCircle, Crown } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { LucideIcon } from 'lucide-react';
+import { apiFetch } from '../utils/api';
 
 interface NotificationViewProps {
   onBack: () => void;
@@ -38,19 +39,12 @@ export function NotificationView({ onBack, onNavigate, darkMode = false }: Notif
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [toast, setToast] = useState<{ show: boolean; message: string }>({ show: false, message: '' });
 
-  const token = localStorage.getItem('accessToken') || localStorage.getItem('token'); // 토큰 가져오기
-
   // ─────────────────────────────────────────────
   // 1. API로부터 알림 데이터 불러오기
   // ─────────────────────────────────────────────
   const fetchNotifications = async () => {
     try {
-      const res = await fetch('http://localhost:3001/api/notifications', {
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const res = await apiFetch('/api/notifications');
       const result = await res.json();
 
       if (result.success) {
@@ -119,10 +113,7 @@ export function NotificationView({ onBack, onNavigate, darkMode = false }: Notif
   // 모두 읽음 처리 API 연동
   const handleMarkAllAsRead = async () => {
     try {
-      const res = await fetch('http://localhost:3001/api/notifications/read-all', {
-        method: 'PUT',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const res = await apiFetch('/api/notifications/read-all', { method: 'PUT' });
       if (res.ok) {
         setActiveNotifications([]); 
         triggerToast('모든 알림을 읽음 처리했습니다. ✨');
@@ -294,7 +285,7 @@ export function NotificationView({ onBack, onNavigate, darkMode = false }: Notif
         </div>
       )}
 
-      {/* 프리미엄 플랜 업그레이드 모달 (웜 골드 그라데이션 타이틀 아키텍처) */}
+      {/* 프리미엄 플랜 업그레이드 모달 */}
       {showUpgradeModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[150] p-4 animate-in fade-in duration-200">
           <div className={`${darkMode ? 'bg-[#0A0E1A] border border-gray-800' : 'bg-white'} rounded-2xl max-w-md w-full shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150`}>

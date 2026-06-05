@@ -4,6 +4,7 @@ import {
   TrendingDown, TrendingUp, Activity, Tag, Lightbulb,
   Clock, BarChart2, ChevronRight
 } from 'lucide-react';
+import { apiFetch } from '../utils/api';
 
 export interface SimilarArticle {
   rank: number;
@@ -41,6 +42,7 @@ interface DiagnosisResultProps {
   diagnosisId?: number;
   resultData?: DiagnosisData;
   onBack: () => void;
+  onSemanticMap?: () => void;
   darkMode?: boolean;
 }
 
@@ -169,7 +171,7 @@ function CaseCard({
   );
 }
 
-export function DiagnosisResult({ diagnosisId, resultData, onBack, darkMode = false }: DiagnosisResultProps) {
+export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap, darkMode = false }: DiagnosisResultProps) {
   const [data, setData] = useState<DiagnosisData | null>(resultData || null);
   const [loading, setLoading] = useState(!resultData && !!diagnosisId);
   const [error, setError] = useState('');
@@ -177,7 +179,7 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, darkMode = fa
   useEffect(() => {
     if (!resultData && diagnosisId) {
       setLoading(true);
-      fetch(`http://localhost:3001/api/diagnose/${diagnosisId}`)
+      apiFetch(`/api/diagnose/${diagnosisId}`)
         .then((res) => res.json())
         .then((json) => { setData(json); setLoading(false); })
         .catch(() => { setError('결과를 불러올 수 없습니다.'); setLoading(false); });
@@ -489,8 +491,21 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, darkMode = fa
             </div>
           )}
 
-          {/* 다시 분석 버튼 */}
-          <div className="flex justify-center pt-2">
+          {/* 하단 버튼 */}
+          <div className="flex justify-center gap-3 pt-2 flex-wrap">
+            {onSemanticMap && (
+              <button
+                onClick={onSemanticMap}
+                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all border ${
+                  darkMode
+                    ? 'border-indigo-500/40 text-indigo-300 hover:bg-indigo-500/10'
+                    : 'border-indigo-200 text-indigo-700 hover:bg-indigo-50'
+                }`}
+              >
+                <ChevronRight className="w-4 h-4" />
+                시맨틱 맵에서 보기
+              </button>
+            )}
             <button
               onClick={onBack}
               className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#142755] to-[#444655] text-white rounded-xl font-semibold text-sm shadow-lg hover:shadow-xl transition-all"

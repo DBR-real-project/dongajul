@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ArrowRight, ArrowLeft, Shield, CheckCircle, Building2, Target, FileText, Loader2 } from 'lucide-react';
 import { DiagnosisData } from './DiagnosisResult';
+import { apiFetch } from '../utils/api';
 
 interface DiagnosisInterviewProps {
   onResultClick: (data: DiagnosisData) => void;
@@ -21,7 +22,9 @@ const STRATEGY_TYPES = [
 export function DiagnosisInterview({ onResultClick, darkMode = false }: DiagnosisInterviewProps) {
   const [step, setStep] = useState(1);
   const [industry, setIndustry] = useState('');
+  const [customIndustry, setCustomIndustry] = useState('');
   const [strategyType, setStrategyType] = useState('');
+  const [customStrategyType, setCustomStrategyType] = useState('');
   const [strategyText, setStrategyText] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -33,10 +36,11 @@ export function DiagnosisInterview({ onResultClick, darkMode = false }: Diagnosi
     setLoading(true);
     setError('');
     try {
-      const fullText = `[산업군: ${industry}] [전략유형: ${strategyType}] ${strategyText}`;
-      const res = await fetch('http://localhost:3001/api/diagnose', {
+      const finalIndustry = industry === '기타' ? (customIndustry.trim() || '기타') : industry;
+      const finalStrategyType = strategyType === '기타' ? (customStrategyType.trim() || '기타') : strategyType;
+      const fullText = `[산업군: ${finalIndustry}] [전략유형: ${finalStrategyType}] ${strategyText}`;
+      const res = await apiFetch('/api/diagnose', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: fullText,
           top_k: 5,
@@ -109,10 +113,19 @@ export function DiagnosisInterview({ onResultClick, darkMode = false }: Diagnosi
                 </button>
               ))}
             </div>
+            {industry === '기타' && (
+              <input
+                type="text"
+                value={customIndustry}
+                onChange={(e) => setCustomIndustry(e.target.value)}
+                placeholder="산업군을 직접 입력해주세요"
+                className={`w-full px-4 py-3 text-sm rounded-xl border focus:outline-none focus:ring-2 focus:ring-[#142755] ${darkMode ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500' : 'bg-white border-gray-200 text-gray-900 placeholder-gray-400'}`}
+              />
+            )}
             <div className="flex justify-end">
               <button
                 onClick={() => industry && setStep(2)}
-                disabled={!industry}
+                disabled={!industry || (industry === '기타' && !customIndustry.trim())}
                 className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#142755] to-[#3B547E] text-white font-semibold rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg"
               >
                 다음 <ArrowRight className="w-4 h-4" />
@@ -149,13 +162,22 @@ export function DiagnosisInterview({ onResultClick, darkMode = false }: Diagnosi
                 </button>
               ))}
             </div>
+            {strategyType === '기타' && (
+              <input
+                type="text"
+                value={customStrategyType}
+                onChange={(e) => setCustomStrategyType(e.target.value)}
+                placeholder="전략 유형을 직접 입력해주세요"
+                className={`w-full px-4 py-3 text-sm rounded-xl border focus:outline-none focus:ring-2 focus:ring-[#142755] ${darkMode ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500' : 'bg-white border-gray-200 text-gray-900 placeholder-gray-400'}`}
+              />
+            )}
             <div className="flex justify-between">
               <button onClick={() => setStep(1)} className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-sm ${darkMode ? 'text-gray-400 hover:bg-gray-800' : 'text-gray-600 hover:bg-gray-100'} transition-all`}>
                 <ArrowLeft className="w-4 h-4" /> 이전
               </button>
               <button
                 onClick={() => strategyType && setStep(3)}
-                disabled={!strategyType}
+                disabled={!strategyType || (strategyType === '기타' && !customStrategyType.trim())}
                 className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#142755] to-[#3B547E] text-white font-semibold rounded-xl disabled:opacity-40 disabled:cursor-not-allowed shadow-lg"
               >
                 다음 <ArrowRight className="w-4 h-4" />

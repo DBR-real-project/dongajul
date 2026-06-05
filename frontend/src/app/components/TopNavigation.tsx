@@ -1,4 +1,4 @@
-import { User, Moon, Sun, Bell, Home, Shield, BarChart2, History, LogOut } from 'lucide-react';
+import { User, Moon, Sun, Bell, Home, Shield, BarChart2, History, LogOut, Map } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 interface TopNavigationProps {
@@ -64,20 +64,19 @@ export function TopNavigation({
           { id: 'risk', icon: Shield, label: '전략 진단' },
           { id: 'analysis', icon: BarChart2, label: '인사이트' },
           { id: 'history', icon: History, label: '진단 이력' },
+          { id: 'semantic-map', icon: Map, label: '시맨틱 맵' },
         ]
       : [
           { id: 'dashboard', icon: Home, label: 'Home' },
           { id: 'risk', icon: Shield, label: 'Diagnose' },
           { id: 'analysis', icon: BarChart2, label: 'Insights' },
           { id: 'history', icon: History, label: 'History' },
+          { id: 'semantic-map', icon: Map, label: 'Semantic Map' },
         ];
 
   const handleLogoutConfirm = () => {
     setIsLogoutModalOpen(false);
     setShowUserMenu(false);
-
-    // App.tsx의 handleLogout 실행
-    // localStorage token/user 삭제는 App.tsx에서 처리
     onLogout();
   };
 
