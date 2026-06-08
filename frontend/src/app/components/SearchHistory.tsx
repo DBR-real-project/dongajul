@@ -3,7 +3,6 @@ import { Clock, Shield, AlertTriangle, Activity, Trash2, ChevronRight } from 'lu
 import { TabType } from '../App';
 import { apiFetch } from '../utils/api';
 import { DiagnosisData } from './DiagnosisResult';
-import { apiFetch } from '../utils/api';
 
 interface DiagnosisHistoryItem {
   diagnosis_id: number;
