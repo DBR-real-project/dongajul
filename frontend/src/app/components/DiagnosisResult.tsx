@@ -57,6 +57,7 @@ function RiskGauge({ score, darkMode }: { score: number; darkMode: boolean }) {
   const color = pct >= 70 ? '#ef4444' : pct >= 40 ? '#fbbf24' : '#10b981';
   const label = pct >= 70 ? '위험' : pct >= 40 ? '주의' : '안전';
 
+
   return (
     <div className="relative w-full max-w-xs mx-auto h-48">
       <svg viewBox="0 0 200 120" className="w-full h-full">
@@ -110,60 +111,52 @@ function CaseCard({
       href={article.url || '#'}
       target="_blank"
       rel="noopener noreferrer"
-      className={`group flex flex-col gap-3 p-5 rounded-2xl cursor-pointer transition-all duration-300 ${
-        darkMode
-          ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30 hover:shadow-xl hover:shadow-gray-900/20'
-          : 'bg-white shadow-sm hover:shadow-md'
-      }`}
+      className={`group flex flex-col gap-3 p-5 rounded-2xl cursor-pointer transition-all duration-300 ${darkMode
+        ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30 hover:shadow-xl hover:shadow-gray-900/20'
+        : 'bg-white shadow-sm hover:shadow-md'
+        }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold mb-2.5 ${
-            isSuccess
-              ? darkMode ? 'bg-green-500/10 text-green-400' : 'bg-green-50 text-green-700'
-              : darkMode ? 'bg-red-500/10 text-red-400' : 'bg-red-50 text-red-700'
-          }`}>
+          <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold mb-2.5 ${isSuccess
+            ? darkMode ? 'bg-green-500/10 text-green-400' : 'bg-green-50 text-green-700'
+            : darkMode ? 'bg-red-500/10 text-red-400' : 'bg-red-50 text-red-700'
+            }`}>
             {isSuccess ? <Shield className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
             <span>유사도 {simPct}%</span>
             {article.rank && <span className="opacity-60">· #{article.rank}</span>}
           </div>
-          <h4 className={`text-sm font-semibold leading-relaxed line-clamp-2 mb-2 ${
-            darkMode ? 'text-white' : 'text-gray-900'
-          } group-hover:${isSuccess ? 'text-green-600' : 'text-red-600'} transition-colors`}>
+          <h4 className={`text-sm font-semibold leading-relaxed line-clamp-2 mb-2 ${darkMode ? 'text-white' : 'text-gray-900'
+            } group-hover:${isSuccess ? 'text-green-600' : 'text-red-600'} transition-colors`}>
             {article.title}
           </h4>
           {article.summary && (
-            <p className={`text-xs leading-relaxed line-clamp-2 ${
-              darkMode ? 'text-gray-400' : 'text-gray-500'
-            }`}>
+            <p className={`text-xs leading-relaxed line-clamp-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'
+              }`}>
               {article.summary}
             </p>
           )}
         </div>
-        <ExternalLink className={`w-4 h-4 flex-shrink-0 mt-1 ${
-          darkMode ? 'text-gray-500' : 'text-gray-400'
-        } group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform`} />
+        <ExternalLink className={`w-4 h-4 flex-shrink-0 mt-1 ${darkMode ? 'text-gray-500' : 'text-gray-400'
+          } group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform`} />
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
         {article.source && (
-          <span className={`px-2 py-0.5 text-xs font-medium rounded-md ${
-            darkMode ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-50 text-indigo-700'
-          }`}>
+          <span className={`px-2 py-0.5 text-xs font-medium rounded-md ${darkMode ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-50 text-indigo-700'
+            }`}>
             #{article.source}
           </span>
         )}
         {article.category && (
-          <span className={`px-2 py-0.5 text-xs font-medium rounded-md ${
-            darkMode ? 'bg-gray-700/60 text-gray-400' : 'bg-gray-100 text-gray-600'
-          }`}>
+          <span className={`px-2 py-0.5 text-xs font-medium rounded-md ${darkMode ? 'bg-gray-700/60 text-gray-400' : 'bg-gray-100 text-gray-600'
+            }`}>
             {article.category}
           </span>
         )}
         {article.published_date && (
-          <span className={`flex items-center gap-1 text-xs ${
-            darkMode ? 'text-gray-500' : 'text-gray-400'
-          }`}>
+          <span className={`flex items-center gap-1 text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'
+            }`}>
             <Clock className="w-3 h-3" />
             {article.published_date.slice(0, 10)}
           </span>
@@ -177,6 +170,49 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
   const [data, setData] = useState<DiagnosisData | null>(resultData || null);
   const [loading, setLoading] = useState(!resultData && !!diagnosisId);
   const [error, setError] = useState('');
+
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const userId = user?.id || null;
+  const [rating, setRating] = useState<'good' | 'bad' | null>(null);
+  const [opinion, setOpinion] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmitFeedback = async () => {
+    if (!rating) {
+      alert('평가를 선택해주세요');
+      return;
+    }
+
+    if (!data?.diagnosis_id) {
+      alert('진단 정보가 없습니다');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+      await apiFetch('/api/feedbacks', {
+        method: 'POST',
+        body: JSON.stringify({
+          user_id: user?.id || null,
+          diagnosis_id: data.diagnosis_id,
+          rating: rating, // good / bad
+          opinion_text: opinion,
+        }),
+      });
+
+      alert('피드백 감사합니다!');
+      setRating(null);
+      setOpinion('');
+
+    } catch (err) {
+      alert('피드백 제출 실패');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     if (!resultData && diagnosisId) {
@@ -195,26 +231,24 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
   const riskBg = pct >= 70
     ? darkMode ? 'bg-red-500/10 border-red-500/20' : 'bg-red-50 border-red-200'
     : pct >= 40
-    ? darkMode ? 'bg-yellow-500/10 border-yellow-500/20' : 'bg-yellow-50 border-yellow-200'
-    : darkMode ? 'bg-green-500/10 border-green-500/20' : 'bg-green-50 border-green-200';
+      ? darkMode ? 'bg-yellow-500/10 border-yellow-500/20' : 'bg-yellow-50 border-yellow-200'
+      : darkMode ? 'bg-green-500/10 border-green-500/20' : 'bg-green-50 border-green-200';
 
   return (
     <div className={`h-full overflow-y-auto ${darkMode ? 'bg-[#0A0E1A]' : 'bg-[#FAFBFC]'} pb-24`}>
       {/* 헤더 */}
-      <header className={`sticky top-0 z-50 border-b ${
-        darkMode
-          ? 'bg-[#0A0E1A]/90 backdrop-blur-xl border-gray-800/50'
-          : 'bg-white/90 backdrop-blur-xl border-gray-200/50'
-      }`}>
+      <header className={`sticky top-0 z-50 border-b ${darkMode
+        ? 'bg-[#0A0E1A]/90 backdrop-blur-xl border-gray-800/50'
+        : 'bg-white/90 backdrop-blur-xl border-gray-200/50'
+        }`}>
         <div className="px-6 py-4 max-w-[1200px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
               onClick={onBack}
-              className={`p-2.5 rounded-xl transition-all ${
-                darkMode
-                  ? 'hover:bg-gray-800/60 text-gray-400 hover:text-white'
-                  : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
-              }`}
+              className={`p-2.5 rounded-xl transition-all ${darkMode
+                ? 'hover:bg-gray-800/60 text-gray-400 hover:text-white'
+                : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
+                }`}
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
@@ -253,12 +287,10 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
 
           {/* 입력 전략 */}
           {data.input_text && (
-            <div className={`p-5 rounded-2xl border ${
-              darkMode ? 'bg-gray-800/40 border-gray-700/40' : 'bg-white border-gray-200 shadow-sm'
-            }`}>
-              <p className={`text-xs font-semibold uppercase tracking-widest mb-2 ${
-                darkMode ? 'text-gray-500' : 'text-gray-400'
-              }`}>분석한 전략</p>
+            <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-gray-800/40 border-gray-700/40' : 'bg-white border-gray-200 shadow-sm'
+              }`}>
+              <p className={`text-xs font-semibold uppercase tracking-widest mb-2 ${darkMode ? 'text-gray-500' : 'text-gray-400'
+                }`}>분석한 전략</p>
               <p className={`text-sm leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 {data.input_text}
               </p>
@@ -266,11 +298,10 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
           )}
 
           {/* 리스크 게이지 + KPI */}
-          <div className={`p-8 rounded-2xl ${
-            darkMode
-              ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30 shadow-xl shadow-gray-900/20'
-              : 'bg-white shadow-sm'
-          }`}>
+          <div className={`p-8 rounded-2xl ${darkMode
+            ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30 shadow-xl shadow-gray-900/20'
+            : 'bg-white shadow-sm'
+            }`}>
             <div className="text-center mb-6">
               <h2 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>
                 통합 전략 리스크 지수
@@ -306,9 +337,8 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
               ].map(({ label, value, icon: Icon, color }) => (
                 <div
                   key={label}
-                  className={`p-4 rounded-xl text-center ${
-                    darkMode ? 'bg-gray-900/40' : 'bg-gray-50'
-                  }`}
+                  className={`p-4 rounded-xl text-center ${darkMode ? 'bg-gray-900/40' : 'bg-gray-50'
+                    }`}
                 >
                   <Icon className={`w-5 h-5 ${color} mx-auto mb-2`} />
                   <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'} mb-1`}>{label}</p>
@@ -330,19 +360,18 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
                 {pct >= 70
                   ? '전략 리스크가 높습니다. 유사 실패 사례를 반드시 검토하세요.'
                   : pct >= 40
-                  ? '일부 리스크 요인이 감지됩니다. 주의가 필요합니다.'
-                  : '상대적으로 안전한 전략입니다. 유사 성공 사례를 참고하세요.'}
+                    ? '일부 리스크 요인이 감지됩니다. 주의가 필요합니다.'
+                    : '상대적으로 안전한 전략입니다. 유사 성공 사례를 참고하세요.'}
               </p>
             </div>
           </div>
 
           {/* 키워드 */}
           {data.keywords && data.keywords.length > 0 && (
-            <div className={`p-5 rounded-2xl ${
-              darkMode
-                ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30'
-                : 'bg-white shadow-sm'
-            }`}>
+            <div className={`p-5 rounded-2xl ${darkMode
+              ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30'
+              : 'bg-white shadow-sm'
+              }`}>
               <div className="flex items-center gap-2 mb-4">
                 <div className={`p-2 rounded-lg ${darkMode ? 'bg-indigo-500/10' : 'bg-indigo-50'}`}>
                   <Tag className={`w-4 h-4 ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`} />
@@ -355,11 +384,10 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
                 {data.keywords.map((kw) => (
                   <span
                     key={kw}
-                    className={`px-3 py-1.5 text-xs font-semibold rounded-xl ${
-                      darkMode
-                        ? 'bg-indigo-500/10 text-indigo-300 border border-indigo-500/20'
-                        : 'bg-indigo-50 text-indigo-700 border border-indigo-100'
-                    }`}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-xl ${darkMode
+                      ? 'bg-indigo-500/10 text-indigo-300 border border-indigo-500/20'
+                      : 'bg-indigo-50 text-indigo-700 border border-indigo-100'
+                      }`}
                   >
                     #{kw}
                   </span>
@@ -414,11 +442,10 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
 
           {/* GPT AI 진단 리포트 */}
           {data.report && (
-            <div className={`p-6 rounded-2xl space-y-5 ${
-              darkMode
-                ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30'
-                : 'bg-white shadow-sm'
-            }`}>
+            <div className={`p-6 rounded-2xl space-y-5 ${darkMode
+              ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30'
+              : 'bg-white shadow-sm'
+              }`}>
               <div className="flex items-center gap-2 mb-1">
                 <div className={`p-2 rounded-lg ${darkMode ? 'bg-yellow-500/10' : 'bg-yellow-50'}`}>
                   <Lightbulb className={`w-4 h-4 ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`} />
@@ -465,9 +492,8 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
               )}
 
               {/* 최종 판정 */}
-              <div className={`px-4 py-3 rounded-xl border ${
-                darkMode ? 'bg-[#0B2F61]/40 border-blue-500/20' : 'bg-[#0B2F61] text-white'
-              }`}>
+              <div className={`px-4 py-3 rounded-xl border ${darkMode ? 'bg-[#0B2F61]/40 border-blue-500/20' : 'bg-[#0B2F61] text-white'
+                }`}>
                 <p className={`text-xs font-semibold mb-1 ${darkMode ? 'text-blue-400' : 'text-blue-200'}`}>최종 판정</p>
                 <p className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-white'}`}>{data.report.verdict}</p>
               </div>
@@ -476,11 +502,10 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
 
           {/* 개선 제안 (기존 - report 없을 때 fallback) */}
           {data.improvement && !data.report && (
-            <div className={`p-6 rounded-2xl ${
-              darkMode
-                ? 'bg-gradient-to-br from-[#0B2F61]/60 to-[#142755]/30 border border-blue-500/10'
-                : 'bg-gradient-to-br from-[#0B2F61] to-[#1d3573] text-white'
-            }`}>
+            <div className={`p-6 rounded-2xl ${darkMode
+              ? 'bg-gradient-to-br from-[#0B2F61]/60 to-[#142755]/30 border border-blue-500/10'
+              : 'bg-gradient-to-br from-[#0B2F61] to-[#1d3573] text-white'
+              }`}>
               <div className="flex items-center gap-2 mb-3">
                 <Lightbulb className={`w-5 h-5 ${darkMode ? 'text-yellow-400' : 'text-[#E5BA73]'}`} />
                 <h3 className={`text-base font-semibold ${darkMode ? 'text-white' : 'text-white'}`}>
@@ -493,16 +518,55 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
             </div>
           )}
 
+          {/* 사용자 피드백 */}
+          <div className="mt-10 p-6 border rounded-2xl">
+            <h3 className="text-base font-semibold mb-4">
+              이 분석이 도움이 되었나요?
+            </h3>
+
+            <div className="flex gap-3 mb-4">
+              <button
+                onClick={() => setRating('good')}
+                className={`px-4 py-2 rounded-lg ${rating === 'good' ? 'bg-green-500 text-white' : 'bg-gray-100'
+                  }`}
+              >
+                👍 도움됨
+              </button>
+
+              <button
+                onClick={() => setRating('bad')}
+                className={`px-4 py-2 rounded-lg ${rating === 'bad' ? 'bg-red-500 text-white' : 'bg-gray-100'
+                  }`}
+              >
+                👎 별로
+              </button>
+            </div>
+
+            <textarea
+              value={opinion}
+              onChange={(e) => setOpinion(e.target.value)}
+              placeholder="의견을 남겨주세요 (선택)"
+              className="w-full border rounded-lg p-2 text-sm"
+            />
+
+            <button
+              onClick={handleSubmitFeedback}
+              disabled={submitting}
+              className="mt-3 px-4 py-2 bg-indigo-600 text-white rounded-lg"
+            >
+              {submitting ? '제출 중...' : '피드백 제출'}
+            </button>
+          </div>
+
           {/* 하단 버튼 */}
           <div className="flex justify-center gap-3 pt-2 flex-wrap">
             {onSemanticMap && (
               <button
                 onClick={onSemanticMap}
-                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all border ${
-                  darkMode
-                    ? 'border-indigo-500/40 text-indigo-300 hover:bg-indigo-500/10'
-                    : 'border-indigo-200 text-indigo-700 hover:bg-indigo-50'
-                }`}
+                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all border ${darkMode
+                  ? 'border-indigo-500/40 text-indigo-300 hover:bg-indigo-500/10'
+                  : 'border-indigo-200 text-indigo-700 hover:bg-indigo-50'
+                  }`}
               >
                 <ChevronRight className="w-4 h-4" />
                 시맨틱 맵에서 보기
