@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BarChart2, TrendingUp, AlertTriangle, Shield, ExternalLink, Search, Clock, RefreshCw } from 'lucide-react';
 import { apiFetch } from '../utils/api';
-import { apiFetch } from '../utils/api';
 
 interface Article {
   article_id: number;
