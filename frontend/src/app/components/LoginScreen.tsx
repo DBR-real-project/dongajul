@@ -14,6 +14,8 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
   const [error, setError] = useState('');
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
+  const [resetStatus, setResetStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+  const [resetMsg, setResetMsg] = useState('');
 
   // 1. 에러 해결 포인트: React.FormEvent 대신 권장 표준인 React.SubmitEvent 사용
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -54,6 +56,36 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
       setError('서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.');
     }
   };
+  const handlePasswordReset = async () => {
+  if (!resetEmail) {
+    setResetStatus('error');
+    setResetMsg('이메일을 입력해주세요.');
+    return;
+  }
+
+  try {
+    setResetStatus('loading');
+
+    const res = await fetch('http://localhost:3001/api/auth/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: resetEmail }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      setResetStatus('done');
+      setResetMsg('이메일로 재설정 링크를 보냈습니다.');
+    } else {
+      setResetStatus('error');
+      setResetMsg(data.message || '실패했습니다.');
+    }
+  } catch (err) {
+    setResetStatus('error');
+    setResetMsg('서버 오류가 발생했습니다.');
+  }
+};
 
 
   return (
