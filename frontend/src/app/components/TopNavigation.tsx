@@ -60,19 +60,19 @@ export function TopNavigation({
   const menuItems =
     language === 'ko'
       ? [
-          { id: 'dashboard', icon: Home, label: '홈' },
-          { id: 'risk', icon: Shield, label: '전략 진단' },
-          { id: 'analysis', icon: BarChart2, label: '인사이트' },
-          { id: 'history', icon: History, label: '진단 이력' },
-          { id: 'semantic-map', icon: Map, label: '시맨틱 맵' },
-        ]
+        { id: 'dashboard', icon: Home, label: '홈' },
+        { id: 'risk', icon: Shield, label: '전략 진단' },
+        { id: 'analysis', icon: BarChart2, label: '인사이트' },
+        { id: 'history', icon: History, label: '진단 이력' },
+        { id: 'semantic-map', icon: Map, label: '시맨틱 맵' },
+      ]
       : [
-          { id: 'dashboard', icon: Home, label: 'Home' },
-          { id: 'risk', icon: Shield, label: 'Diagnose' },
-          { id: 'analysis', icon: BarChart2, label: 'Insights' },
-          { id: 'history', icon: History, label: 'History' },
-          { id: 'semantic-map', icon: Map, label: 'Semantic Map' },
-        ];
+        { id: 'dashboard', icon: Home, label: 'Home' },
+        { id: 'risk', icon: Shield, label: 'Diagnose' },
+        { id: 'analysis', icon: BarChart2, label: 'Insights' },
+        { id: 'history', icon: History, label: 'History' },
+        { id: 'semantic-map', icon: Map, label: 'Semantic Map' },
+      ];
 
   const handleLogoutConfirm = () => {
     setIsLogoutModalOpen(false);
@@ -103,13 +103,12 @@ export function TopNavigation({
             <button
               key={item.id}
               onClick={() => onViewChange(item.id)}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all whitespace-nowrap flex-shrink-0 ${
-                isActive
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all whitespace-nowrap flex-shrink-0 ${isActive
                   ? 'bg-gradient-to-r from-[#142755] to-[#444655] text-white shadow-lg'
                   : darkMode
-                  ? 'text-gray-400 hover:text-white hover:bg-gray-800/60'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
+                    ? 'text-gray-400 hover:text-white hover:bg-gray-800/60'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
             >
               {item.label}
             </button>
@@ -119,11 +118,10 @@ export function TopNavigation({
 
       <div className="flex flex-nowrap items-center gap-2">
         <div
-          className={`px-3 py-1.5 ${
-            darkMode
+          className={`px-3 py-1.5 ${darkMode
               ? 'bg-gradient-to-br from-gray-800/60 to-gray-850/60 border border-gray-700/50'
               : 'bg-gradient-to-br from-gray-50 to-indigo-50 border border-gray-300/50'
-          } rounded-lg flex items-center gap-2`}
+            } rounded-lg flex items-center gap-2`}
         >
           <span className={`text-xs font-bold ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
             {language === 'ko' ? 'AI 사용량' : 'AI Usage'}
@@ -143,6 +141,16 @@ export function TopNavigation({
         </button>
 
         <button
+          onClick={() => onViewChange('subscription')}
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${darkMode
+              ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:opacity-90'
+              : 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:opacity-90'
+            }`}
+        >
+          {language === 'ko' ? '구독' : 'Upgrade'}
+        </button>
+
+        <button
           onClick={onToggleDarkMode}
           className={`p-2 ${darkMode ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-600'} rounded-lg transition-colors`}
           title={language === 'ko' ? '테마 전환' : 'Toggle theme'}
@@ -153,11 +161,10 @@ export function TopNavigation({
         {onToggleLanguage && (
           <button
             onClick={onToggleLanguage}
-            className={`px-3 py-1.5 ${
-              darkMode
+            className={`px-3 py-1.5 ${darkMode
                 ? 'bg-gray-800/60 hover:bg-gray-800 border border-gray-700/50 text-gray-300'
                 : 'bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700'
-            } rounded-lg transition-all text-xs font-semibold`}
+              } rounded-lg transition-all text-xs font-semibold`}
             title={language === 'en' ? 'Switch language' : '언어 전환'}
           >
             한/영
@@ -167,11 +174,10 @@ export function TopNavigation({
         <div className="relative">
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
-            className={`flex items-center gap-2 px-3 py-2 ${
-              darkMode
+            className={`flex items-center gap-2 px-3 py-2 ${darkMode
                 ? 'bg-gray-800/60 hover:bg-gray-800 border border-gray-700/50'
                 : 'bg-gray-50 hover:bg-gray-100 border border-gray-200'
-            } rounded-lg transition-all shadow-sm hover:shadow`}
+              } rounded-lg transition-all shadow-sm hover:shadow`}
           >
             <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center shadow-lg">
               <User className="w-4 h-4 text-white" />
@@ -185,18 +191,16 @@ export function TopNavigation({
 
           {showUserMenu && (
             <div
-              className={`absolute right-0 mt-2 min-w-[200px] ${
-                darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200 text-gray-900'
-              } border rounded-xl shadow-2xl z-[100] overflow-hidden origin-top-right animate-in fade-in slide-in-from-top-1 duration-150`}
+              className={`absolute right-0 mt-2 min-w-[200px] ${darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200 text-gray-900'
+                } border rounded-xl shadow-2xl z-[100] overflow-hidden origin-top-right animate-in fade-in slide-in-from-top-1 duration-150`}
             >
               <button
                 onClick={() => {
                   setShowUserMenu(false);
                   onViewChange('profile');
                 }}
-                className={`w-full px-5 py-3 text-left text-sm ${
-                  darkMode ? 'hover:bg-gray-700 text-gray-200' : 'hover:bg-gray-50 text-gray-700'
-                } transition-colors`}
+                className={`w-full px-5 py-3 text-left text-sm ${darkMode ? 'hover:bg-gray-700 text-gray-200' : 'hover:bg-gray-50 text-gray-700'
+                  } transition-colors`}
               >
                 {language === 'ko' ? '프로필 설정' : 'Profile Settings'}
               </button>
@@ -206,11 +210,10 @@ export function TopNavigation({
                   setShowUserMenu(false);
                   setIsLogoutModalOpen(true);
                 }}
-                className={`w-full px-5 py-3 text-left text-sm font-semibold ${
-                  darkMode
+                className={`w-full px-5 py-3 text-left text-sm font-semibold ${darkMode
                     ? 'hover:bg-gray-700 text-red-400 border-t border-gray-700'
                     : 'hover:bg-gray-50 text-red-600 border-t border-gray-200'
-                } transition-colors`}
+                  } transition-colors`}
               >
                 {language === 'ko' ? '로그아웃' : 'Logout'}
               </button>
@@ -227,11 +230,10 @@ export function TopNavigation({
           />
 
           <div
-            className={`relative transform overflow-hidden rounded-2xl ${
-              darkMode
+            className={`relative transform overflow-hidden rounded-2xl ${darkMode
                 ? 'bg-gray-900 border border-gray-800 text-white shadow-gray-950/50'
                 : 'bg-white text-gray-900 shadow-xl'
-            } px-6 py-6 text-left shadow-2xl transition-all sm:w-full sm:max-w-md animate-in fade-in zoom-in-95 duration-200`}
+              } px-6 py-6 text-left shadow-2xl transition-all sm:w-full sm:max-w-md animate-in fade-in zoom-in-95 duration-200`}
           >
             <div className="flex items-start gap-4">
               <div className="mx-auto flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-50 dark:bg-red-500/10 text-red-500 sm:mx-0 sm:h-10 sm:w-10">
@@ -264,11 +266,10 @@ export function TopNavigation({
               <button
                 type="button"
                 onClick={() => setIsLogoutModalOpen(false)}
-                className={`inline-flex justify-center rounded-xl ${
-                  darkMode
+                className={`inline-flex justify-center rounded-xl ${darkMode
                     ? 'bg-gray-800 hover:bg-gray-700 text-gray-300'
                     : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                } active:scale-95 px-4 py-2.5 text-xs font-bold transition-all`}
+                  } active:scale-95 px-4 py-2.5 text-xs font-bold transition-all`}
               >
                 {language === 'ko' ? '취소' : 'Cancel'}
               </button>

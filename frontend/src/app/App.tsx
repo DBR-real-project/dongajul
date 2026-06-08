@@ -14,6 +14,7 @@ import { NotificationView } from './components/NotificationView';
 import { ProfileView } from './components/ProfileView';
 import { CompareView } from './components/CompareView';
 import { SemanticMap } from './components/SemanticMap';
+import { SubscriptionPage } from './components/SubscriptionPage';
 
 export type ViewType =
   | 'dashboard'
@@ -27,7 +28,8 @@ export type ViewType =
   | 'notifications'
   | 'profile'
   | 'result'
-  | 'semantic-map';
+  | 'semantic-map'
+  | 'subscription';
 
 export type TabType = 'dashboard' | 'strategy' | 'history';
 
@@ -192,7 +194,7 @@ export default function App() {
         onLogin={handleLogin}
         onSocialLogin={handleSocialLogin}
         onSignupClick={() => setShowSignup(true)}
-        onForgotPassword={() => {}}
+        onForgotPassword={() => { }}
       />
     );
   }
@@ -291,6 +293,8 @@ export default function App() {
               onBack={() => setCurrentView('dashboard')}
               darkMode={darkMode}
             />
+          ) : currentView === 'subscription' ? (
+            <SubscriptionPage />
           ) : (
             <EnterpriseDashboard
               darkMode={darkMode}
@@ -307,4 +311,3 @@ export default function App() {
     </div>
   );
 }
- 
