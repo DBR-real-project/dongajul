@@ -7,7 +7,6 @@
 import { ArrowLeft, User, Mail, Shield, Settings, Bell, Lock, X, Check, Moon, Sun, ChevronRight, Edit2, Clock } from 'lucide-react';
 import { apiFetch } from '../utils/api';
 import { useState, useEffect } from 'react';
-import { apiFetch } from '../utils/api';
 
 interface ProfileViewProps {
   onBack: () => void;

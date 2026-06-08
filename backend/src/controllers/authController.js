@@ -220,4 +220,64 @@ exports.naverLogin = (req, res) => {
 
   const naverAuthUrl =
     'https://nid.naver.com/oauth2.0/authorize?' +
-    new UR
+    new URLSearchParams({
+      response_type: 'code',
+      client_id: process.env.NAVER_CLIENT_ID,
+      redirect_uri: process.env.NAVER_REDIRECT_URI,
+      state,
+    });
+
+  res.redirect(naverAuthUrl);
+};
+
+// 네이버 callback 처리
+exports.naverCallback = async (req, res) => {
+  const { code, state } = req.query;
+
+  try {
+    const tokenResult = await axios.post(
+      'https://nid.naver.com/oauth2.0/token',
+      new URLSearchParams({
+        grant_type: 'authorization_code',
+        client_id: process.env.NAVER_CLIENT_ID,
+        client_secret: process.env.NAVER_CLIENT_SECRET,
+        code,
+        state,
+      }),
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      }
+    );
+
+    const accessToken = tokenResult.data.access_token;
+
+    const userResult = await axios.get('https://openapi.naver.com/v1/nid/me', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    const naverUser = userResult.data.response;
+    const email = naverUser.email;
+    const name = naverUser.name || naverUser.nickname || '네이버사용자';
+
+    if (!email) {
+      return res.status(400).send('네이버 계정에서 이메일을 가져올 수 없습니다.');
+    }
+
+    let user = await findUserByEmail(email);
+
+    if (!user) {
+      user = await createUser(email, null, name);
+    }
+
+    const token = authService.makeToken(user);
+
+    res.redirect(`${process.env.FRONTEND_URL}?token=${token}`);
+  } catch (err) {
+    console.error(err.response?.data || err.message);
+    res.status(500).send('네이버 로그인 실패');
+  }
+};
