@@ -6,6 +6,7 @@ const pool = mysql.createPool({
   user: process.env.MYSQL_USER,
   password: process.env.MYSQL_PASSWORD,
   database: process.env.MYSQL_DATABASE,
+  charset: 'utf8mb4',        // 한글·이모지 완전 지원
   waitForConnections: true,
   connectionLimit: 10,
 });

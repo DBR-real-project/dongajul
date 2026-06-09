@@ -77,19 +77,6 @@ exports.kakaoLogin = (req, res) => {
   const kakaoAuthUrl =
     'https://kauth.kakao.com/oauth/authorize?' +
     new URLSearchParams({
-      response_type: 'code',
-      client_id: process.env.KAKAO_REST_API_KEY,
-      redirect_uri: process.env.KAKAO_REDIRECT_URI,
-    });
-
-  res.redirect(kakaoAuthUrl);
-};
-
-// 카카오 로그인 페이지로 이동
-exports.kakaoLogin = (req, res) => {
-  const kakaoAuthUrl =
-    'https://kauth.kakao.com/oauth/authorize?' +
-    new URLSearchParams({
       client_id: process.env.KAKAO_REST_API_KEY,
       redirect_uri: process.env.KAKAO_REDIRECT_URI,
       response_type: 'code',
@@ -145,7 +132,9 @@ exports.kakaoCallback = async (req, res) => {
     }
     const token = authService.makeToken(user);
     const kakaoRefreshToken = authService.makeRefreshToken(user);
-    await saveRefreshToken(user.user_id, kakaoRefreshToken);
+    try { await saveRefreshToken(user.user_id, kakaoRefreshToken); } catch (e) {
+      console.error('[kakao] refresh token 저장 실패:', e.message);
+    }
 
     res.redirect(`${process.env.FRONTEND_URL}?token=${token}&refresh_token=${kakaoRefreshToken}`);
 
@@ -218,7 +207,9 @@ exports.googleCallback = async (req, res) => {
 
     const token = authService.makeToken(user);
     const googleRefreshToken = authService.makeRefreshToken(user);
-    await saveRefreshToken(user.user_id, googleRefreshToken);
+    try { await saveRefreshToken(user.user_id, googleRefreshToken); } catch (e) {
+      console.error('[google] refresh token 저장 실패:', e.message);
+    }
 
     res.redirect(`${process.env.FRONTEND_URL}?token=${token}&refresh_token=${googleRefreshToken}`);
   } catch (err) {
@@ -288,7 +279,9 @@ exports.naverCallback = async (req, res) => {
 
     const token = authService.makeToken(user);
     const naverRefreshToken = authService.makeRefreshToken(user);
-    await saveRefreshToken(user.user_id, naverRefreshToken);
+    try { await saveRefreshToken(user.user_id, naverRefreshToken); } catch (e) {
+      console.error('[naver] refresh token 저장 실패:', e.message);
+    }
 
     res.redirect(`${process.env.FRONTEND_URL}?token=${token}&refresh_token=${naverRefreshToken}`);
   } catch (err) {
