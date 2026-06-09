@@ -1,0 +1,26 @@
+=== 동아줄 리스크 스코어링 모델 성능 리포트 ===
+
+채택 모델: MLP  (임계값: 0.32)
+학습 데이터: 54868건 (success=48078 / failure=6790)
+테스트 데이터: 13717건
+
+[ CV 결과 요약 ]
+  MLP          AUC=0.9771±0.001  AP=0.8429±0.006
+  LightGBM     AUC=0.9755±0.001  AP=0.8411±0.005
+  XGBoost      AUC=0.9744±0.001  AP=0.8361±0.006
+  LR           AUC=0.9727±0.001  AP=0.8016±0.006
+
+Ensemble Test AUC=0.9772  AP=0.8503
+
+[Test Set 최종 성능]
+              precision    recall  f1-score   support
+
+     failure     0.7062    0.8768    0.7823      1697
+     success     0.9820    0.9485    0.9650     12020
+
+    accuracy                         0.9396     13717
+   macro avg     0.8441    0.9127    0.8736     13717
+weighted avg     0.9479    0.9396    0.9424     13717
+
+Test ROC-AUC: 0.9784
+Test AP:      0.8529
