@@ -41,6 +41,7 @@ build/
 !데이터처리/output/risk_model.pkl
 !데이터처리/output/faiss.index
 !데이터처리/output/risk_model_report.txt
+!데이터처리/output/embeddings.npy
 
 # ── DB / Docker ──────────────────────────────────────────────────────────────
 mysql_data/
