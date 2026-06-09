@@ -80,6 +80,7 @@ exports.kakaoLogin = (req, res) => {
       client_id: process.env.KAKAO_REST_API_KEY,
       redirect_uri: process.env.KAKAO_REDIRECT_URI,
       response_type: 'code',
+      scope: 'profile_nickname',  // 닉네임만 요청 (account_email은 권한 없음)
     });
   res.redirect(kakaoAuthUrl);
 };
