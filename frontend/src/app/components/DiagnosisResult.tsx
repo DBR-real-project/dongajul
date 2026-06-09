@@ -171,8 +171,6 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
   const [loading, setLoading] = useState(!resultData && !!diagnosisId);
   const [error, setError] = useState('');
 
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const userId = user?.id || null;
   const [rating, setRating] = useState<'good' | 'bad' | null>(null);
   const [opinion, setOpinion] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -191,23 +189,40 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
     try {
       setSubmitting(true);
 
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const savedUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const userId = savedUser?.id || savedUser?.user_id;
 
-      await apiFetch('/api/feedbacks', {
+      if (!userId) {
+        alert('로그인 사용자 정보가 없습니다. 다시 로그인해주세요.');
+        return;
+      }
+
+      const res = await apiFetch('/api/feedbacks', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
-          user_id: user?.id || null,
+          user_id: userId,
           diagnosis_id: data.diagnosis_id,
-          rating: rating, // good / bad
+          rating: rating === 'good' ? 5 : 1,
           opinion_text: opinion,
         }),
       });
 
+      const result = await res.json();
+
+      if (!res.ok) {
+        console.error('피드백 저장 실패:', result);
+        alert(result.message || '피드백 제출 실패');
+        return;
+      }
+
       alert('피드백 감사합니다!');
       setRating(null);
       setOpinion('');
-
     } catch (err) {
+      console.error('피드백 제출 에러:', err);
       alert('피드백 제출 실패');
     } finally {
       setSubmitting(false);
