@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
-import { CheckCircle, Loader2 } from 'lucide-react';
-import { apiFetch } from '../utils/api';
+﻿import React, { useEffect } from 'react';
+import { apiFetchJson } from '../utils/api';
 
 interface CheckoutPageProps {
   onBack: () => void;
@@ -17,34 +16,22 @@ export function CheckoutPage({ onBack, onSuccess }: CheckoutPageProps) {
     setLoading(true);
     setErrorMsg('');
 
-    try {
-      const res = await apiFetch('/api/subscriptions', {
-        method: 'POST',
-        body: JSON.stringify({ plan_type: 'premium' }),
-      });
-      const data = await res.json();
+const handlePayment = async () => {
+  try {
+    await apiFetchJson('/api/subscriptions', {
+      method: 'POST',
+      body: JSON.stringify({
+        plan_type: 'premium',
+      }),
+    });
 
-      if (res.status === 409) {
-        // 이미 구독 중
-        setErrorMsg('이미 활성화된 구독이 있습니다.');
-        return;
-      }
-
-      if (!data.success) {
-        setErrorMsg(data.message || '결제 처리 중 오류가 발생했습니다.');
-        return;
-      }
-
-      setDone(true);
-      setTimeout(() => {
-        onSuccess?.();
-      }, 1800);
-    } catch {
-      setErrorMsg('서버 연결에 실패했습니다. 잠시 후 다시 시도해주세요.');
-    } finally {
-      setLoading(false);
-    }
-  };
+    alert('구독 완료!');
+    
+  } catch (err: any) {
+    console.error(err);
+    alert(err.message || '구독 실패');
+  }
+};
 
   return (
     <div className="min-h-screen bg-gray-50 py-20 px-4 flex flex-col items-center justify-center font-sans">
