@@ -183,13 +183,14 @@ ai_server/
 
 ---
 
-## 현재 상태 (2026-06-09 세션4 — 최종)
+## 현재 상태 (2026-06-09 세션5 — 최종)
 
 **NLP 파이프라인 전체 완료**: ① 전처리 → ② 라벨링 → ③ 임베딩+FAISS → ④ 리스크 모델 → ⑤ UMAP+K-means
 **FastAPI ML 서비스 완료**: POST /diagnose, POST /report (GPT RAG), GET /health, GET /clusters
 **RAG 완료**: FAISS 유사 사례 검색 → GPT few-shot 리포트 생성 (reporter.py)
 **JWT Refresh Token 완료**: Access 15분 / Refresh 7일, 자동 재발급
 **카카오 로그인 복구 완료**: charset 버그 + JWT fallback 처리
+**프론트엔드 API 연동 완료**: AIChatbot(GPT), ArticleDetail(실DB), CheckoutPage(구독 DB)
 
 ---
 
@@ -254,4 +255,10 @@ ai_server/
 2. ~~JWT Refresh Token~~ **완료**
 3. ~~users.password_hash NULL 허용~~ **완료**
 4. ~~카카오 로그인 복구~~ **완료**
-5. 기업 구독 결제 플로우
+5. ~~AIChatbot → POST /api/chat (GPT)~~ **완료**
+6. ~~ArticleDetail → GET /api/articles/:id (실DB)~~ **완료**
+7. ~~CheckoutPage → POST /api/subscriptions (DB only)~~ **완료**
+8. ProfileView 알림 토글 DB 연동 — **보류** (users 테이블에 알림 설정 컬럼 없음)
+9. CompareView DB 연동 — **보류** (실제 메트릭 데이터 없음, 하드코딩 차트로 데모)
+10. StrategyWorkspace 백엔드 연동 — **보류** (strategies 테이블 없음, 신규 설계 필요)
+11. 기업 구독 결제 플로우 (기업용 별도 플랜)

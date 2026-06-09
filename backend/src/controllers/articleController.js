@@ -101,6 +101,8 @@ exports.getArticleById = async (req, res) => {
       a.url,
       a.source,
       a.category,
+      a.company_name,
+      a.industry,
       a.published_at,
       al.label,
       al.confidence,
