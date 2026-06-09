@@ -1,24 +1,76 @@
-import { ArrowLeft, Building2, Calendar, TrendingUp, TrendingDown, Target, Users, DollarSign, Lightbulb, BarChart3 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend } from 'recharts';
+import { useState, useEffect } from 'react';
+import { ArrowLeft, Building2, Calendar, TrendingUp, TrendingDown, Target, Users, Lightbulb, BarChart3, ExternalLink } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
+import { apiFetch } from '../utils/api';
 
-// 외부에서 전달하는 컴포넌트 Props 규격 정의
 interface ArticleDetailProps {
-  articleId: number; // 조회할 아티클의 고유 ID
-  onBack: () => void; // '목록으로' 버튼을 누를 때 뷰 상태를 원복할 이벤트 콜백 함수
-  darkMode?: boolean; // 가독성 선제 조치를 위한 다크모드 옵션 추가
+  articleId: number;
+  onBack: () => void;
+  darkMode?: boolean;
 }
 
-// TODO: GET /api/articles/:id 응답으로 교체
-const articleDetails: Record<number, any> = {};
-
-// 상징색 연동을 위한 브랜드 상수 설정 (CompareView 스타일 상속)
-const BRAND_NAVY = '#0B2F61'; // 성공/혁신 지표용
-const BRAND_GOLD = '#C8994B'; // 위험/실패 지표용
+const BRAND_NAVY = '#0B2F61';
+const BRAND_GOLD = '#C8994B';
 
 export function ArticleDetail({ articleId, onBack, darkMode = false }: ArticleDetailProps) {
-  const article = articleDetails[articleId] || null;
+  const [article, setArticle] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  if (!article) {
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    setError(false);
+
+    apiFetch(`/api/articles/${articleId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (!mounted) return;
+        if (data.success && data.data) {
+          const d = data.data;
+          const confidence = typeof d.confidence === 'number' ? d.confidence : 0.7;
+          const base = Math.round(confidence * 100);
+
+          setArticle({
+            title: d.title || '제목 없음',
+            company: d.company_name || d.source || 'DBR',
+            industry: d.industry || d.cluster_name || '전략 경영',
+            date: d.published_at ? String(d.published_at).split('T')[0] : '-',
+            label: d.label || 'neutral',
+            summary: d.summary || '요약 정보가 없습니다.',
+            url: d.url,
+            cluster: d.cluster_name,
+            confidence,
+            metrics: [
+              { name: '전략성', score: base },
+              { name: '혁신성', score: Math.round(base * 0.88) },
+              { name: '실행력', score: Math.round(base * 0.84) },
+              { name: '시장성', score: Math.round(base * 0.92) },
+              { name: '지속성', score: Math.round(base * 0.78) },
+            ],
+          });
+        } else {
+          setError(true);
+        }
+      })
+      .catch(() => { if (mounted) setError(true); })
+      .finally(() => { if (mounted) setLoading(false); });
+
+    return () => { mounted = false; };
+  }, [articleId]);
+
+  if (loading) {
+    return (
+      <div className={`h-full flex items-center justify-center ${darkMode ? 'bg-[#0A0E1A] text-gray-400' : 'bg-[#FAFBFC] text-gray-500'}`}>
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-[#0B2F61] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-sm font-medium">기사 정보를 불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !article) {
     return (
       <div className={`h-full flex items-center justify-center ${darkMode ? 'bg-[#0A0E1A] text-gray-400' : 'bg-[#FAFBFC] text-gray-500'}`}>
         <div className="text-center">
@@ -29,18 +81,16 @@ export function ArticleDetail({ articleId, onBack, darkMode = false }: ArticleDe
     );
   }
 
-  const isSuccess = article.category === 'success';
-
-  // 차트 컴포넌트 가독성을 높이기 위한 메인 색상 분기
+  const isSuccess = article.label === 'success';
   const primaryColor = isSuccess ? BRAND_NAVY : BRAND_GOLD;
 
   return (
     <div className={`h-full min-h-screen overflow-y-auto ${darkMode ? 'bg-[#0A0E1A]' : 'bg-[#FAFBFC]'} pb-24`}>
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 space-y-8">
-        
-        {/* 상단 스티키 헤더 바 영역 */}
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+        {/* 헤더 */}
         <div className="flex items-start justify-between">
-          <div>
+          <div className="flex-1">
             <button
               onClick={onBack}
               className={`flex items-center gap-2 mb-4 px-3 py-2 ${
@@ -51,7 +101,6 @@ export function ArticleDetail({ articleId, onBack, darkMode = false }: ArticleDe
               <span className="text-sm font-medium">목록으로</span>
             </button>
 
-            {/* 성공 / 실패 배지 */}
             <div className="flex items-center gap-2 mb-3">
               {isSuccess ? (
                 <TrendingUp className="w-5 h-5 text-emerald-500" />
@@ -59,21 +108,26 @@ export function ArticleDetail({ articleId, onBack, darkMode = false }: ArticleDe
                 <TrendingDown className="w-5 h-5 text-red-500" />
               )}
               <span className={`px-2.5 py-1 text-xs font-semibold rounded-lg ${
-                isSuccess 
+                isSuccess
                   ? darkMode ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-50 text-emerald-700'
-                  : darkMode ? 'bg-red-500/10 text-red-400' : 'bg-red-50 text-red-700'
+                  : article.label === 'failure'
+                    ? darkMode ? 'bg-red-500/10 text-red-400' : 'bg-red-50 text-red-700'
+                    : darkMode ? 'bg-gray-500/10 text-gray-400' : 'bg-gray-50 text-gray-600'
               }`}>
-                {isSuccess ? '성공 사례' : '실패 사례'}
+                {isSuccess ? '성공 사례' : article.label === 'failure' ? '실패 사례' : '중립 사례'}
               </span>
+              {article.cluster && (
+                <span className={`px-2.5 py-1 text-xs font-medium rounded-lg ${darkMode ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-700'}`}>
+                  {article.cluster}
+                </span>
+              )}
             </div>
 
-            {/* 아티클 대형 타이틀 */}
             <h1 className={`text-2xl sm:text-3xl font-bold tracking-tight ${darkMode ? 'text-white' : 'text-gray-900'} mb-3 leading-snug`}>
               {article.title}
             </h1>
 
-            {/* 메타 데이터 컬렉션 */}
-            <div className="flex flex-wrap gap-4 text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium">
+            <div className="flex flex-wrap gap-4 text-xs sm:text-sm text-gray-500 font-medium">
               <div className="flex items-center gap-1">
                 <Building2 className="w-4 h-4" />
                 <span>{article.company}</span>
@@ -86,12 +140,23 @@ export function ArticleDetail({ articleId, onBack, darkMode = false }: ArticleDe
                 <Calendar className="w-4 h-4" />
                 <span>{article.date}</span>
               </div>
+              {article.url && (
+                <a
+                  href={article.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-blue-500 hover:text-blue-600"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  <span>원문 보기</span>
+                </a>
+              )}
             </div>
           </div>
         </div>
 
-        {/* 메인 요약 그리드 카드 (좌측 바 하이라이팅 적용) */}
-        <div className={`relative p-6 rounded-2xl border-l-4 ${isSuccess ? 'border-emerald-500' : 'border-red-500'} ${
+        {/* 핵심 요약 */}
+        <div className={`relative p-6 rounded-2xl border-l-4 ${isSuccess ? 'border-emerald-500' : article.label === 'failure' ? 'border-red-500' : 'border-gray-400'} ${
           darkMode ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30' : 'bg-white shadow-sm'
         }`}>
           <div className={`inline-flex items-center gap-1.5 mb-2 text-sm font-semibold ${isSuccess ? 'text-emerald-600' : 'text-red-500'}`}>
@@ -103,141 +168,64 @@ export function ArticleDetail({ articleId, onBack, darkMode = false }: ArticleDe
           </p>
         </div>
 
-        {/* 지표 비교 분석 차트 섹션 (글씨 짤림 절대 방지 공간 설계) */}
+        {/* 신뢰도 + 차트 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          
-          {/* 바 차트 영역 */}
+
+          {/* 바 차트 */}
           <div className={`${darkMode ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30' : 'bg-white'} p-6 rounded-2xl shadow-sm border ${darkMode ? 'border-gray-700/50' : 'border-gray-100'}`}>
             <div className="flex items-center justify-between mb-6">
-              <h3 className={`text-base font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>정량 성과 분석</h3>
+              <h3 className={`text-base font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>전략 역량 분석</h3>
               <BarChart3 className={`w-4 h-4 ${darkMode ? 'text-gray-400' : 'text-gray-400'}`} />
             </div>
-            <ResponsiveContainer width="100%" height={260}>
-              {/* margin 공간을 사방으로 충분히 확보하여 바깥 텍스트 짤림 방지 */}
+            <ResponsiveContainer width="100%" height={240}>
               <BarChart data={article.metrics} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#E2E8F0'} vertical={false} />
-                <XAxis 
-                  dataKey="name" 
-                  tick={{ fontSize: 12, fill: darkMode ? '#9CA3AF' : '#64748B', fontWeight: 500 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis 
-                  domain={[0, 100]}
-                  tick={{ fontSize: 12, fill: darkMode ? '#9CA3AF' : '#64748B' }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip 
-                  contentStyle={{
-                    backgroundColor: darkMode ? '#1F2937' : '#FFFFFF',
-                    border: `1px solid ${darkMode ? '#374151' : '#E2E8F0'}`,
-                    borderRadius: '12px'
-                  }}
-                  itemStyle={{ color: darkMode ? '#FFF' : '#000' }}
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: darkMode ? '#9CA3AF' : '#64748B' }} axisLine={false} tickLine={false} />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: darkMode ? '#9CA3AF' : '#64748B' }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: darkMode ? '#1F2937' : '#fff', border: `1px solid ${darkMode ? '#374151' : '#E2E8F0'}`, borderRadius: '12px' }}
+                  itemStyle={{ color: darkMode ? '#fff' : '#000' }}
                 />
                 <Bar dataKey="score" fill={primaryColor} radius={[6, 6, 0, 0]} barSize={28} />
               </BarChart>
             </ResponsiveContainer>
           </div>
 
-          {/* 레이더 차트 영역 */}
+          {/* 레이더 차트 */}
           <div className={`${darkMode ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30' : 'bg-white'} p-6 rounded-2xl shadow-sm border ${darkMode ? 'border-gray-700/50' : 'border-gray-100'}`}>
             <div className="flex items-center justify-between mb-6">
               <h3 className={`text-base font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>밸런스 종합 평가</h3>
               <Target className={`w-4 h-4 ${darkMode ? 'text-gray-400' : 'text-gray-400'}`} />
             </div>
-            <ResponsiveContainer width="100%" height={260}>
-              {/* 사방 margin 레이아웃 패딩을 넓혀 겉의 텍스트가 잘려나가는 현상 물리적 차단 */}
+            <ResponsiveContainer width="100%" height={240}>
               <RadarChart data={article.metrics} margin={{ top: 15, right: 30, left: 30, bottom: 15 }}>
-                <PolarGrid stroke={darkMode ? '#374151' : '#E2E8F0'} strokeWidth={1.2} />
-                <PolarAngleAxis 
-                  dataKey="name" 
-                  tick={{ fontSize: 12, fill: darkMode ? '#9CA3AF' : '#64748B', fontWeight: 500 }} 
-                />
+                <PolarGrid stroke={darkMode ? '#374151' : '#E2E8F0'} />
+                <PolarAngleAxis dataKey="name" tick={{ fontSize: 11, fill: darkMode ? '#9CA3AF' : '#64748B' }} />
                 <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
-                <Radar 
-                  name="역량 스코어" 
-                  dataKey="score" 
-                  stroke={primaryColor} 
-                  fill={primaryColor} 
-                  fillOpacity={0.15} 
-                  dot={{ fill: primaryColor, r: 3 }}
-                />
+                <Radar name="역량 스코어" dataKey="score" stroke={primaryColor} fill={primaryColor} fillOpacity={0.15} dot={{ fill: primaryColor, r: 3 }} />
                 <Tooltip />
               </RadarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* 상세 텍스트 종속 영역 (테이블 및 리스크 구조 매핑) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* 배경 정보 */}
-          <div className={`${darkMode ? 'bg-gray-800/30' : 'bg-white'} p-6 rounded-2xl border ${darkMode ? 'border-gray-700/50' : 'border-gray-200/60'} shadow-sm`}>
-            <h3 className={`text-base font-bold mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>사례 배경</h3>
-            <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'} leading-relaxed`}>{article.background}</p>
+        {/* 신뢰도 정보 */}
+        <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-gray-800/30 border-gray-700/50' : 'bg-white border-gray-200 shadow-sm'}`}>
+          <h3 className={`text-sm font-bold mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>라벨링 신뢰도</h3>
+          <div className="flex items-center gap-4">
+            <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+              <div
+                className={`h-2 rounded-full ${isSuccess ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                style={{ width: `${Math.round(article.confidence * 100)}%` }}
+              />
+            </div>
+            <span className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+              {Math.round(article.confidence * 100)}%
+            </span>
           </div>
-
-          {/* 주요 전략 리스트 (서클 넘버 마크업 유지) */}
-          <div className={`${darkMode ? 'bg-gray-800/30' : 'bg-white'} p-6 rounded-2xl border ${darkMode ? 'border-gray-700/50' : 'border-gray-200/60'} shadow-sm`}>
-            <h3 className={`text-base font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'} flex items-center gap-2`}>
-              <Target className="w-4 h-4 text-indigo-500" /> 주요 추진 전략
-            </h3>
-            <ul className="space-y-2.5">
-              {article.strategy.map((item: string, index: number) => (
-                <li key={index} className="flex items-start gap-2.5">
-                  <div className="w-5 h-5 bg-[#0B2F61] text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold rounded-md">
-                    {index + 1}
-                  </div>
-                  <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'} leading-relaxed`}>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-
-        {/* 결과 및 성과 상세 테이블 (CompareView 구조 수용) */}
-        <div className={`${darkMode ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30' : 'bg-white'} rounded-2xl overflow-hidden shadow-sm border ${darkMode ? 'border-gray-700/50' : 'border-gray-100'}`}>
-          <div className={`px-6 py-4 ${darkMode ? 'bg-gray-900/40' : 'bg-gray-50/70'} border-b ${darkMode ? 'border-gray-700/50' : 'border-gray-200/60'}`}>
-            <h3 className={`text-base font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>성과 및 결과 지표</h3>
-          </div>
-          <div className="p-6 space-y-3">
-            {article.results.map((item: string, index: number) => (
-              <div key={index} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50/50 dark:bg-gray-900/20">
-                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isSuccess ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                <span className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{item}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* 핵심 인사이트 분석 블록 (엠버/오렌지 계열 그라데이션) */}
-        <div className={`p-6 rounded-2xl border-2 ${darkMode ? 'bg-amber-500/5 border-amber-500/20' : 'bg-gradient-to-br from-amber-50/60 to-orange-50/60 border-amber-100'}`}>
-          <div className="flex items-center gap-2 mb-4">
-            <Lightbulb className="w-5 h-5 text-amber-600" />
-            <h3 className={`text-base font-bold ${darkMode ? 'text-amber-400' : 'text-amber-900'}`}>핵심 인사이트 분석</h3>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {article.keyInsights.map((item: string, index: number) => (
-              <div key={index} className="flex items-start gap-2">
-                <span className="text-amber-500 flex-shrink-0 mt-0.5">💡</span>
-                <span className={`text-sm leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-800'}`}>{item}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* 결론 및 시사점 체크리스트 블록 */}
-        <div className={`p-6 rounded-2xl ${darkMode ? 'bg-gray-800/30' : 'bg-gradient-to-br from-indigo-50/40 to-purple-50/40'} border ${darkMode ? 'border-gray-700/50' : 'border-indigo-100/50'}`}>
-          <h3 className={`text-base font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>교훈 및 시사점</h3>
-          <div className="space-y-2.5">
-            {article.lessons.map((item: string, index: number) => (
-              <div key={index} className="flex items-start gap-2">
-                <span className="text-[#0B2F61] dark:text-indigo-400 font-bold flex-shrink-0">✓</span>
-                <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'} leading-relaxed`}>{item}</span>
-              </div>
-            ))}
-          </div>
+          <p className={`text-xs mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+            AI가 해당 사례를 {isSuccess ? '성공' : article.label === 'failure' ? '실패' : '중립'} 사례로 분류한 신뢰도입니다.
+          </p>
         </div>
 
       </div>

@@ -64,7 +64,10 @@ export async function apiFetch(path: string, options: RequestOptions = {}): Prom
     if (token) headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${BASE_URL}${path}`, { ...fetchOptions, headers });
+  const res = await fetch(`${BASE_URL}${path}`, {
+    ...fetchOptions,
+    headers,
+  });
 
   if (res.status === 401 && !skipAuth && !_isRetry) {
     // refresh token으로 재발급 시도
@@ -76,17 +79,19 @@ export async function apiFetch(path: string, options: RequestOptions = {}): Prom
     // refresh도 실패 → 로그아웃
     clearAuth();
     window.location.reload();
-    return res;
   }
 
-  return res;
+  return res; // ✅ 그대로 유지
 }
 
-export async function apiPost<T>(path: string, body: unknown): Promise<{ res: Response; data: T }> {
-  const res = await apiFetch(path, {
-    method: 'POST',
-    body: JSON.stringify(body),
-  });
-  const data: T = await res.json();
-  return { res, data };
+export async function apiFetchJson(path: string, options: RequestOptions = {}) {
+  const res = await apiFetch(path, options);
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.message || 'API 요청 실패');
+  }
+
+  return data;
 }
