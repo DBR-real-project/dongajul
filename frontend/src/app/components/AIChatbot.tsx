@@ -1,25 +1,39 @@
-import { MessageCircle, X, Send } from 'lucide-react';
+import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
 import { useState } from 'react';
+import { apiFetch } from '../utils/api';
 
 export function AIChatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<{ role: 'user' | 'bot'; text: string }[]>([
-    { role: 'bot', text: '안녕하세요! DBR 분석 도우미입니다. 무엇을 도와드릴까요?' }
+    { role: 'bot', text: '안녕하세요! DBR·HBR 사례 기반 전략 분석 도우미입니다. 비즈니스 전략의 리스크나 성공 요인에 대해 물어보세요.' }
   ]);
   const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSend = () => {
-    if (!input.trim()) return;
+  const handleSend = async () => {
+    if (!input.trim() || isLoading) return;
 
-    setMessages([...messages, { role: 'user', text: input }]);
+    const userMessage = input.trim();
     setInput('');
+    setMessages(prev => [...prev, { role: 'user', text: userMessage }]);
+    setIsLoading(true);
 
-    setTimeout(() => {
+    try {
+      const res = await apiFetch('/api/chat', {
+        method: 'POST',
+        body: JSON.stringify({ message: userMessage }),
+      });
+      const data = await res.json();
+      const reply = data.reply || '죄송합니다. 답변을 가져올 수 없습니다.';
+      setMessages(prev => [...prev, { role: 'bot', text: reply }]);
+    } catch {
       setMessages(prev => [...prev, {
         role: 'bot',
-        text: '죄송합니다. 현재 AI 챗봇은 데모 모드입니다. 실제 응답 기능은 추후 업데이트 예정입니다.'
+        text: '서버 연결에 실패했습니다. 잠시 후 다시 시도해주세요.',
       }]);
-    }, 500);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -34,7 +48,7 @@ export function AIChatbot() {
       )}
 
       {isOpen && (
-        <div className="fixed bottom-6 right-6 w-80 h-96 bg-white shadow-2xl flex flex-col z-50 border border-gray-200">
+        <div className="fixed bottom-6 right-6 w-80 h-96 bg-white shadow-2xl flex flex-col z-50 border border-gray-200 rounded-xl overflow-hidden">
           <div className="bg-[#142755] text-white p-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <MessageCircle className="w-5 h-5" />
@@ -62,6 +76,14 @@ export function AIChatbot() {
                 </div>
               </div>
             ))}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="bg-gray-100 px-3 py-2 rounded-lg flex items-center gap-1">
+                  <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
+                  <span className="text-sm text-gray-500">분석 중...</span>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="p-3 border-t border-gray-200">
@@ -71,12 +93,14 @@ export function AIChatbot() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                placeholder="메시지를 입력하세요..."
-                className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#1e3a5f]"
+                placeholder="전략 리스크에 대해 질문하세요..."
+                disabled={isLoading}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#1e3a5f] disabled:opacity-50"
               />
               <button
                 onClick={handleSend}
-                className="bg-[#142755] text-white px-3 py-2 rounded hover:bg-[#444655] transition-colors"
+                disabled={isLoading || !input.trim()}
+                className="bg-[#142755] text-white px-3 py-2 rounded hover:bg-[#444655] transition-colors disabled:opacity-50"
               >
                 <Send className="w-4 h-4" />
               </button>

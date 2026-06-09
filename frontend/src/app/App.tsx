@@ -126,12 +126,10 @@ export default function App() {
     const savedUser = localStorage.getItem('user');
 
     if (!savedUser) {
-      localStorage.setItem(
-        'user',
-        JSON.stringify({ email })
-      );
+      localStorage.setItem('user', JSON.stringify({ email }));
     }
 
+    window.dispatchEvent(new Event('storage'));
     setIsLoggedIn(true);
     setShowSignup(false);
     setCurrentView('dashboard');
@@ -334,7 +332,7 @@ export default function App() {
               onSubscribe={() => setCurrentView('checkout')}
             />
           ) : currentView === 'checkout' ? (
-            <CheckoutPage onBack={() => setCurrentView('subscription')} />
+            <CheckoutPage onBack={() => setCurrentView('subscription')} onSuccess={() => setCurrentView('dashboard')} />
           ) : (
             <EnterpriseDashboard
               darkMode={darkMode}
