@@ -1,4 +1,5 @@
 ﻿import React, { useEffect } from 'react';
+import { apiFetchJson } from '../utils/api';
 
 interface CheckoutPageProps {
   onBack: () => void;
@@ -18,40 +19,22 @@ export function CheckoutPage({ onBack }: CheckoutPageProps) {
     };
   }, []);
 
-  // 💡 [결제 진행하기] 버튼 클릭 시 실행되는 함수
-  const handlePayment = () => {
-    const { window: globalWindow } = globalThis as any;
-    
-    if (!globalWindow.IMP) {
-      alert("결제 모듈을 불러오는 중입니다. 잠시 후 다시 시도해 주세요.");
-      return;
-    }
-
-    const IMP = globalWindow.IMP;
-    // 테스트용 가맹점 식별코드입니다. 실제 서비스 시 포트원 관리자 페이지에서 발급받은 내 코드로 변경해야 합니다.
-    IMP.init('imp00000000'); 
-
-    const data = {
-      pg: 'html5_inicis', // PG사 (KG이니시스)
-      pay_method: 'card', // 결제수단 (신용카드)
-      merchant_uid: `mid_${new Date().getTime()}`, // 주문번호 (고유한 값이어야 함)
-      amount: 9900, // 결제 금액
-      name: '전략 리스크 진단 프리미엄 플랜', // 주문명
-      buyer_name: '테스트 유저',
-      buyer_tel: '010-1234-5678',
-      buyer_email: 'test3@email.com',
-    };
-
-    // 실제 결제창 호출
-    IMP.request_pay(data, (response: any) => {
-      if (response.success) {
-        alert('결제가 완료되었습니다! 🎉 (결제번호: ' + response.imp_uid + ')');
-        // TODO: 여기서 백엔드 서버로 결제 성공 정보를 보내서 실제 DB를 업데이트해야 합니다.
-      } else {
-        alert('결제에 실패하였습니다. 😢 에러 내용: ' + response.error_msg);
-      }
+const handlePayment = async () => {
+  try {
+    await apiFetchJson('/api/subscriptions', {
+      method: 'POST',
+      body: JSON.stringify({
+        plan_type: 'premium',
+      }),
     });
-  };
+
+    alert('구독 완료!');
+    
+  } catch (err: any) {
+    console.error(err);
+    alert(err.message || '구독 실패');
+  }
+};
 
   return (
     <div className="min-h-screen bg-gray-50 py-20 px-4 flex flex-col items-center justify-center font-sans">
