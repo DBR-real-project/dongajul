@@ -49,7 +49,7 @@ const notificationRoutes = require('./src/routes/notificationRoutes');
 const subscriptionRoutes = require('./src/routes/subscriptionRoutes');
 
 // 피드백 서비스
-const feedbackRoutes = require("./src/routes/feedbackRoutes");
+const feedbackRoutes = require('./src/routes/feedbackRoutes');
 
 // ── API 라우트 연결 ───────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
@@ -61,7 +61,7 @@ app.use('/api/semantic-map', semanticMapRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
-app.use("/api/feedbacks", feedbackRoutes);
+app.use('/api/feedbacks', feedbackRoutes);
 
 // ── 기본 라우트 ───────────────────────────────────────────────────────
 app.get('/', (req, res) => {

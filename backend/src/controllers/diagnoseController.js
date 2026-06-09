@@ -2,8 +2,9 @@ const axios = require('axios');
 const db = require('../config/db');
 
 const AI_SERVER_URL = process.env.AI_SERVER_URL || 'http://127.0.0.1:8000';
-const AI_TIMEOUT = 180000; // 3분
+const AI_TIMEOUT = 180000;
 
+// POST /api/diagnose
 exports.diagnose = async (req, res) => {
   const { text, top_k = 3, user_id } = req.body;
 
@@ -29,9 +30,6 @@ exports.diagnose = async (req, res) => {
 
     const data = aiResponse.data;
 
-    console.log('[AI 응답 전체]', data);
-    console.log('[AI 응답 report]', data.report);
-
     let cluster_name = null;
 
     if (data.query_cluster_id !== null && data.query_cluster_id !== undefined) {
@@ -49,15 +47,15 @@ exports.diagnose = async (req, res) => {
       }
     }
 
-    saveToDb(String(text).trim(), data, user_id || null).catch(e => {
-      console.error('[diagnoseController] DB 저장 실패:', e.message);
-    });
+    // 중요: DB 저장을 기다려야 diagnosis_id를 프론트에 내려줄 수 있음
+    const diagnosisId = await saveToDb(String(text).trim(), data, user_id || null);
 
     return res.json({
+      diagnosis_id: diagnosisId,
+      input_text: String(text).trim(),
       ...data,
       cluster_name,
     });
-
   } catch (err) {
     console.error('[diagnoseController] 오류:', err.message);
     console.error('[diagnoseController] 코드:', err.code);
@@ -94,87 +92,118 @@ exports.diagnose = async (req, res) => {
   }
 };
 
-
 // DB 저장 함수
 async function saveToDb(inputText, aiData, userId) {
-  const [diagResult] = await db.execute(
-    `INSERT INTO diagnosis_requests (user_id, input_text, status, created_at)
-     VALUES (?, ?, 'completed', NOW())`,
-    [userId, inputText]
-  );
+  const connection = await db.getConnection();
 
-  const diagnosisId = diagResult.insertId;
+  try {
+    await connection.beginTransaction();
 
-  const successArticles = (aiData.similar_articles || []).filter(a => a.label === 'success');
-  const failureArticles = (aiData.similar_articles || []).filter(a => a.label === 'failure');
-
-  const successKeywords = successArticles
-    .map(a => a.category || '')
-    .filter(Boolean)
-    .slice(0, 5)
-    .join(',');
-
-  const failureKeywords = failureArticles
-    .map(a => a.category || '')
-    .filter(Boolean)
-    .slice(0, 5)
-    .join(',');
-
-  await db.execute(
-    `INSERT INTO analysis_results 
-     (diagnosis_id, risk_score, analysis_mode, success_keywords, failure_keywords, created_at)
-     VALUES (?, ?, 'auto', ?, ?, NOW())`,
-    [
-      diagnosisId,
-      aiData.risk_score || 0,
-      successKeywords,
-      failureKeywords,
-    ]
-  );
-
-  const urls = (aiData.similar_articles || [])
-    .map(a => a.url)
-    .filter(Boolean);
-
-  if (urls.length > 0) {
-    const placeholders = urls.map(() => '?').join(',');
-
-    const [artRows] = await db.execute(
-      `SELECT article_id, url FROM articles WHERE url IN (${placeholders})`,
-      urls
+    const [diagResult] = await connection.execute(
+      `
+      INSERT INTO diagnosis_requests
+        (user_id, input_text, status, created_at)
+      VALUES
+        (?, ?, 'completed', NOW())
+      `,
+      [userId, inputText]
     );
 
-    const urlToId = {};
+    const diagnosisId = diagResult.insertId;
 
-    artRows.forEach(r => {
-      urlToId[r.url] = r.article_id;
-    });
+    const successArticles = (aiData.similar_articles || []).filter(
+      (article) => article.label === 'success'
+    );
 
-    for (const article of aiData.similar_articles || []) {
-      const articleId = urlToId[article.url];
+    const failureArticles = (aiData.similar_articles || []).filter(
+      (article) => article.label === 'failure'
+    );
 
-      if (!articleId) continue;
+    const successKeywords = successArticles
+      .map((article) => article.category || '')
+      .filter(Boolean)
+      .slice(0, 5)
+      .join(',');
 
-      await db.execute(
-        `INSERT INTO similar_article_matches 
-         (diagnosis_id, article_id, similarity_score, recommend_rank, case_type)
-         VALUES (?, ?, ?, ?, ?)`,
-        [
-          diagnosisId,
-          articleId,
-          article.similarity || 0,
-          article.rank || 0,
-          article.label || 'neutral',
-        ]
+    const failureKeywords = failureArticles
+      .map((article) => article.category || '')
+      .filter(Boolean)
+      .slice(0, 5)
+      .join(',');
+
+    await connection.execute(
+      `
+      INSERT INTO analysis_results
+        (diagnosis_id, risk_score, analysis_mode, success_keywords, failure_keywords, created_at)
+      VALUES
+        (?, ?, 'auto', ?, ?, NOW())
+      `,
+      [
+        diagnosisId,
+        aiData.risk_score || 0,
+        successKeywords,
+        failureKeywords,
+      ]
+    );
+
+    const urls = (aiData.similar_articles || [])
+      .map((article) => article.url)
+      .filter(Boolean);
+
+    if (urls.length > 0) {
+      const placeholders = urls.map(() => '?').join(',');
+
+      const [artRows] = await connection.execute(
+        `
+        SELECT article_id, url
+        FROM articles
+        WHERE url IN (${placeholders})
+        `,
+        urls
       );
+
+      const urlToId = {};
+
+      artRows.forEach((row) => {
+        urlToId[row.url] = row.article_id;
+      });
+
+      for (const article of aiData.similar_articles || []) {
+        const articleId = urlToId[article.url];
+
+        if (!articleId) continue;
+
+        await connection.execute(
+          `
+          INSERT INTO similar_article_matches
+            (diagnosis_id, article_id, similarity_score, recommend_rank, case_type)
+          VALUES
+            (?, ?, ?, ?, ?)
+          `,
+          [
+            diagnosisId,
+            articleId,
+            article.similarity || 0,
+            article.rank || 0,
+            article.label || 'neutral',
+          ]
+        );
+      }
     }
+
+    await connection.commit();
+
+    console.log(`[DB 저장] diagnosis_id=${diagnosisId}, risk=${aiData.risk_score}`);
+
+    return diagnosisId;
+  } catch (err) {
+    await connection.rollback();
+    console.error('[saveToDb] rollback:', err.message);
+    throw err;
+  } finally {
+    connection.release();
   }
-
-  console.log(`[DB 저장] diagnosis_id=${diagnosisId}, risk=${aiData.risk_score}`);
-
-  return diagnosisId;
 }
-
 
 // GET /api/diagnose/:id — 저장된 진단 결과 조회
 exports.getDiagnoseById = async (req, res) => {
@@ -182,10 +211,18 @@ exports.getDiagnoseById = async (req, res) => {
 
   try {
     const [diagRows] = await db.execute(
-      `SELECT dr.*, ar.risk_score, ar.success_keywords, ar.failure_keywords, ar.improvement_guides
-       FROM diagnosis_requests dr
-       LEFT JOIN analysis_results ar ON dr.diagnosis_id = ar.diagnosis_id
-       WHERE dr.diagnosis_id = ?`,
+      `
+      SELECT
+        dr.*,
+        ar.risk_score,
+        ar.success_keywords,
+        ar.failure_keywords,
+        ar.improvement_guides
+      FROM diagnosis_requests dr
+      LEFT JOIN analysis_results ar
+        ON dr.diagnosis_id = ar.diagnosis_id
+      WHERE dr.diagnosis_id = ?
+      `,
       [id]
     );
 
@@ -198,19 +235,23 @@ exports.getDiagnoseById = async (req, res) => {
     const diag = diagRows[0];
 
     const [matches] = await db.execute(
-      `SELECT sam.recommend_rank AS rank, 
-              sam.similarity_score AS similarity, 
-              sam.case_type AS label,
-              a.title, 
-              a.url, 
-              a.summary, 
-              a.category, 
-              a.source, 
-              a.published_at AS published_date
-       FROM similar_article_matches sam
-       JOIN articles a ON sam.article_id = a.article_id
-       WHERE sam.diagnosis_id = ?
-       ORDER BY sam.recommend_rank`,
+      `
+      SELECT
+        sam.recommend_rank AS rank,
+        sam.similarity_score AS similarity,
+        sam.case_type AS label,
+        a.title,
+        a.url,
+        a.summary,
+        a.category,
+        a.source,
+        a.published_at AS published_date
+      FROM similar_article_matches sam
+      JOIN articles a
+        ON sam.article_id = a.article_id
+      WHERE sam.diagnosis_id = ?
+      ORDER BY sam.recommend_rank
+      `,
       [id]
     );
 
@@ -225,7 +266,6 @@ exports.getDiagnoseById = async (req, res) => {
       similar_articles: matches,
       created_at: diag.created_at,
     });
-
   } catch (err) {
     console.error('[getDiagnoseById]', err.message);
 
