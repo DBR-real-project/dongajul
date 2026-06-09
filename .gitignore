@@ -42,6 +42,10 @@ build/
 !데이터처리/output/faiss.index
 !데이터처리/output/risk_model_report.txt
 !데이터처리/output/embeddings.npy
+!데이터처리/output/DBR_embeddings.npy
+!데이터처리/output/HBR_embeddings.npy
+!데이터처리/output/HBR_labeled.parquet
+!데이터처리/output/HBR_preprocessed.parquet
 
 # ── DB / Docker ──────────────────────────────────────────────────────────────
 mysql_data/
