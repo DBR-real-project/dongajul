@@ -1,7 +1,7 @@
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
 const authService = require('../services/authService');
-const { findUserByEmail, createUser, saveRefreshToken, findByRefreshToken, clearRefreshToken } = require('../models/userModel');
+const { findUserByEmail, createUser, updateUserNickname, saveRefreshToken, findByRefreshToken, clearRefreshToken } = require('../models/userModel');
 
 // 이메일 로그인
 exports.login = async (req, res) => {
@@ -126,6 +126,10 @@ exports.kakaoCallback = async (req, res) => {
     let user = await findUserByEmail(email);
     if (!user) {
       user = await createUser(email, null, name);
+    } else if (name && name !== '카카오사용자' && (!user.nickname || user.nickname === '카카오사용자')) {
+      // 기존 유저인데 닉네임이 기본값이면 실제 카카오 닉네임으로 업데이트
+      await updateUserNickname(user.user_id, name);
+      user.nickname = name;
     }
     const token = authService.makeToken(user);
     const kakaoRefreshToken = authService.makeRefreshToken(user);
