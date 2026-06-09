@@ -183,50 +183,56 @@ ai_server/
 
 ---
 
-## 현재 상태 (2026-06-05 세션2 — 최종)
+## 현재 상태 (2026-06-09 세션3 — 최종)
 
 **NLP 파이프라인 전체 완료**: ① 전처리 → ② 라벨링 → ③ 임베딩+FAISS → ④ 리스크 모델 → ⑤ UMAP+K-means
-**FastAPI ML 서비스 완료**: POST /diagnose, GET /report (GPT RAG), GET /health, GET /clusters
+**FastAPI ML 서비스 완료**: POST /diagnose, POST /report (GPT RAG), GET /health, GET /clusters
 **RAG 완료**: FAISS 유사 사례 검색 → GPT few-shot 리포트 생성 (reporter.py)
+**JWT Refresh Token 완료**: Access 15분 / Refresh 7일, 자동 재발급
 
 ---
 
-### 오늘 완료한 작업 (2026-06-05)
+### 완료한 작업 (2026-06-09)
 
-**1. 공통 API 유틸 (`frontend/src/app/utils/api.ts`)**
-- `apiFetch` 래퍼: Authorization 헤더 자동 첨부
-- 401 응답 시 localStorage 클리어 + 자동 로그아웃(reload)
-- 전체 컴포넌트에서 `localhost:3001` 하드코딩 → `apiFetch` 교체
-  (DiagnosisInterview, DiagnosisResult, SearchHistory, NotificationView, ProfileView, InsightDashboard)
+**1. JWT Refresh Token (`authService.js`, `userModel.js`, `authController.js`, `api.ts`)**
+- Access Token 15분 / Refresh Token 7일 (JWT)
+- 로그인·회원가입·소셜로그인 응답에 `refresh_token` 포함
+- `users.refresh_token` 컬럼에 DB 저장 (서버 측 무효화 가능)
+- `POST /api/auth/refresh` — 재발급 엔드포인트
+- `POST /api/auth/logout` — 서버 측 refresh token 무효화
+- `api.ts`: 401 시 tryRefresh → 성공 시 원래 요청 재시도 / 실패 시 로그아웃
+- 소셜 로그인 콜백: URL params에 `refresh_token` 포함 → App.tsx에서 저장
 
-**2. 버그 수정**
-- SearchHistory: API 응답 `{success, data:[]}` 파싱 오류 → `json.data` 로 수정
-- 회원가입 `alert()` 제거 → 바로 자동 로그인
+**2. DB 마이그레이션 (`backend/scripts/migrate_auth.js`)**
+- `users.password_hash` → `VARCHAR(255) NULL` (소셜 로그인 신규 가입자 지원)
+- `users.refresh_token VARCHAR(512) NULL` 컬럼 추가
+- 완료: `node backend/scripts/migrate_auth.js`
 
-**3. 시맨틱 맵 UI 완료**
-- `SemanticMap.tsx`: Recharts ScatterChart, 성공/실패/중립 색상, 필터, 클러스터 목록
-- 백엔드 `semanticMapRepository.js`: `article_vectors` 직접 조회 (success 400 + failure 200 + neutral 200 랜덤 샘플)
-- TopNavigation에 '시맨틱 맵' 메뉴 추가
-- 진단 결과 화면에 '시맨틱 맵에서 보기' 버튼 추가
-- App.tsx에 `semantic-map` 뷰 연결
+**3. .gitignore 수정 (운영 파일 해제)**
+- 팀원 공유 필요 파일 예외 처리 (각 40MB 이내):
+  - `umap_coords.parquet`, `cluster_info.parquet`, `articles_meta.parquet`
+  - `risk_model.pkl`, `faiss.index`, `risk_model_report.txt`
+- 대용량 학습 전용 파일 (`*.npy`, `*_preprocessed.parquet`, `*_labeled.parquet`) 계속 제외
 
-**4. AI 서버 UMAP 쿼리 포인트**
-- `schemas.py`: `DiagnoseResponse`, `ReportResponse`에 `query_umap_x/y` 필드 추가
-- `main.py`: top-K 유사 아티클의 umap_x/y 평균 → 쿼리 포인트 근사 좌표 반환
-- 진단 결과에서 시맨틱 맵으로 이동 시 ⭐ 포인트 하이라이트
+**4. UMAP DB 임포트 스크립트 (`데이터처리/import_umap_to_db.py`)**
+- `cluster_info.parquet` → `clusters` 테이블
+- `umap_coords.parquet` → `article_vectors` 테이블 (umap_x/y/cluster_id)
+- 팀원이 `python 데이터처리/import_umap_to_db.py` 한 번만 실행하면 시맨틱 맵 데이터 채워짐
 
-**5. 기타 개선**
-- `handleLogout`: userName, 상태 전체 초기화
-- `TopNavigation`: `onLogout` prop 연결
+**5. 버그 수정**
+- `authController.js`: kakaoCallback `finalEmail` → `email` (undefined 버그)
+- `authRoutes.js`: 중복 카카오 라우트(`/kakao` 두 번) 제거
 
 ---
 
 ### ⚠️ 주의사항
 - `npm run build`는 VM에서 dist 폴더 권한 오류(EPERM) — Windows에서 `dist` 폴더 삭제 후 빌드
-- 코드 자체는 정상 (2234 modules transformed 확인)
 - DB에 `article_vectors.umap_x/y` 데이터 있어야 시맨틱 맵 점들 표시됨
+  → `python 데이터처리/import_umap_to_db.py` 실행 필요 (팀원)
+- REFRESH_SECRET 환경변수 없으면 자동으로 `JWT_SECRET + '_refresh'` 사용
 
 ### 남은 작업
-1. 비밀번호 찾기 이메일 전송 (nodemailer)
-2. JWT Refresh Token
-3. 기업 구독 결제 플로우
+1. ~~비밀번호 찾기 이메일 전송 (nodemailer)~~ **진행 안 함 (팀 결정)**
+2. ~~JWT Refresh Token~~ **완료**
+3. ~~users.password_hash NULL 허용~~ **완료**
+4. 기업 구독 결제 플로우

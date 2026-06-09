@@ -33,6 +33,9 @@ export function SignupScreen({ onSignup, onBackToLogin }: SignupScreenProps) {
       const data = await res.json();
       if (res.ok) {
         localStorage.setItem('token', data.token);
+        if (data.refresh_token) {
+          localStorage.setItem('refresh_token', data.refresh_token);
+        }
         localStorage.setItem('user', JSON.stringify(data.user));
         onSignup(data.user.email, data.token);
       } else {

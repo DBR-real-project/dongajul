@@ -38,6 +38,10 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
     if (tokenValue) {
       localStorage.setItem('token', tokenValue);
     }
+    // refresh token 저장
+    if (data.refresh_token) {
+      localStorage.setItem('refresh_token', data.refresh_token);
+    }
 
     // 2. user 전체 저장 (user.id가 있어야 히스토리 조회 가능)
     if (data.user) {

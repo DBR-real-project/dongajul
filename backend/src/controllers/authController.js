@@ -1,6 +1,7 @@
 const axios = require('axios');
+const jwt = require('jsonwebtoken');
 const authService = require('../services/authService');
-const { findUserByEmail, createUser } = require('../models/userModel');
+const { findUserByEmail, createUser, saveRefreshToken, findByRefreshToken, clearRefreshToken } = require('../models/userModel');
 
 // 이메일 로그인
 exports.login = async (req, res) => {
@@ -11,11 +12,15 @@ exports.login = async (req, res) => {
   }
 
   try {
-    const { user, token } = await authService.loginUser(email, password);
+    const { user, token, refresh_token } = await authService.loginUser(email, password);
+
+    // refresh token DB 저장
+    await saveRefreshToken(user.user_id, refresh_token);
 
     res.json({
       success: true,
       token,
+      refresh_token,
       user: {
         id: user.user_id,
         email: user.email,
@@ -41,12 +46,16 @@ exports.register = async (req, res) => {
   }
 
   try {
-    const { user, token } = await authService.registerUser(email, password, name);
+    const { user, token, refresh_token } = await authService.registerUser(email, password, name);
+
+    // refresh token DB 저장
+    await saveRefreshToken(user.user_id, refresh_token);
 
     res.json({
       success: true,
       message: '회원가입 성공',
       token,
+      refresh_token,
       user: {
         id: user.user_id,
         email: user.email,
@@ -132,11 +141,13 @@ exports.kakaoCallback = async (req, res) => {
     }
     let user = await findUserByEmail(email);
     if (!user) {
-      user = await createUser(finalEmail, null, name);
+      user = await createUser(email, null, name);
     }
     const token = authService.makeToken(user);
+    const kakaoRefreshToken = authService.makeRefreshToken(user);
+    await saveRefreshToken(user.user_id, kakaoRefreshToken);
 
-    res.redirect(`${process.env.FRONTEND_URL}?token=${token}`);
+    res.redirect(`${process.env.FRONTEND_URL}?token=${token}&refresh_token=${kakaoRefreshToken}`);
 
   } catch (err) {
     // 에러가 났을 때 터미널에서 정확한 원인을 보기 위한 로그
@@ -206,8 +217,10 @@ exports.googleCallback = async (req, res) => {
     }
 
     const token = authService.makeToken(user);
+    const googleRefreshToken = authService.makeRefreshToken(user);
+    await saveRefreshToken(user.user_id, googleRefreshToken);
 
-    res.redirect(`${process.env.FRONTEND_URL}?token=${token}`);
+    res.redirect(`${process.env.FRONTEND_URL}?token=${token}&refresh_token=${googleRefreshToken}`);
   } catch (err) {
     console.error(err.response?.data || err.message);
     res.status(500).send('구글 로그인 실패');
@@ -274,10 +287,48 @@ exports.naverCallback = async (req, res) => {
     }
 
     const token = authService.makeToken(user);
+    const naverRefreshToken = authService.makeRefreshToken(user);
+    await saveRefreshToken(user.user_id, naverRefreshToken);
 
-    res.redirect(`${process.env.FRONTEND_URL}?token=${token}`);
+    res.redirect(`${process.env.FRONTEND_URL}?token=${token}&refresh_token=${naverRefreshToken}`);
   } catch (err) {
     console.error(err.response?.data || err.message);
     res.status(500).send('네이버 로그인 실패');
   }
+};
+
+// POST /api/auth/refresh — 액세스 토큰 재발급
+exports.refresh = async (req, res) => {
+  const { refresh_token } = req.body;
+  if (!refresh_token) {
+    return res.status(400).json({ message: 'refresh_token이 필요합니다.' });
+  }
+
+  try {
+    const secret = process.env.REFRESH_SECRET || process.env.JWT_SECRET + '_refresh';
+    jwt.verify(refresh_token, secret); // 서명·만료 검증
+
+    const user = await findByRefreshToken(refresh_token);
+    if (!user) {
+      return res.status(401).json({ message: '유효하지 않은 refresh token입니다.' });
+    }
+
+    const token = authService.makeToken(user);
+    return res.json({ success: true, token });
+  } catch (err) {
+    return res.status(401).json({ message: '만료되거나 유효하지 않은 refresh token입니다.' });
+  }
+};
+
+// POST /api/auth/logout — refresh token 서버 측 무효화
+exports.logout = async (req, res) => {
+  const { user_id } = req.body;
+  if (user_id) {
+    try {
+      await clearRefreshToken(user_id);
+    } catch (e) {
+      // 실패해도 클라이언트 로그아웃은 진행
+    }
+  }
+  return res.json({ success: true });
 };

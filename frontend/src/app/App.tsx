@@ -85,11 +85,18 @@ export default function App() {
       localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('userName', user.name || user.email || '사용자');
 
+      // 소셜 로그인 refresh token 저장
+      const refreshToken = params.get('refresh_token');
+      if (refreshToken) {
+        localStorage.setItem('refresh_token', refreshToken);
+      }
+
       setIsLoggedIn(true);
       window.history.replaceState({}, '', '/');
     } catch (e) {
       console.error('토큰 파싱 실패:', e);
       localStorage.removeItem('token');
+      localStorage.removeItem('refresh_token');
       localStorage.removeItem('user');
       localStorage.removeItem('userName');
     }
@@ -136,7 +143,17 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    // 서버 측 refresh token 무효화 (fire-and-forget)
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (user?.id) {
+      fetch('http://localhost:3001/api/auth/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id }),
+      }).catch(() => {});
+    }
     localStorage.removeItem('token');
+    localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
     localStorage.removeItem('userName');
     setIsLoggedIn(false);
