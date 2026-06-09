@@ -73,7 +73,17 @@ export default function App() {
     if (!token) return;
 
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      // atob()는 Latin-1로 디코딩 → 한글(UTF-8 멀티바이트) 깨짐
+      // base64url → base64 변환 후 UTF-8로 올바르게 디코딩
+      const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(
+        decodeURIComponent(
+          atob(base64)
+            .split('')
+            .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+            .join('')
+        )
+      );
 
       const user = {
         id: payload.user_id,
