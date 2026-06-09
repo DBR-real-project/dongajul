@@ -3,11 +3,11 @@ import { apiFetchJson } from '../utils/api';
 
 interface CheckoutPageProps {
   onBack: () => void;
+  onSuccess: () => void;
 }
 
-export function CheckoutPage({ onBack }: CheckoutPageProps) {
-  
-  // 💡 컴포넌트가 마운트될 때 결제 모듈(스크립트)을 동적으로 불러옵니다. 
+export function CheckoutPage({ onBack, onSuccess }: CheckoutPageProps) {
+  // 결제 모듈 스크립트 불러오기
   useEffect(() => {
     const script = document.createElement("script");
     script.src = "https://cdn.iamport.kr/v1/iamport.js";
@@ -19,22 +19,24 @@ export function CheckoutPage({ onBack }: CheckoutPageProps) {
     };
   }, []);
 
-const handlePayment = async () => {
-  try {
-    await apiFetchJson('/api/subscriptions', {
-      method: 'POST',
-      body: JSON.stringify({
-        plan_type: 'premium',
-      }),
-    });
+  const handlePayment = async () => {
+    try {
+      await apiFetchJson('/api/subscriptions', {
+        method: 'POST',
+        body: JSON.stringify({
+          plan_type: 'premium',
+        }),
+      });
 
-    alert('구독 완료!');
-    
-  } catch (err: any) {
-    console.error(err);
-    alert(err.message || '구독 실패');
-  }
-};
+      alert('구독 완료!');
+
+      // 결제 성공 후 App.tsx에서 넘겨준 화면 이동 함수 실행
+      onSuccess();
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || '구독 실패');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-20 px-4 flex flex-col items-center justify-center font-sans">
@@ -64,13 +66,13 @@ const handlePayment = async () => {
                 <div className="text-sm text-gray-500">결제 금액</div>
                 <div className="text-2xl font-bold text-slate-900">₩9,900</div>
               </div>
+
               <div className="rounded-2xl bg-gray-100 p-4">
                 <div className="text-sm text-gray-500">결제 수단</div>
                 <div className="text-base text-slate-700">카드 / 간편결제 / 계좌이체</div>
               </div>
-              
-              {/* 💡 onClick 이벤트에 handlePayment 함수 연결 */}
-              <button 
+
+              <button
                 onClick={handlePayment}
                 className="w-full rounded-xl bg-gradient-to-r from-[#4285f4] via-[#9b72cb] to-[#d96570] py-3 text-white font-bold transition hover:opacity-90 active:scale-95 shadow-md"
               >
