@@ -61,10 +61,38 @@ const updateUserNickname = async (user_id, nickname) => {
   return findUserById(user_id);
 };
 
+// 5. refresh_token 저장
+const saveRefreshToken = async (user_id, refresh_token) => {
+  await db.execute(
+    'UPDATE users SET refresh_token = ? WHERE user_id = ?',
+    [refresh_token, user_id]
+  );
+};
+
+// 6. refresh_token으로 유저 조회
+const findByRefreshToken = async (refresh_token) => {
+  const [rows] = await db.execute(
+    'SELECT * FROM users WHERE refresh_token = ?',
+    [refresh_token]
+  );
+  return rows[0];
+};
+
+// 7. refresh_token 초기화 (로그아웃)
+const clearRefreshToken = async (user_id) => {
+  await db.execute(
+    'UPDATE users SET refresh_token = NULL WHERE user_id = ?',
+    [user_id]
+  );
+};
+
 // 모든 함수 내보내기
 module.exports = {
   findUserByEmail,
   findUserById,
   createUser,
   updateUserNickname,
+  saveRefreshToken,
+  findByRefreshToken,
+  clearRefreshToken,
 };

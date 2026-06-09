@@ -10,7 +10,15 @@ const makeToken = (user) => {
       name: user.nickname || user.name || user.email?.split('@')[0],
     },
     process.env.JWT_SECRET,
-    { expiresIn: '1d' }
+    { expiresIn: '15m' }
+  );
+};
+
+const makeRefreshToken = (user) => {
+  return jwt.sign(
+    { user_id: user.user_id },
+    process.env.REFRESH_SECRET || process.env.JWT_SECRET + '_refresh',
+    { expiresIn: '7d' }
   );
 };
 
@@ -23,8 +31,9 @@ const loginUser = async (email, password) => {
   if (!isValid) throw new Error('INVALID_PASSWORD');
 
   const token = makeToken(user);
+  const refresh_token = makeRefreshToken(user);
 
-  return { user, token };
+  return { user, token, refresh_token };
 };
 
 // 회원가입
@@ -36,12 +45,14 @@ const registerUser = async (email, password, name) => {
   const user = await createUser(email, hashed, name);
 
   const token = makeToken(user);
+  const refresh_token = makeRefreshToken(user);
 
-  return { user, token };
+  return { user, token, refresh_token };
 };
 
 module.exports = {
   loginUser,
   registerUser,
-  makeToken
+  makeToken,
+  makeRefreshToken,
 };
