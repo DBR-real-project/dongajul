@@ -15,6 +15,7 @@ import { ProfileView } from './components/ProfileView';
 import { CompareView } from './components/CompareView';
 import { SemanticMap } from './components/SemanticMap';
 import { SubscriptionPage } from './components/SubscriptionPage';
+import { CheckoutPage } from './components/CheckoutPage';
 
 export type ViewType =
   | 'dashboard'
@@ -29,7 +30,8 @@ export type ViewType =
   | 'profile'
   | 'result'
   | 'semantic-map'
-  | 'subscription';
+  | 'subscription'
+  | 'checkout';
 
 export type TabType = 'dashboard' | 'strategy' | 'history';
 
@@ -294,7 +296,12 @@ export default function App() {
               darkMode={darkMode}
             />
           ) : currentView === 'subscription' ? (
-            <SubscriptionPage />
+            <SubscriptionPage
+              onStartBasic={() => setCurrentView('dashboard')}
+              onSubscribe={() => setCurrentView('checkout')}
+            />
+          ) : currentView === 'checkout' ? (
+            <CheckoutPage onBack={() => setCurrentView('subscription')} />
           ) : (
             <EnterpriseDashboard
               darkMode={darkMode}
