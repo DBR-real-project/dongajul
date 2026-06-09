@@ -28,11 +28,24 @@ build/
 크롤링/*.xlsx
 크롤링/*.xls
 크롤링/naver/*.json
-데이터처리/output/*.parquet
 데이터처리/output/*.npy
+데이터처리/output/*.parquet
 데이터처리/output/*.pkl
 데이터처리/output/*.index
 데이터처리/output/*.txt
+
+# ── 운영 파일 예외 (팀원 공유 필요, 각 파일 40MB 이내) ──────────────────────
+!데이터처리/output/umap_coords.parquet
+!데이터처리/output/cluster_info.parquet
+!데이터처리/output/articles_meta.parquet
+!데이터처리/output/risk_model.pkl
+!데이터처리/output/faiss.index
+!데이터처리/output/risk_model_report.txt
+!데이터처리/output/embeddings.npy
+!데이터처리/output/DBR_embeddings.npy
+!데이터처리/output/HBR_embeddings.npy
+!데이터처리/output/HBR_labeled.parquet
+!데이터처리/output/HBR_preprocessed.parquet
 
 # ── DB / Docker ──────────────────────────────────────────────────────────────
 mysql_data/
@@ -53,6 +66,6 @@ desktop.ini
 # ── 프로젝트 로컬 전용 (팀원 공유 불필요) ────────────────────────────────────
 .claude/
 클로드학습자료/
-scripts/
+/scripts/
 CLAUDE.md
 서류/*.pdf

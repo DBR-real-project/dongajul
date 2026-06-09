@@ -73,7 +73,22 @@ export default function App() {
     if (!token) return;
 
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+
+      // UTF-8 디코딩 시도 → 실패 시 단순 atob fallback (이름 깨질 수 있지만 로그인은 됨)
+      let payload: any;
+      try {
+        payload = JSON.parse(
+          decodeURIComponent(
+            atob(base64)
+              .split('')
+              .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+              .join('')
+          )
+        );
+      } catch {
+        payload = JSON.parse(atob(token.split('.')[1]));
+      }
 
       const user = {
         id: payload.user_id,
@@ -85,11 +100,19 @@ export default function App() {
       localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('userName', user.name || user.email || '사용자');
 
+      // 소셜 로그인 refresh token 저장
+      const refreshToken = params.get('refresh_token');
+      if (refreshToken) {
+        localStorage.setItem('refresh_token', refreshToken);
+      }
+
       setIsLoggedIn(true);
       window.history.replaceState({}, '', '/');
     } catch (e) {
+      // 토큰 자체가 손상된 경우에만 제거
       console.error('토큰 파싱 실패:', e);
       localStorage.removeItem('token');
+      localStorage.removeItem('refresh_token');
       localStorage.removeItem('user');
       localStorage.removeItem('userName');
     }
@@ -103,12 +126,10 @@ export default function App() {
     const savedUser = localStorage.getItem('user');
 
     if (!savedUser) {
-      localStorage.setItem(
-        'user',
-        JSON.stringify({ email })
-      );
+      localStorage.setItem('user', JSON.stringify({ email }));
     }
 
+    window.dispatchEvent(new Event('storage'));
     setIsLoggedIn(true);
     setShowSignup(false);
     setCurrentView('dashboard');
@@ -136,7 +157,17 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    // 서버 측 refresh token 무효화 (fire-and-forget)
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (user?.id) {
+      fetch('http://localhost:3001/api/auth/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id }),
+      }).catch(() => {});
+    }
     localStorage.removeItem('token');
+    localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
     localStorage.removeItem('userName');
     setIsLoggedIn(false);
@@ -301,7 +332,7 @@ export default function App() {
               onSubscribe={() => setCurrentView('checkout')}
             />
           ) : currentView === 'checkout' ? (
-            <CheckoutPage onBack={() => setCurrentView('subscription')} />
+            <CheckoutPage onBack={() => setCurrentView('subscription')} onSuccess={() => setCurrentView('dashboard')} />
           ) : (
             <EnterpriseDashboard
               darkMode={darkMode}

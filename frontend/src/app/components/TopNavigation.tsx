@@ -28,33 +28,52 @@ export function TopNavigation({
   const [userName, setUserName] = useState(() => {
     if (typeof window !== 'undefined') {
       const user = localStorage.getItem('user');
-
       if (user) {
         try {
           const parsedUser = JSON.parse(user);
-          return parsedUser.name || parsedUser.email || '사용자';
+          return parsedUser.nickname || parsedUser.name || parsedUser.email || '사용자';
         } catch {
           return localStorage.getItem('userName') || '사용자';
         }
       }
-
       return localStorage.getItem('userName') || '사용자';
     }
-
     return '사용자';
   });
 
-  useEffect(() => {
-    const user = localStorage.getItem('user');
+  const getProfileImgFromStorage = () => {
+    const raw = localStorage.getItem('user');
+    if (!raw) return null;
+    try {
+      const u = JSON.parse(raw);
+      const email = u.email;
+      return email ? localStorage.getItem(`profileImage_${email}`) || null : null;
+    } catch { return null; }
+  };
 
-    if (user) {
-      try {
-        const parsedUser = JSON.parse(user);
-        setUserName(parsedUser.name || parsedUser.email || '사용자');
-      } catch {
-        setUserName(localStorage.getItem('userName') || '사용자');
+  const [profileImage, setProfileImage] = useState<string | null>(() => {
+    return typeof window !== 'undefined' ? getProfileImgFromStorage() : null;
+  });
+
+  useEffect(() => {
+    const syncFromStorage = () => {
+      // 닉네임 동기화
+      const user = localStorage.getItem('user');
+      if (user) {
+        try {
+          const parsedUser = JSON.parse(user);
+          setUserName(parsedUser.nickname || parsedUser.name || parsedUser.email || '사용자');
+        } catch {
+          setUserName(localStorage.getItem('userName') || '사용자');
+        }
       }
-    }
+      // 계정별 프로필 사진 동기화
+      setProfileImage(getProfileImgFromStorage());
+    };
+
+    syncFromStorage();
+    window.addEventListener('storage', syncFromStorage);
+    return () => window.removeEventListener('storage', syncFromStorage);
   }, []);
 
   const menuItems =
@@ -184,8 +203,14 @@ export function TopNavigation({
                 : 'bg-gray-50 hover:bg-gray-100 border border-gray-200'
             } rounded-lg transition-all shadow-sm hover:shadow`}
           >
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center shadow-lg">
-              <User className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 rounded-lg overflow-hidden shadow-lg flex-shrink-0">
+              {profileImage ? (
+                <img src={profileImage} alt="프로필" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                  <User className="w-4 h-4 text-white" />
+                </div>
+              )}
             </div>
             <div className="text-left">
               <p className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
