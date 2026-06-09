@@ -1,22 +1,27 @@
-// repository 가져오기
-const semanticMapRepository = require("../repositories/semanticMapRepository");
+const axios = require("axios");
 
+const AI_SERVER_URL = process.env.AI_SERVER_URL || "http://127.0.0.1:8000";
 
-// UMAP 좌표 전체 조회 API
-exports.getSemanticMap = async (req, res) => {
+async function getSemanticMap(req, res) {
   try {
-    // DB에서 UMAP 좌표 데이터 조회
-    const semanticMap = await semanticMapRepository.getSemanticMap();
+    const limit = req.query.limit || 2000;
 
-    // 프론트로 데이터 반환
-    res.json(semanticMap);
-  } catch (err) {
-    // 서버 에러 출력
-    console.error("시맨틱 맵 조회 에러:", err);
+    const response = await axios.get(`${AI_SERVER_URL}/semantic-map`, {
+      params: { limit },
+      timeout: 30000,
+    });
 
-    // 에러 응답
-    res.status(500).json({
-      message: "시맨틱 맵 조회 실패",
+    return res.status(200).json(response.data);
+  } catch (error) {
+    console.error("[semantic-map] error:", error.message);
+
+    return res.status(500).json({
+      message: "시맨틱 맵 데이터를 불러오지 못했습니다.",
+      detail: error.response?.data || error.message,
     });
   }
+}
+
+module.exports = {
+  getSemanticMap,
 };

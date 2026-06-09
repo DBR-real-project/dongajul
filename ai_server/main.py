@@ -315,3 +315,53 @@ def clusters():
     if _clusters is None:
         return []
     return _clusters.to_dict(orient="records")
+
+### semantic map 추가
+@app.get("/semantic-map")
+def semantic_map(limit: int = 1000):
+    if _umap is None:
+        raise HTTPException(
+            status_code=503,
+            detail="UMAP 좌표 데이터가 없어 시멘틱 맵을 사용할 수 없습니다.",
+        )
+
+    if _meta is None:
+        raise HTTPException(
+            status_code=503,
+            detail="메타데이터가 없어 시멘틱 맵을 사용할 수 없습니다.",
+        )
+
+    if "umap_x" not in _umap.columns or "umap_y" not in _umap.columns:
+        raise HTTPException(
+            status_code=500,
+            detail="umap_coords.parquet에 umap_x 또는 umap_y 컬럼이 없습니다.",
+        )
+
+    n = min(len(_umap), len(_meta), limit)
+    points = []
+
+    for i in range(n):
+        umap_row = _umap.iloc[i]
+        meta_row = _meta.iloc[i]
+
+        cluster_id = None
+        if "cluster_id" in _umap.columns and pd.notna(umap_row.get("cluster_id")):
+            cluster_id = int(umap_row.get("cluster_id"))
+
+        points.append({
+            "id": int(i),
+            "x": float(umap_row.get("umap_x", 0)),
+            "y": float(umap_row.get("umap_y", 0)),
+            "cluster_id": cluster_id,
+            "title": str(meta_row.get("title", "") or ""),
+            "label": str(meta_row.get("label_name", "") or ""),
+            "category": str(meta_row.get("category", "") or ""),
+            "source": str(meta_row.get("source", "") or ""),
+            "summary": str(meta_row.get("summary", "") or ""),
+            "url": str(meta_row.get("url", "") or ""),
+        })
+
+    return {
+        "count": len(points),
+        "points": points,
+    }
