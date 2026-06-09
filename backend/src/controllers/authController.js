@@ -122,9 +122,6 @@ exports.kakaoCallback = async (req, res) => {
       || kakaoUser.properties?.nickname
       || '카카오사용자';
 
-    console.log('[kakao 디버그] kakao_account.profile:', kakaoUser.kakao_account?.profile);
-    console.log('[kakao 디버그] properties:', kakaoUser.properties);
-    console.log('[kakao 디버그] 최종 name:', name);
     if (!email) {
       return res.status(400).send('카카오 계정에서 이메일을 가져올 수 없습니다.');
     }
