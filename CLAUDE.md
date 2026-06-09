@@ -183,16 +183,19 @@ ai_server/
 
 ---
 
-## 현재 상태 (2026-06-09 세션3 — 최종)
+## 현재 상태 (2026-06-09 세션4 — 최종)
 
 **NLP 파이프라인 전체 완료**: ① 전처리 → ② 라벨링 → ③ 임베딩+FAISS → ④ 리스크 모델 → ⑤ UMAP+K-means
 **FastAPI ML 서비스 완료**: POST /diagnose, POST /report (GPT RAG), GET /health, GET /clusters
 **RAG 완료**: FAISS 유사 사례 검색 → GPT few-shot 리포트 생성 (reporter.py)
 **JWT Refresh Token 완료**: Access 15분 / Refresh 7일, 자동 재발급
+**카카오 로그인 복구 완료**: charset 버그 + JWT fallback 처리
 
 ---
 
-### 완료한 작업 (2026-06-09)
+## ✅ 전체 완료 작업 이력
+
+### 세션1~2 (2026-06-09)
 
 **1. JWT Refresh Token (`authService.js`, `userModel.js`, `authController.js`, `api.ts`)**
 - Access Token 15분 / Refresh Token 7일 (JWT)
@@ -206,33 +209,49 @@ ai_server/
 **2. DB 마이그레이션 (`backend/scripts/migrate_auth.js`)**
 - `users.password_hash` → `VARCHAR(255) NULL` (소셜 로그인 신규 가입자 지원)
 - `users.refresh_token VARCHAR(512) NULL` 컬럼 추가
-- 완료: `node backend/scripts/migrate_auth.js`
+- 실행 완료: `node backend/scripts/migrate_auth.js`
 
 **3. .gitignore 수정 (운영 파일 해제)**
-- 팀원 공유 필요 파일 예외 처리 (각 40MB 이내):
+- 팀원 공유 필요 파일 예외 처리:
   - `umap_coords.parquet`, `cluster_info.parquet`, `articles_meta.parquet`
   - `risk_model.pkl`, `faiss.index`, `risk_model_report.txt`
-- 대용량 학습 전용 파일 (`*.npy`, `*_preprocessed.parquet`, `*_labeled.parquet`) 계속 제외
+  - `embeddings.npy`, `DBR/HBR_embeddings.npy`, `HBR_labeled/preprocessed.parquet` (jyp 추가)
+- 대용량 학습 전용 파일 계속 제외
 
 **4. UMAP DB 임포트 스크립트 (`데이터처리/import_umap_to_db.py`)**
 - `cluster_info.parquet` → `clusters` 테이블
 - `umap_coords.parquet` → `article_vectors` 테이블 (umap_x/y/cluster_id)
 - 팀원이 `python 데이터처리/import_umap_to_db.py` 한 번만 실행하면 시맨틱 맵 데이터 채워짐
 
-**5. 버그 수정**
-- `authController.js`: kakaoCallback `finalEmail` → `email` (undefined 버그)
-- `authRoutes.js`: 중복 카카오 라우트(`/kakao` 두 번) 제거
+**5. 소셜 로그인 pre-existing 버그 수정**
+- `authController.js`: kakaoCallback `finalEmail` → `email` (undefined 변수 버그)
+- `authRoutes.js`: 중복 카카오 라우트 (`/kakao` 두 번 선언) 제거
+
+**6. 비밀번호 찾기 (nodemailer)** — ~~진행 안 함 (팀 결정)~~
 
 ---
 
-### ⚠️ 주의사항
+### 세션4 (2026-06-09) — 카카오 로그인 복구
+
+**7. 카카오 로그인 깨진 버그 수정 (`db.js`, `App.tsx`, `authController.js`)**
+- 원인①: `db.js`에 `charset: 'utf8mb4'` 추가 → MySQL이 latin1 컬럼 데이터를 charset 변환하면서 한글 이름 garbling
+- 원인②: `App.tsx` JWT 디코딩을 `decodeURIComponent`로 변경 → URIError throw 시 catch에서 토큰 전체 삭제 → 로그인 차단
+- 원인③: `authController.js` kakaoCallback에서 `payload` 객체에 `client_secret` 추가했으나 실제 axios.post는 별도 `URLSearchParams`를 사용해 `client_secret`이 누락 → Kakao가 400 반환 (`.env`에 `KAKAO_CLIENT_SECRET` 세팅된 경우 필수값)
+- 수정: `charset: 'utf8mb4'` 제거 / `decodeURIComponent` atob fallback / `tokenParams` 객체로 통합해 client_secret 실제 요청에 포함
+- 커밋: `635daf0`, `2ca7b93` (develop 브랜치)
+
+---
+
+## ⚠️ 주의사항
 - `npm run build`는 VM에서 dist 폴더 권한 오류(EPERM) — Windows에서 `dist` 폴더 삭제 후 빌드
 - DB에 `article_vectors.umap_x/y` 데이터 있어야 시맨틱 맵 점들 표시됨
   → `python 데이터처리/import_umap_to_db.py` 실행 필요 (팀원)
 - REFRESH_SECRET 환경변수 없으면 자동으로 `JWT_SECRET + '_refresh'` 사용
+- `db.js`에 `charset` 옵션 절대 추가 금지 — DB 서버(campus.smhrd.com)가 latin1 기반이라 charset 변환 시 한글 garbling 발생
 
-### 남은 작업
+## 📋 남은 작업
 1. ~~비밀번호 찾기 이메일 전송 (nodemailer)~~ **진행 안 함 (팀 결정)**
 2. ~~JWT Refresh Token~~ **완료**
 3. ~~users.password_hash NULL 허용~~ **완료**
-4. 기업 구독 결제 플로우
+4. ~~카카오 로그인 복구~~ **완료**
+5. 기업 구독 결제 플로우
