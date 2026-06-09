@@ -18,25 +18,27 @@ exports.createFeedback = async (req, res) => {
       });
     }
 
-    if (!rating) {
+    if (rating === undefined || rating === null || rating === "") {
       return res.status(400).json({
         success: false,
         message: "rating이 필요합니다.",
       });
     }
 
-    if (!["good", "bad"].includes(rating)) {
+    const ratingNumber = Number(rating);
+
+    if (![1, 5].includes(ratingNumber)) {
       return res.status(400).json({
         success: false,
-        message: "rating 값은 good 또는 bad만 가능합니다.",
+        message: "rating 값은 1 또는 5만 가능합니다.",
       });
     }
 
     const feedback = await feedbackRepository.createFeedback({
-      user_id,
-      diagnosis_id,
-      rating,
-      opinion_text,
+      user_id: Number(user_id),
+      diagnosis_id: Number(diagnosis_id),
+      rating: ratingNumber,
+      opinion_text: opinion_text || null,
     });
 
     res.status(201).json({
