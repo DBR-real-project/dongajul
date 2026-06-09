@@ -3,18 +3,21 @@ import { apiFetchJson } from '../utils/api';
 
 interface CheckoutPageProps {
   onBack: () => void;
-  onSuccess?: () => void;
 }
 
-export function CheckoutPage({ onBack, onSuccess }: CheckoutPageProps) {
-  const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+export function CheckoutPage({ onBack }: CheckoutPageProps) {
+  
+  // 💡 컴포넌트가 마운트될 때 결제 모듈(스크립트)을 동적으로 불러옵니다. 
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://cdn.iamport.kr/v1/iamport.js";
+    script.async = true;
+    document.body.appendChild(script);
 
-  const handlePayment = async () => {
-    if (loading || done) return;
-    setLoading(true);
-    setErrorMsg('');
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
 
 const handlePayment = async () => {
   try {
@@ -36,79 +39,55 @@ const handlePayment = async () => {
   return (
     <div className="min-h-screen bg-gray-50 py-20 px-4 flex flex-col items-center justify-center font-sans">
       <div className="w-full max-w-3xl bg-white rounded-[24px] p-10 shadow-xl border border-gray-200">
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-bold text-slate-900 mb-3">결제 창</h1>
+          <p className="text-gray-500">
+            지금부터 구독 결제 화면으로 이동합니다. 실제 결제 연동은 해당 화면에서 추가 구성하면 됩니다.
+          </p>
+        </div>
 
-        {done ? (
-          <div className="flex flex-col items-center justify-center py-10 gap-5">
-            <CheckCircle className="w-16 h-16 text-emerald-500" />
-            <h2 className="text-2xl font-bold text-slate-900">구독이 완료되었습니다!</h2>
-            <p className="text-gray-500 text-sm text-center">
-              프리미엄 플랜이 활성화되었습니다. 잠시 후 대시보드로 이동합니다.
-            </p>
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="rounded-2xl border border-gray-200 p-6 bg-slate-50">
+            <h2 className="text-xl font-semibold mb-4">프리미엄 플랜</h2>
+            <p className="text-sm text-gray-600 mb-6">월 ₩9,900으로 모든 AI 분석 기능 무제한 이용.</p>
+            <ul className="space-y-3 text-sm text-slate-700">
+              <li>✓ 최신 AI 모델 사용</li>
+              <li>✓ 우선 응답 속도</li>
+              <li>✓ 심층 진단 리포트</li>
+            </ul>
           </div>
-        ) : (
-          <>
-            <div className="mb-8 text-center">
-              <h1 className="text-3xl font-bold text-slate-900 mb-3">구독 결제</h1>
-              <p className="text-gray-500">
-                프리미엄 플랜으로 업그레이드하여 모든 AI 분석 기능을 이용하세요.
-              </p>
-            </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="rounded-2xl border border-gray-200 p-6 bg-slate-50">
-                <h2 className="text-xl font-semibold mb-4">프리미엄 플랜</h2>
-                <p className="text-sm text-gray-600 mb-6">월 ₩9,900으로 모든 AI 분석 기능 무제한 이용.</p>
-                <ul className="space-y-3 text-sm text-slate-700">
-                  <li>✓ 최신 AI 모델 사용</li>
-                  <li>✓ 우선 응답 속도</li>
-                  <li>✓ 심층 진단 리포트</li>
-                </ul>
+          <div className="rounded-2xl border border-gray-200 p-6 bg-white shadow-sm">
+            <div className="mb-4 text-sm font-semibold text-slate-500">결제 정보</div>
+            <div className="space-y-4">
+              <div className="rounded-2xl bg-gray-100 p-4">
+                <div className="text-sm text-gray-500">결제 금액</div>
+                <div className="text-2xl font-bold text-slate-900">₩9,900</div>
               </div>
-
-              <div className="rounded-2xl border border-gray-200 p-6 bg-white shadow-sm">
-                <div className="mb-4 text-sm font-semibold text-slate-500">결제 정보</div>
-                <div className="space-y-4">
-                  <div className="rounded-2xl bg-gray-100 p-4">
-                    <div className="text-sm text-gray-500">결제 금액</div>
-                    <div className="text-2xl font-bold text-slate-900">₩9,900</div>
-                  </div>
-                  <div className="rounded-2xl bg-gray-100 p-4">
-                    <div className="text-sm text-gray-500">결제 수단</div>
-                    <div className="text-base text-slate-700">카드 / 간편결제 / 계좌이체</div>
-                  </div>
-
-                  {errorMsg && (
-                    <p className="text-sm text-red-500 font-medium text-center">{errorMsg}</p>
-                  )}
-
-                  <button
-                    onClick={handlePayment}
-                    disabled={loading}
-                    className="w-full rounded-xl bg-gradient-to-r from-[#4285f4] via-[#9b72cb] to-[#d96570] py-3 text-white font-bold transition hover:opacity-90 active:scale-95 shadow-md disabled:opacity-60 flex items-center justify-center gap-2"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>처리 중...</span>
-                      </>
-                    ) : (
-                      '결제 진행하기'
-                    )}
-                  </button>
-                </div>
+              <div className="rounded-2xl bg-gray-100 p-4">
+                <div className="text-sm text-gray-500">결제 수단</div>
+                <div className="text-base text-slate-700">카드 / 간편결제 / 계좌이체</div>
               </div>
-            </div>
-
-            <div className="mt-10 flex justify-center">
-              <button
-                onClick={onBack}
-                className="px-6 py-3 rounded-xl border border-slate-300 bg-white text-slate-700 font-semibold transition hover:bg-slate-100"
+              
+              {/* 💡 onClick 이벤트에 handlePayment 함수 연결 */}
+              <button 
+                onClick={handlePayment}
+                className="w-full rounded-xl bg-gradient-to-r from-[#4285f4] via-[#9b72cb] to-[#d96570] py-3 text-white font-bold transition hover:opacity-90 active:scale-95 shadow-md"
               >
-                이전으로 돌아가기
+                결제 진행하기
               </button>
             </div>
-          </>
-        )}
+          </div>
+        </div>
+
+        <div className="mt-10 flex justify-center">
+          <button
+            onClick={onBack}
+            className="px-6 py-3 rounded-xl border border-slate-300 bg-white text-slate-700 font-semibold transition hover:bg-slate-100"
+          >
+            이전으로 돌아가기
+          </button>
+        </div>
       </div>
     </div>
   );
