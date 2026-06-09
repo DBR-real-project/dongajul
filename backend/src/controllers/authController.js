@@ -88,28 +88,22 @@ exports.kakaoLogin = (req, res) => {
 exports.kakaoCallback = async (req, res) => {
   const code = req.query.code;
   try {
-    // 1. 카카오 서버에 보낼 데이터 (client_secret은 비활성화 상태면 아예 빼야 작동함)
-    const payload = {
+    // 1. 카카오 토큰 요청 파라미터 구성
+    // client_secret은 Kakao 앱에서 활성화한 경우에만 포함 (비활성화 상태면 빼야 함)
+    const tokenParams = {
       grant_type: 'authorization_code',
       client_id: process.env.KAKAO_REST_API_KEY,
       redirect_uri: process.env.KAKAO_REDIRECT_URI,
       code,
     };
-
-    // 만약 .env에 KAKAO_CLIENT_SECRET을 진짜로 세팅했다면 그때만 추가
     if (process.env.KAKAO_CLIENT_SECRET) {
-      payload.client_secret = process.env.KAKAO_CLIENT_SECRET;
+      tokenParams.client_secret = process.env.KAKAO_CLIENT_SECRET;
     }
 
     // 2. 토큰 받아오기
     const tokenResult = await axios.post(
       'https://kauth.kakao.com/oauth/token',
-      new URLSearchParams({
-        grant_type: 'authorization_code',
-        client_id: process.env.KAKAO_REST_API_KEY,
-        redirect_uri: process.env.KAKAO_REDIRECT_URI,
-        code,
-      }),
+      new URLSearchParams(tokenParams),
       { headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' } }
     );
 
