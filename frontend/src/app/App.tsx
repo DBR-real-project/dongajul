@@ -73,17 +73,22 @@ export default function App() {
     if (!token) return;
 
     try {
-      // atob()는 Latin-1로 디코딩 → 한글(UTF-8 멀티바이트) 깨짐
-      // base64url → base64 변환 후 UTF-8로 올바르게 디코딩
       const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-      const payload = JSON.parse(
-        decodeURIComponent(
-          atob(base64)
-            .split('')
-            .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-            .join('')
-        )
-      );
+
+      // UTF-8 디코딩 시도 → 실패 시 단순 atob fallback (이름 깨질 수 있지만 로그인은 됨)
+      let payload: any;
+      try {
+        payload = JSON.parse(
+          decodeURIComponent(
+            atob(base64)
+              .split('')
+              .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+              .join('')
+          )
+        );
+      } catch {
+        payload = JSON.parse(atob(token.split('.')[1]));
+      }
 
       const user = {
         id: payload.user_id,
@@ -104,6 +109,7 @@ export default function App() {
       setIsLoggedIn(true);
       window.history.replaceState({}, '', '/');
     } catch (e) {
+      // 토큰 자체가 손상된 경우에만 제거
       console.error('토큰 파싱 실패:', e);
       localStorage.removeItem('token');
       localStorage.removeItem('refresh_token');
