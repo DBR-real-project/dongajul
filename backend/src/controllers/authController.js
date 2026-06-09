@@ -80,6 +80,7 @@ exports.kakaoLogin = (req, res) => {
       client_id: process.env.KAKAO_REST_API_KEY,
       redirect_uri: process.env.KAKAO_REDIRECT_URI,
       response_type: 'code',
+      scope: 'profile_nickname account_email',  // 닉네임·이메일 동의 요청
     });
   res.redirect(kakaoAuthUrl);
 };
@@ -116,7 +117,10 @@ exports.kakaoCallback = async (req, res) => {
     const kakaoUser = userResult.data;
     const kakaoId = kakaoUser.id;
     const email = kakaoUser.kakao_account?.email || `kakao_${kakaoId}@kakao.local`;
-    const name = kakaoUser.kakao_account?.profile?.nickname || '카카오사용자';
+    // kakao_account.profile.nickname (동의 필요) → properties.nickname (기본 제공) 순으로 fallback
+    const name = kakaoUser.kakao_account?.profile?.nickname
+      || kakaoUser.properties?.nickname
+      || '카카오사용자';
     if (!email) {
       return res.status(400).send('카카오 계정에서 이메일을 가져올 수 없습니다.');
     }
