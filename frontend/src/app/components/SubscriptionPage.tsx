@@ -116,9 +116,12 @@ export function SubscriptionPage({ onStartBasic, onSubscribe }: SubscriptionPage
           <div className="text-3xl font-bold mb-6 text-slate-800">
             별도 문의
           </div>
-          <button className="w-full bg-[#0B1931] text-white py-3 rounded-xl font-bold transition hover:opacity-90 mb-8 active:scale-95">
+          <a
+            href="mailto:dongajul@dongajul.com?subject=엔터프라이즈 플랜 문의"
+            className="w-full bg-[#0B1931] text-white py-3 rounded-xl font-bold transition hover:opacity-90 mb-8 active:scale-95 block text-center"
+          >
             영업팀 문의
-          </button>
+          </a>
           
           <ul className="space-y-4 text-sm text-slate-600 flex-grow">
             <li className="flex items-start gap-2">

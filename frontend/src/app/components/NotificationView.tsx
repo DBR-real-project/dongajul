@@ -126,7 +126,7 @@ export function NotificationView({ onBack, onNavigate, darkMode = false }: Notif
   const handleUpgrade = () => setShowUpgradeModal(true);
   const handleConfirmUpgrade = () => {
     setShowUpgradeModal(false);
-    triggerToast('업그레이드 완료되었습니다! 👑');
+    onNavigate?.('checkout');
   };
 
   return (
