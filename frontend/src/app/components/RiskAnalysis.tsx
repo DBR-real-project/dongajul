@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ArrowLeft, Shield, AlertTriangle, ExternalLink, Bell, User, TrendingUp, TrendingDown, Activity, ChevronRight } from 'lucide-react';
 import { DiagnosisData } from './DiagnosisResult';
+import { apiFetch } from '../utils/api';
 
 interface RiskAnalysisProps {
   onBack: () => void;
@@ -49,8 +50,6 @@ export function RiskAnalysis({ onBack, onArticleClick, onResultClick, onNotifica
 
   const text = language === 'en' ? t.en : t.ko;
 
-  const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3001';
-
   const handleAnalyze = async () => {
     if (!strategyText.trim()) {
       setError('전략 텍스트를 입력해주세요.');
@@ -61,9 +60,8 @@ export function RiskAnalysis({ onBack, onArticleClick, onResultClick, onNotifica
     setError('');
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/diagnose`, {
+      const response = await apiFetch('/api/diagnose', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: strategyText, top_k: 5 }),
       });
 
@@ -450,6 +448,17 @@ export function RiskAnalysis({ onBack, onArticleClick, onResultClick, onNotifica
               </div>
             ))}
           </div>
+        </div>
+
+        {/* AI 참고용 면책 문구 */}
+        <div className={`flex items-start gap-2 px-4 py-3 rounded-xl border ${
+          darkMode ? 'bg-gray-800/30 border-gray-700/40' : 'bg-gray-50 border-gray-200'
+        }`}>
+          <span className={`text-xs mt-0.5 flex-shrink-0 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>⚠️</span>
+          <p className={`text-xs leading-relaxed ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+            본 진단 결과는 DBR·HBR 13,335건 사례를 기반으로 AI가 생성한 <strong className={darkMode ? 'text-gray-400' : 'text-gray-500'}>참고용 자료</strong>입니다.
+            실제 경영 의사결정 시 반드시 전문가 자문을 병행하시기 바라며, 본 서비스는 투자·법률·경영 결과에 대한 책임을 지지 않습니다.
+          </p>
         </div>
 
       </div>
