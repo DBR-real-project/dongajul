@@ -1,20 +1,27 @@
 const db = require('../config/db');
 
-// GET /api/articles/stats — 기사 통계
+// GET /api/articles/stats — 기사 통계 (total, success, failure, cluster_count)
 exports.getArticleStats = async (req, res) => {
   try {
-    const [rows] = await db.execute(`
-      SELECT COUNT(*) AS total_articles
-      FROM articles
+    const [[countRow]] = await db.execute(`SELECT COUNT(*) AS total_articles FROM articles`);
+    const [[labelRows]] = await db.execute(`
+      SELECT
+        SUM(CASE WHEN al.label = 'success' THEN 1 ELSE 0 END)  AS success_count,
+        SUM(CASE WHEN al.label = 'failure' THEN 1 ELSE 0 END)  AS failure_count
+      FROM articles a
+      LEFT JOIN article_labels al ON a.article_id = al.article_id
     `);
+    const [[clusterRow]] = await db.execute(`SELECT COUNT(*) AS cluster_count FROM clusters`);
 
     res.json({
       success: true,
-      total_articles: rows[0]?.total_articles || 0,
+      total_articles: Number(countRow?.total_articles)   || 0,
+      success_count:  Number(labelRows?.success_count)   || 0,
+      failure_count:  Number(labelRows?.failure_count)   || 0,
+      cluster_count:  Number(clusterRow?.cluster_count)  || 0,
     });
   } catch (err) {
     console.error('[articleController] getArticleStats 오류:', err);
-
     res.status(500).json({
       success: false,
       message: '기사 통계 조회 중 서버 오류가 발생했습니다.',
