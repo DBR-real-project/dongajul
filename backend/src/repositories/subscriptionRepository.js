@@ -19,7 +19,7 @@ exports.createSubscription = async (userId, planType) => {
     INSERT INTO subscriptions
       (user_id, plan_type, status, start_date, end_date, auto_renewal, created_at, updated_at)
     VALUES
-      (?, ?, 'active', NOW(), DATE_ADD(NOW(), INTERVAL 1 MONTH), true, NOW(), NOW())
+      (?, ?, 'active', NOW(), DATE_ADD(NOW(), INTERVAL 1 MONTH), 1, NOW(), NOW())
   `;
 
   const [result] = await db.query(sql, [userId, planType]);
@@ -29,6 +29,7 @@ exports.createSubscription = async (userId, planType) => {
     user_id: userId,
     plan_type: planType,
     status: "active",
+    auto_renewal: 1,
   };
 };
 
@@ -49,7 +50,7 @@ exports.cancelSubscription = async (userId) => {
   const sql = `
     UPDATE subscriptions
     SET status = 'cancelled',
-        auto_renewal = false,
+        auto_renewal = 0,
         updated_at = NOW()
     WHERE user_id = ?
       AND status = 'active'
