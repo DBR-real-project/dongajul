@@ -29,7 +29,6 @@ exports.createSubscription = async (userId, planType) => {
     user_id: userId,
     plan_type: planType,
     status: "active",
-    auto_renewal: 1,
   };
 };
 
@@ -38,12 +37,24 @@ exports.getSubscriptionByUserId = async (userId) => {
     SELECT *
     FROM subscriptions
     WHERE user_id = ?
+      AND status = 'active'
     ORDER BY created_at DESC
     LIMIT 1
   `;
 
   const [rows] = await db.query(sql, [userId]);
   return rows[0];
+};
+
+exports.updateUserSubscriptionType = async (userId, subscriptionType) => {
+  const sql = `
+    UPDATE users
+    SET subscription_type = ?
+    WHERE user_id = ?
+  `;
+
+  const [result] = await db.query(sql, [subscriptionType, userId]);
+  return result.affectedRows;
 };
 
 exports.cancelSubscription = async (userId) => {
@@ -59,4 +70,3 @@ exports.cancelSubscription = async (userId) => {
   const [result] = await db.query(sql, [userId]);
   return result.affectedRows;
 };
-

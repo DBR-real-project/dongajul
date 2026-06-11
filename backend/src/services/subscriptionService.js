@@ -13,7 +13,6 @@ exports.subscribe = async (userId, planType = "premium") => {
         (?, ?, 'active', NOW(), DATE_ADD(NOW(), INTERVAL 1 MONTH), 1, NOW(), NOW())
     `;
 
-
     const [result] = await conn.query(insertSql, [userId, planType]);
 
     await conn.query(
@@ -42,6 +41,17 @@ exports.subscribe = async (userId, planType = "premium") => {
   } finally {
     conn.release();
   }
+};
+
+exports.syncUserSubscriptionType = async (userId, subscriptionType = "premium") => {
+  const sql = `
+    UPDATE users
+    SET subscription_type = ?
+    WHERE user_id = ?
+  `;
+
+  const [result] = await db.query(sql, [subscriptionType, userId]);
+  return result.affectedRows;
 };
 
 exports.cancelSubscription = async (userId) => {

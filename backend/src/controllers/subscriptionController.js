@@ -17,9 +17,18 @@ exports.createSubscription = async (req, res) => {
     const activeSubscription = await subscriptionRepository.findActiveByUserId(userId);
 
     if (activeSubscription) {
-      return res.status(409).json({
-        success: false,
-        message: "이미 활성화된 구독이 있습니다.",
+      await subscriptionService.syncUserSubscriptionType(
+        userId,
+        activeSubscription.plan_type || "premium"
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "이미 활성화된 구독이 있어 프리미엄 상태로 반영했습니다.",
+        data: {
+          ...activeSubscription,
+          subscription_type: activeSubscription.plan_type || "premium",
+        },
       });
     }
 

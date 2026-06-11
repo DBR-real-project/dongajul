@@ -23,8 +23,11 @@ export function BannerAd() {
         const subscription = res.data;
 
         const isPremium =
-          subscription?.subscription_type === 'premium' ||
-          subscription?.plan_type === 'premium';
+          subscription?.status === 'active' &&
+          (
+            subscription?.subscription_type === 'premium' ||
+            subscription?.plan_type === 'premium'
+          );
 
         if (isPremium) {
           localStorage.setItem('subscription_type', 'premium');
@@ -60,6 +63,14 @@ export function BannerAd() {
       setShowUpgradeModal(false);
       setIsVisible(false);
     } catch (err: any) {
+      if (err.message?.includes('이미 활성화된 구독')) {
+        localStorage.setItem('subscription_type', 'premium');
+        setShowUpgradeModal(false);
+        setIsVisible(false);
+        alert('이미 프리미엄 구독 중입니다.');
+        return;
+      }
+
       alert(err.message || '구독 처리에 실패했습니다.');
     }
   };
