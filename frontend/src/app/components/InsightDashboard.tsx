@@ -72,18 +72,19 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
 
   const filtered = articles;
 
+  // 브랜드 컬러를 KPI 지표에 반영 (Navy & Gold 포인트 추가)
   const stats = [
-    { label: 'DBR·HBR 아티클', value: '13,335', icon: BarChart2, color: 'blue' },
+    { label: 'DBR·HBR 아티클', value: '13,335', icon: BarChart2, color: 'gold' },
     { label: '성공 사례', value: '11,858', icon: TrendingUp, color: 'green' },
     { label: '실패 사례', value: '1,279', icon: AlertTriangle, color: 'red' },
-    { label: '전략 클러스터', value: '12', icon: Shield, color: 'indigo' },
+    { label: '전략 클러스터', value: '12', icon: Shield, color: 'navy' },
   ];
 
   const colorMap: Record<string, string> = {
-    blue: 'bg-blue-500/10 text-blue-500',
-    green: 'bg-green-500/10 text-green-500',
-    red: 'bg-red-500/10 text-red-500',
-    indigo: 'bg-indigo-500/10 text-indigo-500',
+    gold: darkMode ? 'bg-[#E1B764]/20 text-[#E1B764]' : 'bg-[#FCF8F2] text-[#D4A853]',
+    navy: darkMode ? 'bg-[#162238] text-[#E1B764]' : 'bg-[#162238]/10 text-[#162238]',
+    green: darkMode ? 'bg-green-500/10 text-green-400' : 'bg-green-500/10 text-green-600',
+    red: darkMode ? 'bg-red-500/10 text-red-400' : 'bg-red-500/10 text-red-600',
   };
 
   return (
@@ -127,7 +128,7 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
                   {c.top_keywords && (
                     <div className="flex flex-wrap gap-1 mt-2">
                       {c.top_keywords.split(',').slice(0, 3).map((kw: string) => (
-                        <span key={kw} className={`px-1.5 py-0.5 text-[10px] rounded ${darkMode ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>
+                        <span key={kw} className={`px-1.5 py-0.5 text-[10px] rounded ${darkMode ? 'bg-[#E1B764]/20 text-[#E1B764]' : 'bg-[#FCF8F2] text-[#D4A853]'}`}>
                           {kw.trim()}
                         </span>
                       ))}
@@ -155,7 +156,7 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
               key={f}
               onClick={() => setFilter(f)}
               className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${filter === f
-                ? f === 'success' ? 'bg-green-500 text-white' : f === 'failure' ? 'bg-red-500 text-white' : 'bg-[#142755] text-white'
+                ? f === 'success' ? 'bg-green-500 text-white' : f === 'failure' ? 'bg-red-500 text-white' : 'bg-[#162238] text-[#E1B764]'
                 : darkMode ? 'bg-gray-800 text-gray-400 border border-gray-700' : 'bg-white text-gray-600 border border-gray-200'
               }`}
             >
@@ -167,7 +168,7 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
         {/* 아티클 목록 */}
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <div className="w-8 h-8 border-4 border-[#142755] border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-4 border-[#E1B764] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : filtered.length === 0 ? (
           <div className={`text-center py-16 ${darkMode ? 'text-gray-500' : 'text-gray-400'} text-sm`}>
@@ -196,7 +197,7 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
                         {article.label === 'success' ? '✅ 성공' : article.label === 'failure' ? '⚠️ 실패' : '중립'}
                       </span>
                       {article.source && (
-                        <span className={`px-2 py-0.5 text-xs rounded-lg ${darkMode ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>
+                        <span className={`px-2 py-0.5 text-xs rounded-lg ${darkMode ? 'bg-[#E1B764]/20 text-[#E1B764]' : 'bg-[#FCF8F2] text-[#D4A853]'}`}>
                           {article.source}
                         </span>
                       )}
@@ -204,7 +205,7 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
                         <span className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>{article.category}</span>
                       )}
                     </div>
-                    <h4 className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2 leading-relaxed group-hover:text-[#142755] transition-colors line-clamp-2`}>
+                    <h4 className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2 leading-relaxed group-hover:text-[#D4A853] transition-colors line-clamp-2`}>
                       {article.title}
                     </h4>
                     {article.summary && (
@@ -219,7 +220,7 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
                       </div>
                     )}
                   </div>
-                  <ExternalLink className={`w-4 h-4 flex-shrink-0 ${darkMode ? 'text-gray-600' : 'text-gray-300'} group-hover:text-[#142755] transition-colors`} />
+                  <ExternalLink className={`w-4 h-4 flex-shrink-0 ${darkMode ? 'text-gray-600' : 'text-gray-300'} group-hover:text-[#D4A853] transition-colors`} />
                 </div>
               </a>
             ))}
