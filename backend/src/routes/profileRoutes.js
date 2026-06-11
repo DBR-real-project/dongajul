@@ -39,12 +39,6 @@ router.put(
 // PUT /api/profile/password
 // ─────────────────────────────────────────────
 router.put('/password', verifyToken, async (req, res) => {
-  console.log("--- 최종 검문 ---");
-  console.log("req.user 전체 내용:", req.user); 
-  console.log("프론트에서 온 body:", req.body);
-  
-  const userId = req.user.user_id || req.user.id || req.user.idx; // 토큰에 담긴 정확한 키를 써야 함
-  console.log("추출된 userId:", userId);
   try {
     const { currentPassword, newPassword } = req.body;
     const userId = req.user.user_id || req.user.id;

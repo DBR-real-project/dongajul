@@ -6,6 +6,12 @@ export function BannerAd() {
   const [isVisible, setIsVisible] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+  };
 
   useEffect(() => {
     const localSubscription = localStorage.getItem('subscription_type');
@@ -59,7 +65,7 @@ export function BannerAd() {
 
       localStorage.setItem('subscription_type', 'premium');
 
-      alert('프리미엄 플랜으로 업그레이드되었습니다!');
+      showToast('프리미엄 플랜으로 업그레이드되었습니다!', 'success');
       setShowUpgradeModal(false);
       setIsVisible(false);
     } catch (err: any) {
@@ -67,11 +73,11 @@ export function BannerAd() {
         localStorage.setItem('subscription_type', 'premium');
         setShowUpgradeModal(false);
         setIsVisible(false);
-        alert('이미 프리미엄 구독 중입니다.');
+        showToast('이미 프리미엄 구독 중입니다.', 'success');
         return;
       }
 
-      alert(err.message || '구독 처리에 실패했습니다.');
+      showToast(err.message || '구독 처리에 실패했습니다.', 'error');
     }
   };
 
@@ -79,6 +85,11 @@ export function BannerAd() {
 
   return (
     <>
+      {toast.show && (
+        <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-2 px-5 py-3 rounded-2xl shadow-xl text-sm font-bold text-white transition-all ${toast.type === 'error' ? 'bg-red-600' : 'bg-[#0B2F61]'}`}>
+          {toast.type === 'success' ? '✅' : '⚠️'} {toast.message}
+        </div>
+      )}
       <div className="fixed bottom-6 left-1/2 z-50 w-full max-w-4xl -translate-x-1/2 px-4">
         <div className="relative overflow-hidden rounded-2xl border border-[#E5BA73]/30 bg-gradient-to-r from-[#0B2F61] via-[#142755] to-[#111827] px-6 py-5 shadow-lg">
           <div className="absolute -right-12 -top-12 h-32 w-32 rounded-full bg-[#E5BA73]/20 blur-2xl" />

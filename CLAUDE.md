@@ -156,8 +156,10 @@ DBR 성공/실패 사례 대조분석 기반 전략 리스크 진단 서비스.
         ├── articles_meta.parquet       ← ③ 검색 결과용 메타데이터
         ├── risk_model.pkl              ← ④ LogisticRegression (risk_score)
         ├── risk_model_report.txt       ← ④ 성능 리포트
-        ├── umap_coords.parquet         ← ⑤ umap_x, umap_y, cluster_id
-        └── cluster_info.parquet        ← ⑤ clusters 테이블용
+        ├── umap_coords.parquet         ← ⑤ 구버전 (보존)
+        ├── cluster_info.parquet        ← ⑤ 구버전 (보존)
+        ├── umap_coords_v3.parquet      ← ⑤-v3 최신 (cluster_id 1-12, ai_server 로드)
+        └── cluster_info_v3.parquet     ← ⑤-v3 최신 (12개 주제 클러스터, DB 반영 완료)
 ai_server/
     ├── __init__.py
     ├── main.py              ← FastAPI 앱 (POST /diagnose, GET /health, GET /clusters)
@@ -183,14 +185,21 @@ ai_server/
 
 ---
 
-## 현재 상태 (2026-06-09 세션5 — 최종)
+## 현재 상태 (2026-06-11 세션8)
 
 **NLP 파이프라인 전체 완료**: ① 전처리 → ② 라벨링 → ③ 임베딩+FAISS → ④ 리스크 모델 → ⑤ UMAP+K-means
+**v3 클러스터 완료**: 768차원 K-means → 12개 주제 기반 클러스터, DB 반영 완료 (cluster_id 1-12)
 **FastAPI ML 서비스 완료**: POST /diagnose, POST /report (GPT RAG), GET /health, GET /clusters
 **RAG 완료**: FAISS 유사 사례 검색 → GPT few-shot 리포트 생성 (reporter.py)
 **JWT Refresh Token 완료**: Access 15분 / Refresh 7일, 자동 재발급
 **카카오 로그인 복구 완료**: charset 버그 + JWT fallback 처리
-**프론트엔드 API 연동 완료**: AIChatbot(GPT), ArticleDetail(실DB), CheckoutPage(구독 DB)
+**프론트엔드 전체 API 연동 완료**: 모든 화면 apiFetch 기반 연동, alert→toast 교체, AI 면책 문구 추가
+**전체 오류검사 완료 (세션7)**: 6개 버그 수정
+**세션8 추가 버그 수정 + 임포트 스크립트**: BannerAd toast 교체, profileRoutes 보안 로그 제거, articles DB 임포트 스크립트 생성
+
+**신규 기획 아이디어 (세션6 논의)**
+- ① NAVER 뉴스 데이터(55,465건) 기반 산업 트렌드 컨텍스트 → GPT 프롬프트 주입
+- ② 유명 경영전략 저자 프레임워크 knowledge base 구축 → FAISS RAG에 추가
 
 ---
 
@@ -243,6 +252,80 @@ ai_server/
 
 ---
 
+### 세션5~6 (2026-06-11) — 프론트엔드 전체 완성
+
+**8. ProfileView 완전 재작성 (`ProfileView.tsx`)**
+- 내부 darkMode state 제거 → prop 직접 사용
+- 계정보안/알림설정/환경설정 버튼 3개 제거
+- 프로필 사진: 텍스트 버튼 제거 → 아바타 우측상단 카메라 아이콘 배지로 교체
+- 사진 저장 키: `profileImage` → `profileImage_${email}` (계정별 독립)
+- 사진 변경/제거 시 `window.dispatchEvent(new Event('storage'))` → TopNavigation 즉시 동기화
+
+**9. TopNavigation 프로필 이미지 동기화 (`TopNavigation.tsx`)**
+- `getProfileImgFromStorage()` 헬퍼: localStorage `user.email` 기반 키로 이미지 조회
+- `storage` 이벤트 리스너로 사진 변경 실시간 반영 (같은 탭 포함)
+- 닉네임 표시: `parsedUser.nickname` 우선 → `.name` fallback
+
+**10. RiskAnalysis apiFetch 전환 (`RiskAnalysis.tsx`)**
+- raw `fetch` → `apiFetch` (JWT 자동 첨부, 401 자동 갱신)
+- AI 면책 문구 추가 (⚠️ 참고용 자료, 전문가 자문 병행 권고)
+
+**11. DiagnosisResult alert → toast (`DiagnosisResult.tsx`)**
+- 모든 `alert()` 5개 → 자체 toast 시스템으로 교체
+- 피드백 섹션 다크모드 스타일 수정
+- AI 면책 문구 추가
+
+**12. NotificationView 업그레이드 버튼 연결 (`NotificationView.tsx`)**
+- 업그레이드 확인 버튼 → `onNavigate('checkout')` 호출
+
+**13. SubscriptionPage 엔터프라이즈 연결 (`SubscriptionPage.tsx`)**
+- 버튼 → `<a href="mailto:dongajul@dongajul.com?subject=엔터프라이즈 플랜 문의">` 링크
+
+**14. App.tsx 연결 정리**
+- `handleLogin` → `window.dispatchEvent(new Event('storage'))` 추가 (로그인 시 TopNavigation 갱신)
+- CheckoutPage `onSuccess={() => setCurrentView('dashboard')}` 연결
+
+**[팀원 작업 할당 — 완료됨]**
+- `CheckoutPage.tsx`: 팀원이 inline 성공/에러 메시지로 이미 수정 완료 ✅
+- `BannerAd.tsx`: 세션8에서 toast 교체 완료 ✅
+
+---
+
+### 세션7 (2026-06-11) — 전체 오류검사 + 버그 수정
+
+**15. v3 클러스터 재구성 (`umap_cluster_v3.py`, `import_umap_to_db_v3.py`)**
+- 기존: 2D UMAP 좌표 기반 K-means → HBR 영어기사 언어 클러스터 분리 문제
+- 개선: 768차원 임베딩 기반 K-means → 12개 주제 기반 클러스터 (IT/AI, HR/조직, 마케팅, 금융 등)
+- cluster_id=0 MySQL auto_increment 충돌 → 0→12로 리맵 (최종 1-12)
+- DB clusters 테이블 + article_vectors 11,731건 업데이트 완료
+
+**16. 전체 오류검사 + 3개 버그 수정 (세션7)**
+- `InsightDashboard.tsx` L60: `artData.articles` → `artData.data || artData.articles || []`
+  - articleController 응답이 `{data: rows}` 형태인데 `.articles`로 읽어서 항상 빈 배열이던 버그
+- `InsightDashboard.tsx` L41: `.slice(0, 6)` 제거 → 12개 클러스터 전체 표시
+  - 팀원이 재적용한 `.slice(0, 6)` 재수정
+- `ai_server/main.py` L94/101: `umap_coords.parquet` / `cluster_info.parquet` → v3 우선 로드
+  - 구버전 cluster_id 0-11이 DB cluster_id 1-12와 불일치하던 버그
+
+---
+
+### 세션8 (2026-06-11) — 추가 버그 수정 + 임포트 스크립트
+
+**17. BannerAd.tsx alert → toast 교체 (`BannerAd.tsx`)**
+- 구독 성공/이미구독/실패 시 `alert()` 3개 → 자체 toast 시스템으로 교체
+- `CheckoutPage.tsx`는 팀원이 이미 inline 메시지로 수정 완료 확인
+
+**18. profileRoutes.js 보안 디버그 로그 제거 (`profileRoutes.js`)**
+- `/password` 라우트에 `console.log("req.user 전체 내용:", req.user)` 등 4개 제거
+- req.body(비밀번호 평문) 서버 로그 노출 보안 이슈 해결
+
+**19. articles DB 임포트 스크립트 생성 (`데이터처리/import_articles_to_db.py`)**
+- DBR_labeled.parquet + HBR_labeled.parquet → articles + article_labels 테이블
+- url 기준 중복 스킵 (재실행 안전), article_no = URL MD5 해시 20자
+- 팀원이 `python 데이터처리/import_articles_to_db.py` 한 번 실행 필요
+
+---
+
 ## ⚠️ 주의사항
 - `npm run build`는 VM에서 dist 폴더 권한 오류(EPERM) — Windows에서 `dist` 폴더 삭제 후 빌드
 - DB에 `article_vectors.umap_x/y` 데이터 있어야 시맨틱 맵 점들 표시됨
@@ -251,14 +334,19 @@ ai_server/
 - `db.js`에 `charset` 옵션 절대 추가 금지 — DB 서버(campus.smhrd.com)가 latin1 기반이라 charset 변환 시 한글 garbling 발생
 
 ## 📋 남은 작업
-1. ~~비밀번호 변경/찾기~~ **프론트에서 완전 제거, 다시 꺼내지 말 것**
-2. ~~JWT Refresh Token~~ **완료**
-3. ~~users.password_hash NULL 허용~~ **완료**
-4. ~~카카오 로그인 복구~~ **완료**
-5. ~~AIChatbot → POST /api/chat (GPT)~~ **완료**
-6. ~~ArticleDetail → GET /api/articles/:id (실DB)~~ **완료**
-7. ~~CheckoutPage → POST /api/subscriptions (DB only)~~ **완료**
-8. ProfileView 알림 토글 DB 연동 — **보류** (users 테이블에 알림 설정 컬럼 없음)
-9. CompareView DB 연동 — **보류** (실제 메트릭 데이터 없음, 하드코딩 차트로 데모)
-10. StrategyWorkspace 백엔드 연동 — **보류** (strategies 테이블 없음, 신규 설계 필요)
-11. 기업 구독 결제 플로우 (기업용 별도 플랜)
+
+### 팀원 할당
+- **`python 데이터처리/import_articles_to_db.py` 실행** — DBR+HBR 13,335건을 articles/article_labels 테이블에 임포트 (한 번만 실행하면 됨)
+- ~~`python 데이터처리/import_umap_to_db.py` 실행~~ → **v3로 교체: `import_umap_to_db_v3.py` 실행 완료**
+- ~~`CheckoutPage.tsx` alert → toast~~ → 팀원 완료 ✅
+- ~~`BannerAd.tsx` alert~~ → 세션8 완료 ✅
+
+### 보류 결정됨
+- ~~비밀번호 변경/찾기~~ **완전 제거, 다시 꺼내지 말 것**
+- ProfileView 알림 토글 DB 연동 — **보류** (users 테이블에 알림 설정 컬럼 없음)
+- CompareView DB 연동 — **보류** (실제 메트릭 없음, 하드코딩 차트 데모)
+- StrategyWorkspace 백엔드 연동 — **보류** (strategies 테이블 없음)
+
+### 신규 기획 (세션6 논의, 구현 검토 중)
+- **트렌드 컨텍스트**: NAVER 뉴스 55,465건 → 산업별 시계열 키워드 추출 → GPT 프롬프트 주입
+- **전략 프레임워크 knowledge base**: Porter/Christensen/블루오션 등 → FAISS RAG에 추가
