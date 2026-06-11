@@ -319,6 +319,7 @@ export default function App() {
           ) : currentView === 'notifications' ? (
             <NotificationView
               onBack={() => setCurrentView('dashboard')}
+              onNavigate={(view) => setCurrentView(view as any)}
               darkMode={darkMode}
             />
           ) : currentView === 'profile' || currentView === 'settings' ? (
