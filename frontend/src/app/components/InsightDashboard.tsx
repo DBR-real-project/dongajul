@@ -1,5 +1,14 @@
 import { useState, useEffect } from 'react';
-import { BarChart2, TrendingUp, AlertTriangle, Shield, ExternalLink, Search, Clock, RefreshCw } from 'lucide-react';
+import {
+  BarChart2,
+  TrendingUp,
+  AlertTriangle,
+  Shield,
+  ExternalLink,
+  Search,
+  Clock,
+  RefreshCw,
+} from 'lucide-react';
 import { apiFetch } from '../utils/api';
 
 interface Article {
@@ -20,6 +29,13 @@ interface Cluster {
   top_keywords: string;
 }
 
+interface StatsData {
+  total_articles: number;
+  success_count: number;
+  failure_count: number;
+  cluster_count: number;
+}
+
 interface InsightDashboardProps {
   darkMode?: boolean;
   onArticleClick?: (id: number) => void;
@@ -32,10 +48,41 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
   const [filter, setFilter] = useState<'all' | 'success' | 'failure'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
+  const [statsData, setStatsData] = useState<StatsData>({
+    total_articles: 0,
+    success_count: 0,
+    failure_count: 0,
+    cluster_count: 0,
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await apiFetch('/api/articles/stats');
+
+        if (!res.ok) return;
+
+        const data = await res.json();
+
+        setStatsData({
+          total_articles: Number(data.total_articles) || 0,
+          success_count: Number(data.success_count) || 0,
+          failure_count: Number(data.failure_count) || 0,
+          cluster_count: Number(data.cluster_count) || 0,
+        });
+      } catch (e) {
+        console.error('통계 로드 실패:', e);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
   useEffect(() => {
     const fetchClusters = async () => {
       try {
         const clusterRes = await apiFetch('/api/clusters');
+
         if (clusterRes.ok) {
           const clData = await clusterRes.json();
           setClusters(Array.isArray(clData) ? clData.slice(0, 6) : []);
@@ -44,20 +91,32 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
         console.error('클러스터 로드 실패:', e);
       }
     };
+
     fetchClusters();
   }, []);
 
   useEffect(() => {
     const fetchArticles = async () => {
       setLoading(true);
+
       try {
-        const params = new URLSearchParams({ limit: '20' });
-        if (filter !== 'all') params.append('label', filter);
-        if (searchQuery.trim()) params.append('search', searchQuery.trim());
+        const params = new URLSearchParams({
+          limit: '20',
+        });
+
+        if (filter !== 'all') {
+          params.append('label', filter);
+        }
+
+        if (searchQuery.trim()) {
+          params.append('search', searchQuery.trim());
+        }
+
         const artRes = await apiFetch(`/api/articles?${params}`);
+
         if (artRes.ok) {
           const artData = await artRes.json();
-          setArticles(Array.isArray(artData) ? artData : artData.articles || []);
+          setArticles(Array.isArray(artData) ? artData : artData.articles || artData.data || []);
         }
       } catch (e) {
         console.error('아티클 로드 실패:', e);
@@ -67,6 +126,7 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
     };
 
     const timer = setTimeout(fetchArticles, 300);
+
     return () => clearTimeout(timer);
   }, [searchQuery, filter]);
 
@@ -74,10 +134,30 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
 
   // 브랜드 컬러를 KPI 지표에 반영 (Navy & Gold 포인트 추가)
   const stats = [
-    { label: 'DBR·HBR 아티클', value: '13,335', icon: BarChart2, color: 'gold' },
-    { label: '성공 사례', value: '11,858', icon: TrendingUp, color: 'green' },
-    { label: '실패 사례', value: '1,279', icon: AlertTriangle, color: 'red' },
-    { label: '전략 클러스터', value: '12', icon: Shield, color: 'navy' },
+    {
+      label: 'DBR·HBR 아티클',
+      value: statsData.total_articles.toLocaleString(),
+      icon: BarChart2,
+      color: 'blue',
+    },
+    {
+      label: '성공 사례',
+      value: statsData.success_count.toLocaleString(),
+      icon: TrendingUp,
+      color: 'green',
+    },
+    {
+      label: '실패 사례',
+      value: statsData.failure_count.toLocaleString(),
+      icon: AlertTriangle,
+      color: 'red',
+    },
+    {
+      label: '전략 클러스터',
+      value: statsData.cluster_count.toLocaleString(),
+      icon: Shield,
+      color: 'indigo',
+    },
   ];
 
   const colorMap: Record<string, string> = {
@@ -89,49 +169,101 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
 
   return (
     <div className={`h-full overflow-y-auto ${darkMode ? 'bg-[#0A0E1A]' : 'bg-[#F8FAFC]'} pb-20`}>
-      {/* 헤더 */}
-      <div className={`sticky top-0 z-40 border-b px-6 py-4 ${darkMode ? 'bg-[#0A0E1A]/90 backdrop-blur-xl border-gray-800/50' : 'bg-white/90 backdrop-blur-xl border-gray-200/50'}`}>
+      <div
+        className={`sticky top-0 z-40 border-b px-6 py-4 ${
+          darkMode
+            ? 'bg-[#0A0E1A]/90 backdrop-blur-xl border-gray-800/50'
+            : 'bg-white/90 backdrop-blur-xl border-gray-200/50'
+        }`}
+      >
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div>
-            <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>경영 인사이트</h1>
-            <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'} mt-0.5`}>DBR·HBR 성공·실패 사례 데이터베이스</p>
+            <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+              경영 인사이트
+            </h1>
+            <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'} mt-0.5`}>
+              DBR·HBR 성공·실패 사례 데이터베이스
+            </p>
           </div>
-          <button onClick={() => window.location.reload()} className={`p-2 rounded-xl ${darkMode ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-500'} transition-all`}>
+
+          <button
+            onClick={() => window.location.reload()}
+            className={`p-2 rounded-xl ${
+              darkMode ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-500'
+            } transition-all`}
+          >
             <RefreshCw className="w-4 h-4" />
           </button>
         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-6 py-6 space-y-6">
-        {/* KPI */}
         <div className="grid grid-cols-4 gap-4">
           {stats.map(({ label, value, icon: Icon, color }) => (
-            <div key={label} className={`${darkMode ? 'bg-gray-800/50 border-gray-700/40' : 'bg-white border-gray-100'} border rounded-2xl p-4 shadow-sm`}>
+            <div
+              key={label}
+              className={`${
+                darkMode ? 'bg-gray-800/50 border-gray-700/40' : 'bg-white border-gray-100'
+              } border rounded-2xl p-4 shadow-sm`}
+            >
               <div className={`w-9 h-9 ${colorMap[color]} rounded-xl flex items-center justify-center mb-3`}>
                 <Icon className="w-4 h-4" />
               </div>
-              <div className={`text-2xl font-extrabold ${darkMode ? 'text-white' : 'text-gray-900'} mb-0.5`}>{value}</div>
-              <div className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{label}</div>
+
+              <div className={`text-2xl font-extrabold ${darkMode ? 'text-white' : 'text-gray-900'} mb-0.5`}>
+                {value}
+              </div>
+
+              <div className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                {label}
+              </div>
             </div>
           ))}
         </div>
 
-        {/* 클러스터 */}
         {clusters.length > 0 && (
-          <div className={`${darkMode ? 'bg-gray-800/50 border-gray-700/40' : 'bg-white border-gray-100'} border rounded-2xl p-5 shadow-sm`}>
-            <h3 className={`text-base font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>전략 클러스터 분포</h3>
+          <div
+            className={`${
+              darkMode ? 'bg-gray-800/50 border-gray-700/40' : 'bg-white border-gray-100'
+            } border rounded-2xl p-5 shadow-sm`}
+          >
+            <h3 className={`text-base font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
+              전략 클러스터 분포
+            </h3>
+
             <div className="grid grid-cols-3 gap-3">
               {clusters.map((c) => (
-                <div key={c.cluster_id} className={`${darkMode ? 'bg-gray-900/40 border-gray-700' : 'bg-gray-50 border-gray-200'} border rounded-xl p-3`}>
-                  <div className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-gray-800'} mb-1`}>{c.cluster_name}</div>
-                  <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{Number(c.article_count).toLocaleString()}건</div>
+                <div
+                  key={c.cluster_id}
+                  className={`${
+                    darkMode ? 'bg-gray-900/40 border-gray-700' : 'bg-gray-50 border-gray-200'
+                  } border rounded-xl p-3`}
+                >
+                  <div className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-gray-800'} mb-1`}>
+                    {c.cluster_name}
+                  </div>
+
+                  <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {Number(c.article_count).toLocaleString()}건
+                  </div>
+
                   {c.top_keywords && (
                     <div className="flex flex-wrap gap-1 mt-2">
-                      {c.top_keywords.split(',').slice(0, 3).map((kw: string) => (
-                        <span key={kw} className={`px-1.5 py-0.5 text-[10px] rounded ${darkMode ? 'bg-[#E1B764]/20 text-[#E1B764]' : 'bg-[#FCF8F2] text-[#D4A853]'}`}>
-                          {kw.trim()}
-                        </span>
-                      ))}
+                      {c.top_keywords
+                        .split(',')
+                        .slice(0, 3)
+                        .map((kw: string) => (
+                          <span
+                            key={kw}
+                            className={`px-1.5 py-0.5 text-[10px] rounded ${
+                              darkMode
+                                ? 'bg-indigo-500/10 text-indigo-400'
+                                : 'bg-indigo-50 text-indigo-600'
+                            }`}
+                          >
+                            {kw.trim()}
+                          </span>
+                        ))}
                     </div>
                   )}
                 </div>
@@ -140,24 +272,38 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
           </div>
         )}
 
-        {/* 검색 + 필터 */}
         <div className="flex items-center gap-3">
-          <div className={`flex-1 flex items-center gap-2 px-4 py-2.5 rounded-xl border ${darkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white border-gray-200'}`}>
+          <div
+            className={`flex-1 flex items-center gap-2 px-4 py-2.5 rounded-xl border ${
+              darkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white border-gray-200'
+            }`}
+          >
             <Search className={`w-4 h-4 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="아티클 검색..."
-              className={`flex-1 text-sm bg-transparent focus:outline-none ${darkMode ? 'text-white placeholder-gray-600' : 'text-gray-900 placeholder-gray-400'}`}
+              className={`flex-1 text-sm bg-transparent focus:outline-none ${
+                darkMode ? 'text-white placeholder-gray-600' : 'text-gray-900 placeholder-gray-400'
+              }`}
             />
           </div>
+
           {(['all', 'success', 'failure'] as const).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${filter === f
-                ? f === 'success' ? 'bg-green-500 text-white' : f === 'failure' ? 'bg-red-500 text-white' : 'bg-[#162238] text-[#E1B764]'
-                : darkMode ? 'bg-gray-800 text-gray-400 border border-gray-700' : 'bg-white text-gray-600 border border-gray-200'
+              className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                filter === f
+                  ? f === 'success'
+                    ? 'bg-green-500 text-white'
+                    : f === 'failure'
+                      ? 'bg-red-500 text-white'
+                      : 'bg-[#142755] text-white'
+                  : darkMode
+                    ? 'bg-gray-800 text-gray-400 border border-gray-700'
+                    : 'bg-white text-gray-600 border border-gray-200'
               }`}
             >
               {f === 'all' ? '전체' : f === 'success' ? '성공' : '실패'}
@@ -165,7 +311,6 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
           ))}
         </div>
 
-        {/* 아티클 목록 */}
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <div className="w-8 h-8 border-4 border-[#E1B764] border-t-transparent rounded-full animate-spin" />
@@ -177,52 +322,97 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
         ) : (
           <div className="space-y-3">
             {filtered.map((article) => (
-              <a
+              <button
                 key={article.article_id}
-                href={article.url || '#'}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`group ${darkMode ? 'bg-gray-800/50 border-gray-700/40 hover:bg-gray-800/80' : 'bg-white border-gray-100 hover:shadow-md'} border rounded-2xl p-5 transition-all block`}
+                type="button"
+                onClick={() => {
+                  if (onArticleClick) {
+                    onArticleClick(article.article_id);
+                  } else if (article.url) {
+                    window.open(article.url, '_blank', 'noopener,noreferrer');
+                  }
+                }}
+                className={`group w-full text-left ${
+                  darkMode
+                    ? 'bg-gray-800/50 border-gray-700/40 hover:bg-gray-800/80'
+                    : 'bg-white border-gray-100 hover:shadow-md'
+                } border rounded-2xl p-5 transition-all block`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-lg ${
-                        article.label === 'success'
-                          ? darkMode ? 'bg-green-500/10 text-green-400' : 'bg-green-50 text-green-700'
-                          : article.label === 'failure'
-                          ? darkMode ? 'bg-red-500/10 text-red-400' : 'bg-red-50 text-red-700'
-                          : darkMode ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-600'
-                      }`}>
+                      <span
+                        className={`px-2.5 py-0.5 text-xs font-semibold rounded-lg ${
+                          article.label === 'success'
+                            ? darkMode
+                              ? 'bg-green-500/10 text-green-400'
+                              : 'bg-green-50 text-green-700'
+                            : article.label === 'failure'
+                              ? darkMode
+                                ? 'bg-red-500/10 text-red-400'
+                                : 'bg-red-50 text-red-700'
+                              : darkMode
+                                ? 'bg-gray-700 text-gray-400'
+                                : 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
                         {article.label === 'success' ? '✅ 성공' : article.label === 'failure' ? '⚠️ 실패' : '중립'}
                       </span>
+
                       {article.source && (
-                        <span className={`px-2 py-0.5 text-xs rounded-lg ${darkMode ? 'bg-[#E1B764]/20 text-[#E1B764]' : 'bg-[#FCF8F2] text-[#D4A853]'}`}>
+                        <span
+                          className={`px-2 py-0.5 text-xs rounded-lg ${
+                            darkMode ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-50 text-indigo-600'
+                          }`}
+                        >
                           {article.source}
                         </span>
                       )}
+
                       {article.category && (
-                        <span className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>{article.category}</span>
+                        <span className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                          {article.category}
+                        </span>
                       )}
                     </div>
-                    <h4 className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2 leading-relaxed group-hover:text-[#D4A853] transition-colors line-clamp-2`}>
+
+                    <h4
+                      className={`text-sm font-bold ${
+                        darkMode ? 'text-white' : 'text-gray-900'
+                      } mb-2 leading-relaxed group-hover:text-[#142755] transition-colors line-clamp-2`}
+                    >
                       {article.title}
                     </h4>
+
                     {article.summary && (
-                      <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'} line-clamp-2 leading-relaxed`}>
+                      <p
+                        className={`text-xs ${
+                          darkMode ? 'text-gray-400' : 'text-gray-500'
+                        } line-clamp-2 leading-relaxed`}
+                      >
                         {article.summary}
                       </p>
                     )}
+
                     {article.published_at && (
-                      <div className={`flex items-center gap-1 mt-2 text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                      <div
+                        className={`flex items-center gap-1 mt-2 text-xs ${
+                          darkMode ? 'text-gray-500' : 'text-gray-400'
+                        }`}
+                      >
                         <Clock className="w-3 h-3" />
                         {new Date(article.published_at).toLocaleDateString('ko-KR')}
                       </div>
                     )}
                   </div>
-                  <ExternalLink className={`w-4 h-4 flex-shrink-0 ${darkMode ? 'text-gray-600' : 'text-gray-300'} group-hover:text-[#D4A853] transition-colors`} />
+
+                  <ExternalLink
+                    className={`w-4 h-4 flex-shrink-0 ${
+                      darkMode ? 'text-gray-600' : 'text-gray-300'
+                    } group-hover:text-[#142755] transition-colors`}
+                  />
                 </div>
-              </a>
+              </button>
             ))}
           </div>
         )}
