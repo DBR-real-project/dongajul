@@ -15,13 +15,14 @@ exports.subscribe = async (userId, planType = "premium") => {
 
     const [result] = await conn.query(insertSql, [userId, planType]);
 
-    const updateSql = `
+    await conn.query(
+      `
       UPDATE users
       SET subscription_type = ?
       WHERE user_id = ?
-    `;
-
-    await conn.query(updateSql, [planType, userId]);
+      `,
+      [planType, userId]
+    );
 
     await conn.commit();
 
@@ -29,6 +30,7 @@ exports.subscribe = async (userId, planType = "premium") => {
       subscription_id: result.insertId,
       user_id: userId,
       plan_type: planType,
+      subscription_type: planType,
       status: "active",
       auto_renewal: 1,
     };
@@ -39,6 +41,17 @@ exports.subscribe = async (userId, planType = "premium") => {
   } finally {
     conn.release();
   }
+};
+
+exports.syncUserSubscriptionType = async (userId, subscriptionType = "premium") => {
+  const sql = `
+    UPDATE users
+    SET subscription_type = ?
+    WHERE user_id = ?
+  `;
+
+  const [result] = await db.query(sql, [subscriptionType, userId]);
+  return result.affectedRows;
 };
 
 exports.cancelSubscription = async (userId) => {

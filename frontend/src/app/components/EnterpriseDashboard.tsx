@@ -1,4 +1,5 @@
 import { Shield, TrendingUp, AlertTriangle, ArrowRight, BarChart2, Database, Zap, ChevronRight, CheckCircle } from 'lucide-react';
+import { BannerAd } from './BannerAd';
 
 interface EnterpriseDashboardProps {
   darkMode?: boolean;
@@ -37,6 +38,11 @@ export function EnterpriseDashboard({ darkMode = false, onStartDiagnosis, onView
 
   return (
     <div className={`h-full overflow-y-auto ${darkMode ? 'bg-[#0A0E1A]' : 'bg-[#F8FAFC]'}`}>
+
+      {/* Premium Banner */}
+      <section className="px-8 pt-6 max-w-5xl mx-auto">
+        <BannerAd />
+      </section>
 
       {/* Hero */}
       {/* 💡 배경색이 딥 블랙 네이비로 수정되었습니다. */}
