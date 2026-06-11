@@ -20,6 +20,7 @@ function clearAuth() {
   localStorage.removeItem('refresh_token');
   localStorage.removeItem('user');
   localStorage.removeItem('userName');
+  localStorage.removeItem('subscription_type');
 }
 
 async function tryRefresh(): Promise<boolean> {
