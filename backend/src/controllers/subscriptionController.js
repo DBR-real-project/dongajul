@@ -3,8 +3,15 @@ const subscriptionService = require("../services/subscriptionService");
 
 exports.createSubscription = async (req, res) => {
   try {
-    console.log("🔥 req.user:", req.user);
-    const userId = req.user.user_id;
+    const userId = req.user?.user_id || req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "로그인 사용자 정보를 확인할 수 없습니다.",
+      });
+    }
+
     const { plan_type = "premium" } = req.body;
 
     const activeSubscription = await subscriptionRepository.findActiveByUserId(userId);
@@ -23,9 +30,9 @@ exports.createSubscription = async (req, res) => {
       message: "구독이 완료되었습니다.",
       data: subscription,
     });
-
   } catch (err) {
     console.error("createSubscription error:", err);
+
     res.status(500).json({
       success: false,
       message: "구독 처리 중 서버 오류가 발생했습니다.",
@@ -35,7 +42,14 @@ exports.createSubscription = async (req, res) => {
 
 exports.getMySubscription = async (req, res) => {
   try {
-    const userId = req.user.user_id;
+    const userId = req.user?.user_id || req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "로그인 사용자 정보를 확인할 수 없습니다.",
+      });
+    }
 
     const subscription = await subscriptionRepository.getSubscriptionByUserId(userId);
 
@@ -45,6 +59,7 @@ exports.getMySubscription = async (req, res) => {
     });
   } catch (err) {
     console.error("getMySubscription error:", err);
+
     res.status(500).json({
       success: false,
       message: "구독 조회 중 서버 오류가 발생했습니다.",
@@ -54,7 +69,14 @@ exports.getMySubscription = async (req, res) => {
 
 exports.cancelSubscription = async (req, res) => {
   try {
-    const userId = req.user.user_id;
+    const userId = req.user?.user_id || req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "로그인 사용자 정보를 확인할 수 없습니다.",
+      });
+    }
 
     const affectedRows = await subscriptionService.cancelSubscription(userId);
 
@@ -71,22 +93,10 @@ exports.cancelSubscription = async (req, res) => {
     });
   } catch (err) {
     console.error("cancelSubscription error:", err);
+
     res.status(500).json({
       success: false,
       message: "구독 취소 중 서버 오류가 발생했습니다.",
     });
-  }
-};
-
-exports.subscribe = async (req, res) => {
-  try {
-    const userId = req.user.user_id;
-    const { planType } = req.body;
-
-    const result = await subscriptionService.subscribe(userId, planType);
-
-    res.json(result);
-  } catch (err) {
-    res.status(500).json({ message: "구독 실패" });
   }
 };
