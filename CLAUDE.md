@@ -228,7 +228,7 @@ ai_server/
 - `authController.js`: kakaoCallback `finalEmail` → `email` (undefined 변수 버그)
 - `authRoutes.js`: 중복 카카오 라우트 (`/kakao` 두 번 선언) 제거
 
-**6. 비밀번호 찾기 (nodemailer)** — ~~진행 안 함 (팀 결정)~~
+**6. 비밀번호 변경/찾기** — ~~완전 제거 (팀 결정, 프론트에서도 삭제 완료)~~ **절대 언급 금지**
 
 ---
 
@@ -251,7 +251,7 @@ ai_server/
 - `db.js`에 `charset` 옵션 절대 추가 금지 — DB 서버(campus.smhrd.com)가 latin1 기반이라 charset 변환 시 한글 garbling 발생
 
 ## 📋 남은 작업
-1. ~~비밀번호 찾기 이메일 전송 (nodemailer)~~ **진행 안 함 (팀 결정)**
+1. ~~비밀번호 변경/찾기~~ **프론트에서 완전 제거, 다시 꺼내지 말 것**
 2. ~~JWT Refresh Token~~ **완료**
 3. ~~users.password_hash NULL 허용~~ **완료**
 4. ~~카카오 로그인 복구~~ **완료**

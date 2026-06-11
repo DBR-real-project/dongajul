@@ -39,7 +39,8 @@ export function EnterpriseDashboard({ darkMode = false, onStartDiagnosis, onView
     <div className={`h-full overflow-y-auto ${darkMode ? 'bg-[#0A0E1A]' : 'bg-[#F8FAFC]'}`}>
 
       {/* Hero */}
-      <section className={`relative overflow-hidden ${darkMode ? 'bg-gradient-to-br from-[#0B1E3D] to-[#0A0E1A]' : 'bg-gradient-to-br from-[#0B2F61] to-[#142755]'} px-8 py-20 text-white`}>
+      {/* 💡 배경색이 딥 블랙 네이비로 수정되었습니다. */}
+      <section className={`relative overflow-hidden ${darkMode ? 'bg-gradient-to-b from-[#050B14] to-[#0A1128]' : 'bg-gradient-to-b from-[#0A1128] via-[#142755] to-[#0A1128]'} px-8 py-20 text-white`}>
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-10 left-1/4 w-96 h-96 bg-[#E5BA73] rounded-full blur-3xl" />
           <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-blue-400 rounded-full blur-3xl" />
@@ -113,7 +114,8 @@ export function EnterpriseDashboard({ darkMode = false, onStartDiagnosis, onView
 
       {/* CTA */}
       <section className="px-8 py-14 max-w-5xl mx-auto text-center">
-        <div className={`${darkMode ? 'bg-gradient-to-br from-[#0B1E3D] to-[#142755]' : 'bg-gradient-to-br from-[#0B2F61] to-[#1d3573]'} rounded-3xl p-12 text-white`}>
+        {/* 💡 상단 Hero 섹션과 톤을 맞춰 딥 블랙 네이비로 수정되었습니다. */}
+        <div className={`${darkMode ? 'bg-gradient-to-br from-[#050B14] to-[#0A1128]' : 'bg-gradient-to-br from-[#0A1128] to-[#142755]'} rounded-3xl p-12 text-white shadow-lg`}>
           <div className="flex items-center justify-center gap-2 mb-4">
             <CheckCircle className="w-5 h-5 text-[#E5BA73]" />
             <span className="text-sm font-semibold text-[#E5BA73]">지금 바로 무료로 시작하세요</span>

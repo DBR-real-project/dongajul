@@ -132,6 +132,7 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
 
   const filtered = articles;
 
+  // 브랜드 컬러를 KPI 지표에 반영 (Navy & Gold 포인트 추가)
   const stats = [
     {
       label: 'DBR·HBR 아티클',
@@ -160,10 +161,10 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
   ];
 
   const colorMap: Record<string, string> = {
-    blue: 'bg-blue-500/10 text-blue-500',
-    green: 'bg-green-500/10 text-green-500',
-    red: 'bg-red-500/10 text-red-500',
-    indigo: 'bg-indigo-500/10 text-indigo-500',
+    gold: darkMode ? 'bg-[#E1B764]/20 text-[#E1B764]' : 'bg-[#FCF8F2] text-[#D4A853]',
+    navy: darkMode ? 'bg-[#162238] text-[#E1B764]' : 'bg-[#162238]/10 text-[#162238]',
+    green: darkMode ? 'bg-green-500/10 text-green-400' : 'bg-green-500/10 text-green-600',
+    red: darkMode ? 'bg-red-500/10 text-red-400' : 'bg-red-500/10 text-red-600',
   };
 
   return (
@@ -312,7 +313,7 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
 
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <div className="w-8 h-8 border-4 border-[#142755] border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-4 border-[#E1B764] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : filtered.length === 0 ? (
           <div className={`text-center py-16 ${darkMode ? 'text-gray-500' : 'text-gray-400'} text-sm`}>
