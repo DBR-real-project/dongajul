@@ -1,4 +1,5 @@
 import { Shield, TrendingUp, AlertTriangle, ArrowRight, BarChart2, Database, Zap, ChevronRight, CheckCircle } from 'lucide-react';
+import { BannerAd } from './BannerAd';
 
 interface EnterpriseDashboardProps {
   darkMode?: boolean;
@@ -37,6 +38,11 @@ export function EnterpriseDashboard({ darkMode = false, onStartDiagnosis, onView
 
   return (
     <div className={`h-full overflow-y-auto ${darkMode ? 'bg-[#0A0E1A]' : 'bg-[#F8FAFC]'}`}>
+
+      {/* Premium Banner */}
+      <section className="px-8 pt-6 max-w-5xl mx-auto">
+        <BannerAd />
+      </section>
 
       {/* Hero */}
       <section className={`relative overflow-hidden ${darkMode ? 'bg-gradient-to-br from-[#0B1E3D] to-[#0A0E1A]' : 'bg-gradient-to-br from-[#0B2F61] to-[#142755]'} px-8 py-20 text-white`}>

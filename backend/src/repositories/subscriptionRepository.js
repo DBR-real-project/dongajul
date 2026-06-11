@@ -58,3 +58,4 @@ exports.cancelSubscription = async (userId) => {
   const [result] = await db.query(sql, [userId]);
   return result.affectedRows;
 };
+
