@@ -3,7 +3,6 @@ const subscriptionService = require("../services/subscriptionService");
 
 exports.createSubscription = async (req, res) => {
   try {
-    console.log("🔥 req.user:", req.user);
     const userId = req.user.user_id;
     const { plan_type = "premium" } = req.body;
 
