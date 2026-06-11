@@ -123,10 +123,17 @@ export function NotificationView({ onBack, onNavigate, darkMode = false }: Notif
     }
   };
 
-  const handleUpgrade = () => setShowUpgradeModal(true);
+  const handleUpgrade = () => {
+    if (onNavigate) {
+      onNavigate('subscription');
+      return;
+    }
+    setShowUpgradeModal(true);
+  };
+
   const handleConfirmUpgrade = () => {
     setShowUpgradeModal(false);
-    onNavigate?.('checkout');
+    triggerToast('업그레이드 완료되었습니다! 👑');
   };
 
   return (
@@ -140,7 +147,7 @@ export function NotificationView({ onBack, onNavigate, darkMode = false }: Notif
       )}
 
       {/* 헤더 바 */}
-      <header className={`${darkMode ? 'bg-[#0D1527] border-gray-800' : 'bg-white border-slate-200'} border-b sticky top-0 z-50 shadow-sm`}>
+      <header className={`${darkMode ? 'bg-[#0D1527] border-gray-800' : 'bg-white border-slate-200'} border-b sticky top-0 z-10 shadow-sm`}>
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
