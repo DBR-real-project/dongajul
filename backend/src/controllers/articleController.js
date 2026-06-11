@@ -1,5 +1,27 @@
 const db = require('../config/db');
 
+// GET /api/articles/stats — 기사 통계
+exports.getArticleStats = async (req, res) => {
+  try {
+    const [rows] = await db.execute(`
+      SELECT COUNT(*) AS total_articles
+      FROM articles
+    `);
+
+    res.json({
+      success: true,
+      total_articles: rows[0]?.total_articles || 0,
+    });
+  } catch (err) {
+    console.error('[articleController] getArticleStats 오류:', err);
+
+    res.status(500).json({
+      success: false,
+      message: '기사 통계 조회 중 서버 오류가 발생했습니다.',
+    });
+  }
+};
+
 // GET /api/articles — 기사 목록
 exports.getArticles = async (req, res) => {
   const {

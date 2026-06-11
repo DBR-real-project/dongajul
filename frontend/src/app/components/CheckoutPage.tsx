@@ -1,4 +1,4 @@
-﻿import React, { useEffect } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { apiFetchJson } from '../utils/api';
 
 interface CheckoutPageProps {
@@ -7,10 +7,14 @@ interface CheckoutPageProps {
 }
 
 export function CheckoutPage({ onBack, onSuccess }: CheckoutPageProps) {
+  const [loading, setLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+
   // 결제 모듈 스크립트 불러오기
   useEffect(() => {
-    const script = document.createElement("script");
-    script.src = "https://cdn.iamport.kr/v1/iamport.js";
+    const script = document.createElement('script');
+    script.src = 'https://cdn.iamport.kr/v1/iamport.js';
     script.async = true;
     document.body.appendChild(script);
 
@@ -20,21 +24,30 @@ export function CheckoutPage({ onBack, onSuccess }: CheckoutPageProps) {
   }, []);
 
   const handlePayment = async () => {
+    if (loading) return;
+
+    setLoading(true);
+    setSuccessMessage('');
+    setErrorMessage('');
+
     try {
-      await apiFetchJson('/api/subscriptions', {
+      const result = await apiFetchJson('/api/subscriptions', {
         method: 'POST',
         body: JSON.stringify({
           plan_type: 'premium',
         }),
       });
 
-      alert('구독 완료!');
+      setSuccessMessage(result?.message || '구독이 완료되었습니다.');
 
-      // 결제 성공 후 App.tsx에서 넘겨준 화면 이동 함수 실행
-      onSuccess();
+      setTimeout(() => {
+        onSuccess();
+      }, 700);
     } catch (err: any) {
       console.error(err);
-      alert(err.message || '구독 실패');
+      setErrorMessage(err.message || '구독 처리 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -51,7 +64,10 @@ export function CheckoutPage({ onBack, onSuccess }: CheckoutPageProps) {
         <div className="grid gap-6 md:grid-cols-2">
           <div className="rounded-2xl border border-gray-200 p-6 bg-slate-50">
             <h2 className="text-xl font-semibold mb-4">프리미엄 플랜</h2>
-            <p className="text-sm text-gray-600 mb-6">월 ₩9,900으로 모든 AI 분석 기능 무제한 이용.</p>
+            <p className="text-sm text-gray-600 mb-6">
+              월 ₩9,900으로 모든 AI 분석 기능 무제한 이용.
+            </p>
+
             <ul className="space-y-3 text-sm text-slate-700">
               <li>✓ 최신 AI 모델 사용</li>
               <li>✓ 우선 응답 속도</li>
@@ -61,6 +77,7 @@ export function CheckoutPage({ onBack, onSuccess }: CheckoutPageProps) {
 
           <div className="rounded-2xl border border-gray-200 p-6 bg-white shadow-sm">
             <div className="mb-4 text-sm font-semibold text-slate-500">결제 정보</div>
+
             <div className="space-y-4">
               <div className="rounded-2xl bg-gray-100 p-4">
                 <div className="text-sm text-gray-500">결제 금액</div>
@@ -72,11 +89,24 @@ export function CheckoutPage({ onBack, onSuccess }: CheckoutPageProps) {
                 <div className="text-base text-slate-700">카드 / 간편결제 / 계좌이체</div>
               </div>
 
+              {successMessage && (
+                <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
+                  {successMessage}
+                </div>
+              )}
+
+              {errorMessage && (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                  {errorMessage}
+                </div>
+              )}
+
               <button
                 onClick={handlePayment}
-                className="w-full rounded-xl bg-gradient-to-r from-[#4285f4] via-[#9b72cb] to-[#d96570] py-3 text-white font-bold transition hover:opacity-90 active:scale-95 shadow-md"
+                disabled={loading}
+                className="w-full rounded-xl bg-gradient-to-r from-[#4285f4] via-[#9b72cb] to-[#d96570] py-3 text-white font-bold transition hover:opacity-90 active:scale-95 shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
               >
-                결제 진행하기
+                {loading ? '구독 처리 중...' : '결제 진행하기'}
               </button>
             </div>
           </div>
@@ -85,7 +115,8 @@ export function CheckoutPage({ onBack, onSuccess }: CheckoutPageProps) {
         <div className="mt-10 flex justify-center">
           <button
             onClick={onBack}
-            className="px-6 py-3 rounded-xl border border-slate-300 bg-white text-slate-700 font-semibold transition hover:bg-slate-100"
+            disabled={loading}
+            className="px-6 py-3 rounded-xl border border-slate-300 bg-white text-slate-700 font-semibold transition hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             이전으로 돌아가기
           </button>
