@@ -1,6 +1,5 @@
 import { LayoutDashboard, BarChart3, GitCompare, History, FileText, User, Bell, Moon, Sun } from 'lucide-react';
 import { useState } from 'react';
-import logoImg from '../../imports/lg.png';
 
 interface LeftSidebarProps {
   currentView: string;
@@ -41,18 +40,17 @@ export function LeftSidebar({
   ];
 
   return (
-    <div className={`w-64 h-full ${darkMode ? 'bg-[#0A0E1A] border-gray-800' : 'bg-white border-gray-200'} border-r flex flex-col select-none`}>
+    <div className={`w-64 h-full ${darkMode ? 'bg-[#0A0E1A] border-gray-800' : 'bg-white border-gray-200'} border-r flex flex-col select-none relative z-50`}>
       {/* Logo */}
       <div className="p-6 pb-8 border-b border-gray-200 dark:border-gray-800 flex items-center justify-center">
         <img
-          src={logoImg}
           alt="STRAND Logo"
           className="w-14 h-14 object-contain"
         />
       </div>
 
       {/* Navigation Menu */}
-      <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto relative z-10">
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentView === item.id;
@@ -79,7 +77,7 @@ export function LeftSidebar({
       </nav>
 
       {/* Bottom Actions */}
-      <div className={`p-4 border-t ${darkMode ? 'border-gray-800' : 'border-gray-200'} space-y-1.5`}>
+      <div className={`p-4 border-t ${darkMode ? 'border-gray-800' : 'border-gray-200'} space-y-1.5 relative z-20`}>
         {/* Notification */}
         <button
           onClick={onNotificationClick}
@@ -143,11 +141,15 @@ export function LeftSidebar({
             </div>
           </button>
 
+          {/* === 수정된 부분: 모달 팝업의 z-index를 9999로 설정 === */}
           {showUserMenu && (
             <>
-              <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />
-              <div className={`absolute bottom-full left-0 right-0 mb-2 w-full z-50 rounded-2xl border shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-150 ${
-                darkMode ? 'bg-gray-850 border-gray-700 text-white' : 'bg-white border-gray-150 text-gray-800'
+              {/* 투명한 배경 클릭 시 닫히도록 하는 레이어 */}
+              <div className="fixed inset-0 z-[9998]" onClick={() => setShowUserMenu(false)} />
+              
+              {/* 실제 메뉴 모달 레이어 */}
+              <div className={`absolute bottom-full left-0 right-0 mb-2 w-full z-[9999] rounded-2xl border shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-150 ${
+                darkMode ? 'bg-gray-850 border-gray-700 text-white' : 'bg-white border-gray-200 text-gray-800'
               }`}>
                 <button
                   onClick={() => {

@@ -1,7 +1,8 @@
 /**
  * 공통 API 유틸리티
- * - Authorization 헤더 자동 첨부
- * - 401 응답 시 Refresh Token으로 재시도 → 실패 시 자동 로그아웃
+ * - Authorization: Bearer token 자동 첨부
+ * - 401 응답 시 refresh_token 재시도
+ * - refresh 실패 시 자동 로그아웃
  */
 
 const BASE_URL = 'http://localhost:3001';
@@ -21,27 +22,39 @@ function clearAuth() {
   localStorage.removeItem('userName');
 }
 
-/** refresh_token으로 새 access token 발급. 성공 시 true 반환 */
 async function tryRefresh(): Promise<boolean> {
   const refreshToken = getRefreshToken();
-  if (!refreshToken) return false;
+
+  if (!refreshToken) {
+    return false;
+  }
 
   try {
     const res = await fetch(`${BASE_URL}/api/auth/refresh`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: refreshToken }),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        refresh_token: refreshToken,
+      }),
     });
 
-    if (!res.ok) return false;
+    if (!res.ok) {
+      return false;
+    }
 
     const data = await res.json();
-    if (data.token) {
-      localStorage.setItem('token', data.token);
-      return true;
+
+    if (!data.token) {
+      return false;
     }
-    return false;
-  } catch {
+
+    localStorage.setItem('token', data.token);
+
+    return true;
+  } catch (err) {
+    console.error('토큰 재발급 실패:', err);
     return false;
   }
 }
@@ -51,46 +64,67 @@ interface RequestOptions extends RequestInit {
   _isRetry?: boolean;
 }
 
-export async function apiFetch(path: string, options: RequestOptions = {}): Promise<Response> {
-  const { skipAuth = false, _isRetry = false, ...fetchOptions } = options;
+export async function apiFetch(
+  path: string,
+  options: RequestOptions = {}
+): Promise<Response> {
+  const { skipAuth = false, _isRetry = false, headers, ...fetchOptions } = options;
 
-  const headers: Record<string, string> = {
+  const token = getToken();
+
+  const requestHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...(fetchOptions.headers as Record<string, string> || {}),
+    ...(headers as Record<string, string>),
   };
 
-  if (!skipAuth) {
-    const token = getToken();
-    if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (!skipAuth && token) {
+    requestHeaders.Authorization = `Bearer ${token}`;
   }
 
   const res = await fetch(`${BASE_URL}${path}`, {
     ...fetchOptions,
-    headers,
+    headers: requestHeaders,
   });
 
   if (res.status === 401 && !skipAuth && !_isRetry) {
-    // refresh token으로 재발급 시도
     const refreshed = await tryRefresh();
+
     if (refreshed) {
-      // 새 토큰으로 원래 요청 재시도
-      return apiFetch(path, { ...options, _isRetry: true });
+      return apiFetch(path, {
+        ...options,
+        _isRetry: true,
+      });
     }
-    // refresh도 실패 → 로그아웃
+
     clearAuth();
-    window.location.reload();
+    window.location.href = '/';
+
+    return res;
   }
 
-  return res; // ✅ 그대로 유지
+  return res;
 }
 
-export async function apiFetchJson(path: string, options: RequestOptions = {}) {
+export async function apiFetchJson(
+  path: string,
+  options: RequestOptions = {}
+) {
   const res = await apiFetch(path, options);
 
-  const data = await res.json();
+  let data: any = null;
+
+  try {
+    data = await res.json();
+  } catch {
+    data = null;
+  }
 
   if (!res.ok) {
-    throw new Error(data.message || 'API 요청 실패');
+    throw new Error(
+      data?.message ||
+      data?.error ||
+      'API 요청 실패'
+    );
   }
 
   return data;

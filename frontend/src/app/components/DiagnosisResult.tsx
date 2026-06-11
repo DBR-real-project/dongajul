@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   ArrowLeft, Shield, AlertTriangle, ExternalLink,
   TrendingDown, TrendingUp, Activity, Tag, Lightbulb,
-  Clock, BarChart2, ChevronRight
+  Clock, BarChart2, ChevronRight, Check
 } from 'lucide-react';
 import { apiFetch } from '../utils/api';
 
@@ -174,15 +174,21 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
   const [rating, setRating] = useState<'good' | 'bad' | null>(null);
   const [opinion, setOpinion] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const handleSubmitFeedback = async () => {
     if (!rating) {
-      alert('평가를 선택해주세요');
+      showToast('평가를 선택해주세요');
       return;
     }
 
     if (!data?.diagnosis_id) {
-      alert('진단 정보가 없습니다');
+      showToast('진단 정보가 없습니다');
       return;
     }
 
@@ -193,15 +199,12 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
       const userId = savedUser?.id || savedUser?.user_id;
 
       if (!userId) {
-        alert('로그인 사용자 정보가 없습니다. 다시 로그인해주세요.');
+        showToast('로그인 사용자 정보가 없습니다. 다시 로그인해주세요.');
         return;
       }
 
       const res = await apiFetch('/api/feedbacks', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           user_id: userId,
           diagnosis_id: data.diagnosis_id,
@@ -213,17 +216,15 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
       const result = await res.json();
 
       if (!res.ok) {
-        console.error('피드백 저장 실패:', result);
-        alert(result.message || '피드백 제출 실패');
+        showToast(result.message || '피드백 제출 실패');
         return;
       }
 
-      alert('피드백 감사합니다!');
+      showToast('피드백 감사합니다!');
       setRating(null);
       setOpinion('');
     } catch (err) {
-      console.error('피드백 제출 에러:', err);
-      alert('피드백 제출 실패');
+      showToast('피드백 제출 실패');
     } finally {
       setSubmitting(false);
     }
@@ -534,24 +535,30 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
           )}
 
           {/* 사용자 피드백 */}
-          <div className="mt-10 p-6 border rounded-2xl">
-            <h3 className="text-base font-semibold mb-4">
+          <div className={`mt-10 p-6 rounded-2xl border ${darkMode ? 'bg-gray-800/40 border-gray-700/40' : 'bg-white border-gray-200 shadow-sm'}`}>
+            <h3 className={`text-base font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
               이 분석이 도움이 되었나요?
             </h3>
 
             <div className="flex gap-3 mb-4">
               <button
                 onClick={() => setRating('good')}
-                className={`px-4 py-2 rounded-lg ${rating === 'good' ? 'bg-green-500 text-white' : 'bg-gray-100'
-                  }`}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                  rating === 'good'
+                    ? 'bg-green-500 text-white'
+                    : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
               >
                 👍 도움됨
               </button>
 
               <button
                 onClick={() => setRating('bad')}
-                className={`px-4 py-2 rounded-lg ${rating === 'bad' ? 'bg-red-500 text-white' : 'bg-gray-100'
-                  }`}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                  rating === 'bad'
+                    ? 'bg-red-500 text-white'
+                    : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
               >
                 👎 별로
               </button>
@@ -561,16 +568,32 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
               value={opinion}
               onChange={(e) => setOpinion(e.target.value)}
               placeholder="의견을 남겨주세요 (선택)"
-              className="w-full border rounded-lg p-2 text-sm"
+              rows={3}
+              className={`w-full border rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all ${
+                darkMode
+                  ? 'bg-gray-900/50 border-gray-700 text-white placeholder-gray-600'
+                  : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'
+              }`}
             />
 
             <button
               onClick={handleSubmitFeedback}
               disabled={submitting}
-              className="mt-3 px-4 py-2 bg-indigo-600 text-white rounded-lg"
+              className="mt-3 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold transition-colors disabled:opacity-50"
             >
               {submitting ? '제출 중...' : '피드백 제출'}
             </button>
+          </div>
+
+          {/* AI 참고용 면책 문구 */}
+          <div className={`flex items-start gap-2 px-4 py-3 rounded-xl border ${
+            darkMode ? 'bg-gray-800/30 border-gray-700/40' : 'bg-gray-50 border-gray-200'
+          }`}>
+            <span className={`text-xs mt-0.5 flex-shrink-0 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>⚠️</span>
+            <p className={`text-xs leading-relaxed ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+              본 진단 결과는 DBR·HBR 13,335건 사례를 기반으로 AI가 생성한 <strong className={darkMode ? 'text-gray-400' : 'text-gray-500'}>참고용 자료</strong>입니다.
+              실제 경영 의사결정 시 반드시 전문가 자문을 병행하시기 바라며, 본 서비스는 투자·법률·경영 결과에 대한 책임을 지지 않습니다.
+            </p>
           </div>
 
           {/* 하단 버튼 */}
@@ -596,6 +619,13 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
             </button>
           </div>
 
+        </div>
+      )}
+
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-5 py-2.5 rounded-xl shadow-2xl z-[60] flex items-center gap-2 text-xs font-bold">
+          <Check className="w-4 h-4 text-green-400" />
+          {toast}
         </div>
       )}
     </div>
