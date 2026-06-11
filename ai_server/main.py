@@ -91,19 +91,26 @@ async def lifespan(app: FastAPI):
         _meta = None
         print(f"[startup] WARNING: articles_meta.parquet 없음: {OUT_DIR / 'articles_meta.parquet'}")
 
-    if (OUT_DIR / "umap_coords.parquet").exists():
-        _umap = pd.read_parquet(OUT_DIR / "umap_coords.parquet")
-        print("[startup] umap_coords.parquet 로드 완료")
+    # v3 우선 로드, 없으면 구버전 fallback
+    umap_path = OUT_DIR / "umap_coords_v3.parquet"
+    if not umap_path.exists():
+        umap_path = OUT_DIR / "umap_coords.parquet"
+    if umap_path.exists():
+        _umap = pd.read_parquet(umap_path)
+        print(f"[startup] {umap_path.name} 로드 완료")
     else:
         _umap = None
-        print(f"[startup] WARNING: umap_coords.parquet 없음: {OUT_DIR / 'umap_coords.parquet'}")
+        print(f"[startup] WARNING: umap_coords 파일 없음: {umap_path}")
 
-    if (OUT_DIR / "cluster_info.parquet").exists():
-        _clusters = pd.read_parquet(OUT_DIR / "cluster_info.parquet")
-        print("[startup] cluster_info.parquet 로드 완료")
+    cluster_path = OUT_DIR / "cluster_info_v3.parquet"
+    if not cluster_path.exists():
+        cluster_path = OUT_DIR / "cluster_info.parquet"
+    if cluster_path.exists():
+        _clusters = pd.read_parquet(cluster_path)
+        print(f"[startup] {cluster_path.name} 로드 완료")
     else:
         _clusters = None
-        print(f"[startup] WARNING: cluster_info.parquet 없음: {OUT_DIR / 'cluster_info.parquet'}")
+        print(f"[startup] WARNING: cluster_info 파일 없음: {cluster_path}")
 
     article_count = len(_meta) if _meta is not None else 0
     cluster_count = len(_clusters) if _clusters is not None else 0
