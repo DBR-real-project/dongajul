@@ -37,6 +37,11 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
           localStorage.setItem('token', tokenValue);
         }
 
+        // refresh_token 저장 (15분 후 자동 재발급용)
+        if (data.refresh_token) {
+          localStorage.setItem('refresh_token', data.refresh_token);
+        }
+
         if (data.user) {
           localStorage.setItem('user', JSON.stringify(data.user));
           const displayName = data.user.nickname || data.user.name || data.user.email || '사용자';

@@ -85,7 +85,7 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
 
         if (clusterRes.ok) {
           const clData = await clusterRes.json();
-          setClusters(Array.isArray(clData) ? clData.slice(0, 6) : []);
+          setClusters(Array.isArray(clData) ? clData : []);
         }
       } catch (e) {
         console.error('클러스터 로드 실패:', e);
@@ -161,10 +161,12 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
   ];
 
   const colorMap: Record<string, string> = {
-    gold: darkMode ? 'bg-[#E1B764]/20 text-[#E1B764]' : 'bg-[#FCF8F2] text-[#D4A853]',
-    navy: darkMode ? 'bg-[#162238] text-[#E1B764]' : 'bg-[#162238]/10 text-[#162238]',
-    green: darkMode ? 'bg-green-500/10 text-green-400' : 'bg-green-500/10 text-green-600',
-    red: darkMode ? 'bg-red-500/10 text-red-400' : 'bg-red-500/10 text-red-600',
+    gold:   darkMode ? 'bg-[#E1B764]/20 text-[#E1B764]'   : 'bg-[#FCF8F2] text-[#D4A853]',
+    navy:   darkMode ? 'bg-[#162238] text-[#E1B764]'       : 'bg-[#162238]/10 text-[#162238]',
+    blue:   darkMode ? 'bg-blue-500/10 text-blue-400'      : 'bg-blue-500/10 text-blue-600',
+    green:  darkMode ? 'bg-green-500/10 text-green-400'    : 'bg-green-500/10 text-green-600',
+    red:    darkMode ? 'bg-red-500/10 text-red-400'        : 'bg-red-500/10 text-red-600',
+    indigo: darkMode ? 'bg-indigo-500/10 text-indigo-400'  : 'bg-indigo-500/10 text-indigo-600',
   };
 
   return (
