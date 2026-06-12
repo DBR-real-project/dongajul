@@ -352,7 +352,7 @@ def parse_article(driver: webdriver.Chrome, url: str, category: str) -> dict | N
 # ──────────────────────────────────────────────
 # 메인
 # ──────────────────────────────────────────────
-def main():
+def main(start_idx: int = 0):
     seen_urls = load_existing_urls()
     print(f"[시작] 기존 수집 URL: {len(seen_urls)}건")
 
@@ -360,7 +360,7 @@ def main():
     total_saved = 0
 
     try:
-        for cat_name, cat_path in CATEGORIES:
+        for cat_name, cat_path in CATEGORIES[start_idx:]:
             print(f"\n{'='*55}")
             print(f"[카테고리] {cat_name}")
             print(f"{'='*55}")
@@ -395,4 +395,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--from", dest="start_idx", type=int, default=0,
+                    help="CATEGORIES 배열에서 시작할 인덱스 (0부터)")
+    args = ap.parse_args()
+    main(start_idx=args.start_idx)

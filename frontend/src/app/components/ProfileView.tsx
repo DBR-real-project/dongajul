@@ -2,7 +2,7 @@
  * src/app/components/ProfileView.tsx - 프로필/설정 화면
  */
 
-import { ArrowLeft, User, Mail, Shield, Clock, Edit2, Check, X, Camera } from 'lucide-react';
+import { ArrowLeft, User, Mail, Shield, Clock, Edit2, Check, X, Camera, Loader } from 'lucide-react';
 import { apiFetch } from '../utils/api';
 import { useState, useEffect, useRef } from 'react';
 
@@ -23,6 +23,18 @@ interface UserData {
   last_login_at?: string | null;
 }
 
+interface SubscriptionInfo {
+  subscription_id?: number;
+  user_id?: number;
+  plan_type?: string;
+  status?: string;
+  start_date?: string;
+  end_date?: string;
+  auto_renewal?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
 interface LocalUser {
   nickname: string;
   email: string;
@@ -32,6 +44,7 @@ interface LocalUser {
 export function ProfileView({ onBack, darkMode = false }: ProfileViewProps) {
   const [activePanel, setActivePanel] = useState<SettingsPanel>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [cancelingSubscription, setCancelingSubscription] = useState(false);
 
   const [userData, setUserData] = useState<UserData | null>(() => {
     const saved = localStorage.getItem('user');
@@ -52,6 +65,7 @@ export function ProfileView({ onBack, darkMode = false }: ProfileViewProps) {
     const savedUser = localStorage.getItem('user');
     try { return savedUser ? JSON.parse(savedUser).email : ''; } catch { return ''; }
   });
+  const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo | null>(null);
 
   // 계정별 프로필 이미지 키 — email 기반으로 통일
   const getImgKey = (u: UserData | null) =>
@@ -69,27 +83,43 @@ export function ProfileView({ onBack, darkMode = false }: ProfileViewProps) {
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 서버에서 프로필 로드
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const res = await apiFetch('/api/profile');
-        const data = await res.json();
-        if (data.success && data.user) {
-          setUserData(data.user);
-          setEditNickname(data.user.nickname || '');
-          setEditEmail(data.user.email || '');
-          localStorage.setItem('user', JSON.stringify(data.user));
-          if (data.user.nickname) localStorage.setItem('userName', data.user.nickname);
-          // email 기반 키로 재동기화
-          const key = `profileImage_${data.user.email}`;
-          setProfileImage(localStorage.getItem(key) || null);
-        }
-      } catch (err) {
-        console.error('프로필 로드 실패:', err);
+  const fetchProfile = async () => {
+    try {
+      const res = await apiFetch('/api/profile');
+      const data = await res.json();
+      if (data.success && data.user) {
+        setUserData(data.user);
+        setEditNickname(data.user.nickname || '');
+        setEditEmail(data.user.email || '');
+        localStorage.setItem('user', JSON.stringify(data.user));
+        if (data.user.nickname) localStorage.setItem('userName', data.user.nickname);
+        const key = `profileImage_${data.user.email}`;
+        setProfileImage(localStorage.getItem(key) || null);
       }
-    };
+    } catch (err) {
+      console.error('프로필 로드 실패:', err);
+    }
+  };
+
+  const fetchSubscriptionInfo = async () => {
+    try {
+      const res = await apiFetch('/api/subscriptions/me');
+      const data = await res.json();
+      if (data.success && data.data) {
+        setSubscriptionInfo(data.data);
+      } else {
+        setSubscriptionInfo(null);
+      }
+    } catch (err) {
+      console.error('구독 정보 로드 실패:', err);
+      setSubscriptionInfo(null);
+    }
+  };
+
+  // 서버에서 프로필과 구독 상태 로드
+  useEffect(() => {
     fetchProfile();
+    fetchSubscriptionInfo();
   }, []);
 
   const showToast = (message: string) => {
@@ -126,6 +156,31 @@ export function ProfileView({ onBack, darkMode = false }: ProfileViewProps) {
     if (key) localStorage.removeItem(key);
     window.dispatchEvent(new Event('storage'));
     showToast('프로필 사진이 삭제되었습니다');
+  };
+
+  // 구독 취소
+  const handleCancelSubscription = async () => {
+    if (!window.confirm('구독을 취소하시겠습니까?')) return;
+
+    setCancelingSubscription(true);
+    try {
+      const res = await apiFetch('/api/subscriptions/cancel', {
+        method: 'PATCH',
+      });
+      const data = await res.json();
+      if (data.success) {
+        await fetchProfile();
+        await fetchSubscriptionInfo();
+        showToast('구독이 취소되었습니다');
+      } else {
+        showToast(data.message || '취소 실패');
+      }
+    } catch (err) {
+      console.error('구독 취소 중 오류:', err);
+      showToast('서버 통신 중 오류가 발생했습니다');
+    } finally {
+      setCancelingSubscription(false);
+    }
   };
 
   // 프로필 정보 저장
@@ -253,14 +308,49 @@ export function ProfileView({ onBack, darkMode = false }: ProfileViewProps) {
         </div>
 
         {/* 구독 정보 */}
-        <div className={`${dm ? 'bg-gray-800/40 border-gray-700/40' : 'bg-white border-slate-200'} p-5 rounded-2xl border shadow-sm flex items-center justify-between`}>
-          <div>
-            <h3 className={`text-xs font-bold uppercase tracking-wider mb-1 ${dm ? 'text-gray-400' : 'text-gray-500'}`}>구독 플랜</h3>
-            <div className={`text-sm font-bold uppercase ${dm ? 'text-white' : 'text-gray-900'} mb-0.5`}>{userData?.subscription_type || '-'}</div>
+        <div className={`${dm ? 'bg-gray-800/40 border-gray-700/40' : 'bg-white border-slate-200'} p-5 rounded-2xl border shadow-sm`}>
+          <h3 className={`text-xs font-bold uppercase tracking-wider mb-1 ${dm ? 'text-gray-400' : 'text-gray-500'}`}>구독 플랜</h3>
+          <div className="mb-3">
+            <div className={`text-sm font-bold uppercase ${dm ? 'text-white' : 'text-gray-900'}`}>
+              {subscriptionInfo?.plan_type || userData?.subscription_type || '-'}
+            </div>
           </div>
-          <span className="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs rounded-xl font-bold shadow-inner">
-            활성
-          </span>
+
+          {/* 구독 활성 또는 해지 중 상태 */}
+          {subscriptionInfo?.end_date ? (
+            <div className="space-y-3">
+              {(subscriptionInfo.status === 'cancelled' || cancelingSubscription) ? (
+                <div className={`inline-flex px-2 py-1 text-xs rounded-xl font-bold ${dm ? 'bg-yellow-900/10 text-amber-200' : 'bg-yellow-50 text-amber-700'} border ${dm ? 'border-yellow-800/60' : 'border-yellow-200'}`}>
+                  구독 해지중
+                </div>
+              ) : (
+                <button
+                  onClick={handleCancelSubscription}
+                  disabled={cancelingSubscription}
+                  className={`px-3 py-1 text-xs rounded-xl font-bold transition-all flex items-center gap-1.5 ${
+                    cancelingSubscription
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : dm
+                        ? 'bg-red-900/30 text-red-400 hover:bg-red-900/50 border border-red-800/50'
+                        : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
+                  }`}
+                >
+                  {cancelingSubscription && <Loader className="w-3 h-3 animate-spin" />}
+                  해지
+                </button>
+              )}
+
+              {subscriptionInfo.end_date && (
+                <div className={`text-xs ${dm ? 'text-gray-300' : 'text-gray-600'}`}>
+                  남은 기간: {Math.max(0, Math.ceil((new Date(subscriptionInfo.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))}일
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-xs font-semibold text-gray-400">
+              구독 중이 아닙니다
+            </div>
+          )}
         </div>
 
         <div className="text-center pt-2">
