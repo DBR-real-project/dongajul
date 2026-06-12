@@ -34,9 +34,8 @@ export function SearchHistory({ onResultByIdClick, darkMode = false }: SearchHis
     const fetchHistory = async () => {
       setLoading(true);
       try {
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        if (!user.id) { setLoading(false); return; }
-        const res = await apiFetch(`/api/history?user_id=${user.id}`);
+        if (!localStorage.getItem('token')) { setLoading(false); return; }
+        const res = await apiFetch('/api/history');
         if (res.ok) {
           const json = await res.json();
           // 응답 형태: { success: true, data: [...] }

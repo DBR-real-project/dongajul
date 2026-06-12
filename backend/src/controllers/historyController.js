@@ -6,12 +6,12 @@ const historyRepository = require("../repositories/historyRepository");
  */
 exports.getHistory = async (req, res) => {
   try {
-    const userId = req.query.user_id;
+    const userId = req.user?.user_id;
 
     if (!userId) {
-      return res.status(400).json({
+      return res.status(401).json({
         success: false,
-        message: "user_id is required",
+        message: "인증이 필요합니다.",
       });
     }
 

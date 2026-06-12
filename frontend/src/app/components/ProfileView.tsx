@@ -45,12 +45,12 @@ export function ProfileView({ onBack, darkMode = false }: ProfileViewProps) {
     const savedName = localStorage.getItem('userName');
     if (savedName) return savedName;
     const savedUser = localStorage.getItem('user');
-    return savedUser ? JSON.parse(savedUser).nickname : '';
+    try { return savedUser ? JSON.parse(savedUser).nickname : ''; } catch { return ''; }
   });
 
   const [editEmail, setEditEmail] = useState(() => {
     const savedUser = localStorage.getItem('user');
-    return savedUser ? JSON.parse(savedUser).email : '';
+    try { return savedUser ? JSON.parse(savedUser).email : ''; } catch { return ''; }
   });
 
   // 계정별 프로필 이미지 키 — email 기반으로 통일
