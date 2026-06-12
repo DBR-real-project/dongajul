@@ -185,7 +185,7 @@ ai_server/
 
 ---
 
-## 현재 상태 (2026-06-11 세션8)
+## 현재 상태 (2026-06-12 세션9 — 3가지 기획 기능 구현)
 
 **NLP 파이프라인 전체 완료**: ① 전처리 → ② 라벨링 → ③ 임베딩+FAISS → ④ 리스크 모델 → ⑤ UMAP+K-means
 **v3 클러스터 완료**: 768차원 K-means → 12개 주제 기반 클러스터, DB 반영 완료 (cluster_id 1-12)
@@ -194,12 +194,11 @@ ai_server/
 **JWT Refresh Token 완료**: Access 15분 / Refresh 7일, 자동 재발급
 **카카오 로그인 복구 완료**: charset 버그 + JWT fallback 처리
 **프론트엔드 전체 API 연동 완료**: 모든 화면 apiFetch 기반 연동, alert→toast 교체, AI 면책 문구 추가
-**전체 오류검사 완료 (세션7)**: 6개 버그 수정
-**세션8 추가 버그 수정 + 임포트 스크립트**: BannerAd toast 교체, profileRoutes 보안 로그 제거, articles DB 임포트 스크립트 생성
-
-**신규 기획 아이디어 (세션6 논의)**
-- ① NAVER 뉴스 데이터(55,465건) 기반 산업 트렌드 컨텍스트 → GPT 프롬프트 주입
-- ② 유명 경영전략 저자 프레임워크 knowledge base 구축 → FAISS RAG에 추가
+**전체 오류검사 완료 (세션7~8)**: 7개 버그 수정
+**3가지 기획 기능 구현 완료 (세션9)**:
+- ① 리스크 스코어 3-factor 고도화: model(35%) + case(45%,신뢰도 가중) + cluster(20%) × reliability 보정
+- ② GPT 리포트 전문화: strategy_analysis + risk_details + framework_insight 섹션 추가
+- ③ 비즈니스 전략 프레임워크 KB: 12개 프레임워크(Porter/블루오션/린스타트업 등) SBERT 임베딩 → 관련 프레임워크 자동 주입
 
 ---
 
@@ -323,6 +322,37 @@ ai_server/
 - DBR_labeled.parquet + HBR_labeled.parquet → articles + article_labels 테이블
 - url 기준 중복 스킵 (재실행 안전), article_no = URL MD5 해시 20자
 - 팀원이 `python 데이터처리/import_articles_to_db.py` 한 번 실행 필요
+
+---
+
+### 세션9 (2026-06-12) — 3가지 기획 기능 구현
+
+**20. 전략 프레임워크 Knowledge Base (`ai_server/frameworks.py` 신규)**
+- 12개 주요 경영전략 프레임워크 (Porter 5 Forces/본원적전략, 파괴적혁신, 블루오션, JTBD, BMC, 린스타트업, 고슴도치/플라이휠, Zero to One, 앤소프 매트릭스, 가치사슬, 플랫폼·네트워크)
+- SBERT 임베딩(768차원) → 코사인 유사도 기반 관련 프레임워크 검색
+- `init_frameworks(sbert_model)` 서버 시작 시 1회 호출
+- `find_relevant_frameworks(query_emb)` → 유사도 0.35 이상 시 프레임워크 텍스트 반환
+
+**21. 리스크 스코어 3-factor 고도화 (`ai_server/main.py`)**
+- 기존: `0.4 × model_score + 0.6 × case_score` (2인자 고정 비율)
+- 개선: `base_score = 0.35 × model_score + 0.45 × case_score + 0.20 × cluster_risk`
+  → `risk_score = base_score × reliability + 0.5 × (1 - reliability)` (신뢰도 보정)
+- case_score: 유사도 × confidence 가중 실패 비율 (confidence 없으면 1.0 기본값)
+- cluster_risk: 클러스터별 사전 계산된 평균 실패율 (`_cluster_risk_map`)
+- reliability: `min(max_sim / 0.65, 1.0)` — 최고 유사도 낮으면 0.5 방향 수축
+
+**22. GPT 리포트 전문화 (`ai_server/reporter.py`, `ai_server/schemas.py`)**
+- DiagnosisReport에 3개 Optional 필드 추가: `strategy_analysis`, `risk_details`, `framework_insight`
+- 전문 컨설팅 시스템 프롬프트 재작성 (7개 섹션 → 구조화된 분석)
+- `risk_details[i]`: `risk_factors[i]`와 1:1 대응 심층 분석 (발생 경위·영향·유사 사례 연결)
+- `strategy_analysis`: 타깃 고객·수익모델·차별화·실행 난이도 구조 평가
+- `framework_insight`: 관련 프레임워크 컨텍스트 주입 시 GPT가 인사이트 생성
+- few-shot 예시 3개 모두 새 포맷으로 업데이트
+
+**23. DiagnosisResult.tsx 리포트 UI 확장 (`frontend/src/app/components/DiagnosisResult.tsx`)**
+- "전략 구조 분석" 섹션 추가 (파란 좌측 보더 카드)
+- 리스크 요인에 심층 분석 하위 텍스트 표시 (risk_details 연동)
+- "프레임워크 관점" 섹션 추가 (노란 하이라이트 박스, 판정 직전)
 
 ---
 
