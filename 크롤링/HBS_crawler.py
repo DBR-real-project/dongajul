@@ -38,17 +38,18 @@ BASE_URL = "https://www.library.hbs.edu"
 SOURCE   = "HBS"
 
 CATEGORIES = [
-    ("Strategy & Innovation",        "/working-knowledge/collections/strategy-innovation"),
+    ("Strategy & Innovation",        "/working-knowledge/collections/strategy-and-innovation"),
     ("Leadership",                   "/working-knowledge/collections/leadership"),
-    ("Data & Technology",            "/working-knowledge/collections/data-technology"),
+    ("Data & Technology",            "/working-knowledge/collections/data-and-technology"),
     ("Managing the Business",        "/working-knowledge/collections/managing-the-business"),
-    ("Marketing & Consumers",        "/working-knowledge/collections/marketing-consumers"),
-    ("Finance & Investing",          "/working-knowledge/collections/finance-investing"),
-    ("Economics & Global Commerce",  "/working-knowledge/collections/economics-global-commerce"),
-    ("Career & Workplace",           "/working-knowledge/collections/career-workplace"),
+    ("Marketing & Consumers",        "/working-knowledge/collections/marketing-and-consumers"),
+    ("Finance & Investing",          "/working-knowledge/collections/finance-and-investing"),
+    ("Economics & Global Commerce",  "/working-knowledge/collections/economics-and-global-commerce"),
     ("Social Responsibility",        "/working-knowledge/collections/social-responsibility"),
-    ("Regulation & Compliance",      "/working-knowledge/collections/regulation-compliance"),
-    ("Psychology & Behavior",        "/working-knowledge/collections/psychology-behavior"),
+    ("Regulation & Compliance",      "/working-knowledge/collections/regulation-and-compliance"),
+    ("Psychology & Behavior",        "/working-knowledge/collections/psychology-and-behavior"),
+    ("Entrepreneurship",             "/working-knowledge/collections/entrepreneurship"),
+    ("Artificial Intelligence",      "/working-knowledge/collections/artificial-intelligence"),
 ]
 
 OUT_DIR  = Path(__file__).parent
@@ -111,61 +112,90 @@ def save_rows(rows: list[dict]):
         writer.writerows(rows)
 
 
+# 기사 URL인지 판별 (컬렉션/네비게이션 제외)
+_NON_ARTICLE = {
+    "/working-knowledge",
+    "/working-knowledge/",
+    "/working-knowledge/about",
+    "/working-knowledge/collections",
+    "/working-knowledge/popular-research",
+    "/working-knowledge/subscribe-to-working-knowledge-newsletters",
+}
+
+def _is_article_url(href: str) -> bool:
+    path = href.replace(BASE_URL, "").split("?")[0].rstrip("/")
+    if not path.startswith("/working-knowledge/"):
+        return False
+    if "/collections/" in path:
+        return False
+    if path in _NON_ARTICLE:
+        return False
+    return True
+
+
 # ──────────────────────────────────────────────
-# 카테고리 페이지 → 기사 URL 목록 수집
+# 카테고리 페이지 → 기사 URL 목록 수집 (페이지네이션)
 # ──────────────────────────────────────────────
 def collect_article_urls(driver: webdriver.Chrome, cat_url: str) -> list[str]:
-    full_url = BASE_URL + cat_url
-    driver.get(full_url)
+    urls: set[str] = set()
+    page = 1
 
-    try:
-        WebDriverWait(driver, PAGE_LOAD_WAIT).until(
-            EC.presence_of_element_located((By.TAG_NAME, "a"))
-        )
-    except TimeoutException:
-        print(f"  [WARN] 페이지 로드 타임아웃: {full_url}")
-        return []
+    while True:
+        paged_url = BASE_URL + cat_url + (f"?page={page}" if page > 1 else "")
+        driver.get(paged_url)
 
-    # infinite scroll — 더 이상 높이가 안 늘 때까지 스크롤
-    last_height = driver.execute_script("return document.body.scrollHeight")
-    scroll_attempts = 0
-    while scroll_attempts < 30:
-        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        # 기사 카드 로드까지 대기 — "Showing N results" 텍스트 또는 기사 링크 등장 확인
+        try:
+            WebDriverWait(driver, PAGE_LOAD_WAIT).until(
+                lambda d: len([
+                    a for a in d.find_elements(By.CSS_SELECTOR, "a[href*='/working-knowledge/']")
+                    if _is_article_url(a.get_attribute("href") or "")
+                ]) >= 3
+            )
+        except TimeoutException:
+            # 기사 카드가 안 뜨면 일반 a 태그라도 기다림
+            try:
+                WebDriverWait(driver, 5).until(
+                    EC.presence_of_element_located((By.TAG_NAME, "a"))
+                )
+            except TimeoutException:
+                print(f"  [WARN] 페이지 로드 타임아웃: {paged_url}")
+                break
+
         time.sleep(SCROLL_PAUSE)
 
-        # "Load More" 버튼이 있으면 클릭
-        try:
-            btn = driver.find_element(
-                By.XPATH,
-                "//button[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'load more') "
-                "or contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'see more') "
-                "or contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'show more')]"
-            )
-            driver.execute_script("arguments[0].click();", btn)
-            time.sleep(SCROLL_PAUSE)
-        except NoSuchElementException:
-            pass
+        # 이번 페이지의 기사 링크 수집
+        links = driver.find_elements(By.CSS_SELECTOR, "a[href*='/working-knowledge/']")
+        page_urls: set[str] = set()
+        for a in links:
+            href = a.get_attribute("href") or ""
+            if _is_article_url(href):
+                page_urls.add(href.split("?")[0].rstrip("/"))
 
-        new_height = driver.execute_script("return document.body.scrollHeight")
-        if new_height == last_height:
+        if not page_urls:
+            print(f"    page {page}: 기사 없음, 종료")
             break
-        last_height = new_height
-        scroll_attempts += 1
 
-    # 기사 링크 추출: /working-knowledge/{slug} 패턴
-    links = driver.find_elements(By.CSS_SELECTOR, "a[href*='/working-knowledge/']")
-    urls = set()
-    for a in links:
-        href = a.get_attribute("href") or ""
-        # 컬렉션/검색 페이지 제외, 실제 기사만
-        if (
-            "/working-knowledge/" in href
-            and "/collections" not in href
-            and "/search" not in href
-            and href != BASE_URL + "/working-knowledge"
-            and href != BASE_URL + "/working-knowledge/"
-        ):
-            urls.add(href.split("?")[0].rstrip("/"))
+        new_count = len(page_urls - urls)
+        urls |= page_urls
+        print(f"    page {page}: +{new_count}건 (누적 {len(urls)}건)")
+
+        # 최대 페이지 번호 추출 (pagination에서 가장 큰 숫자)
+        import re as _re
+        page_links = driver.find_elements(By.CSS_SELECTOR, "a[href*='?page=']")
+        page_nums = []
+        for a in page_links:
+            href = a.get_attribute("href") or ""
+            m = _re.search(r"\?page=(\d+)", href)
+            if m:
+                page_nums.append(int(m.group(1)))
+        max_page = max(page_nums) if page_nums else page
+
+        if page >= max_page:
+            break
+
+        page += 1
+        time.sleep(random.uniform(0.8, 1.5))
 
     return list(urls)
 
