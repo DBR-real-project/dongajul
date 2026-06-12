@@ -240,8 +240,8 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
     }
   }, [diagnosisId, resultData]);
 
-  const successCases = data?.similar_articles.filter((a) => a.label === 'success') ?? [];
-  const failureCases = data?.similar_articles.filter((a) => a.label === 'failure') ?? [];
+  const successCases = data?.similar_articles?.filter((a) => a.label === 'success') ?? [];
+  const failureCases = data?.similar_articles?.filter((a) => a.label === 'failure') ?? [];
   const pct = data ? Math.round(data.risk_score * 100) : 0;
   const riskColor = pct >= 70 ? 'text-red-500' : pct >= 40 ? 'text-yellow-500' : 'text-green-500';
   const riskBg = pct >= 70
@@ -477,15 +477,30 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
                 <p className={`text-sm leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{data.report.summary}</p>
               </div>
 
-              {/* 리스크 요인 */}
+              {/* 전략 구조 분석 */}
+              {(data.report as any).strategy_analysis && (
+                <div className={`p-4 rounded-xl border-l-4 ${darkMode ? 'bg-gray-900/30 border-blue-500/50' : 'bg-blue-50 border-blue-400'}`}>
+                  <p className={`text-xs font-semibold uppercase tracking-widest mb-2 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>전략 구조 분석</p>
+                  <p className={`text-sm leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{(data.report as any).strategy_analysis}</p>
+                </div>
+              )}
+
+              {/* 리스크 요인 + 심층 분석 */}
               {data.report.risk_factors.length > 0 && (
                 <div>
                   <p className={`text-xs font-semibold uppercase tracking-widest mb-3 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>주요 리스크 요인</p>
-                  <ul className="space-y-2">
+                  <ul className="space-y-3">
                     {data.report.risk_factors.map((factor, i) => (
-                      <li key={i} className={`flex items-start gap-2.5 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                        <AlertTriangle className={`w-4 h-4 mt-0.5 flex-shrink-0 ${darkMode ? 'text-red-400' : 'text-red-500'}`} />
-                        {factor}
+                      <li key={i} className={`rounded-xl p-3 ${darkMode ? 'bg-red-950/20' : 'bg-red-50'}`}>
+                        <div className={`flex items-start gap-2.5 text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                          <AlertTriangle className={`w-4 h-4 mt-0.5 flex-shrink-0 ${darkMode ? 'text-red-400' : 'text-red-500'}`} />
+                          {factor}
+                        </div>
+                        {(data.report as any).risk_details?.[i] && (
+                          <p className={`mt-1.5 ml-6 text-xs leading-relaxed ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                            {(data.report as any).risk_details[i]}
+                          </p>
+                        )}
                       </li>
                     ))}
                   </ul>
@@ -504,6 +519,17 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
                       </li>
                     ))}
                   </ul>
+                </div>
+              )}
+
+              {/* 프레임워크 인사이트 */}
+              {(data.report as any).framework_insight && (
+                <div className={`p-4 rounded-xl border ${darkMode ? 'bg-yellow-900/10 border-yellow-500/20' : 'bg-yellow-50 border-yellow-200'}`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Lightbulb className={`w-3.5 h-3.5 ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`} />
+                    <p className={`text-xs font-semibold uppercase tracking-widest ${darkMode ? 'text-yellow-400' : 'text-yellow-700'}`}>전략 프레임워크 관점</p>
+                  </div>
+                  <p className={`text-sm leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{(data.report as any).framework_insight}</p>
                 </div>
               )}
 
