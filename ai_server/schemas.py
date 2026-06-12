@@ -33,8 +33,11 @@ class DiagnoseResponse(BaseModel):
 
 class DiagnosisReport(BaseModel):
     summary: str
+    strategy_analysis: Optional[str] = None
     risk_factors: list[str]
+    risk_details: Optional[list[str]] = None
     improvement: list[str]
+    framework_insight: Optional[str] = None
     verdict: str
 
 

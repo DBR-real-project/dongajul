@@ -26,6 +26,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from sentence_transformers import SentenceTransformer
 
+from .frameworks import find_relevant_frameworks, init_frameworks
 from .reporter import generate_report
 from .schemas import DiagnoseRequest, DiagnoseResponse, ReportResponse, SimilarArticle
 
@@ -48,6 +49,7 @@ _risk_model: Any = None
 _meta: pd.DataFrame | None = None
 _umap: pd.DataFrame | None = None
 _clusters: pd.DataFrame | None = None
+_cluster_risk_map: dict = {}
 
 
 def _risk_level(score: float) -> str:
@@ -60,10 +62,11 @@ def _risk_level(score: float) -> str:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _sbert, _faiss_index, _risk_model, _meta, _umap, _clusters
+    global _sbert, _faiss_index, _risk_model, _meta, _umap, _clusters, _cluster_risk_map
 
     print("[startup] SentenceTransformer (ko-sroberta, 768차원) 로드 중...")
     _sbert = SentenceTransformer("jhgan/ko-sroberta-multitask")
+    init_frameworks(_sbert)
 
     print("[startup] FAISS 인덱스 로드 중...")
     if (OUT_DIR / "faiss.index").exists():
@@ -111,6 +114,14 @@ async def lifespan(app: FastAPI):
     else:
         _clusters = None
         print(f"[startup] WARNING: cluster_info 파일 없음: {cluster_path}")
+
+    # 클러스터별 실패율 사전 계산 (3-factor 스코어링에 사용)
+    if _umap is not None and "cluster_id" in _umap.columns and "label" in _umap.columns:
+        for cid, grp in _umap.groupby("cluster_id"):
+            total = len(grp)
+            fail = int((grp["label"] == "failure").sum())
+            _cluster_risk_map[int(cid)] = round(fail / total, 4) if total > 0 else 0.35
+        print(f"[startup] cluster_risk_map 계산 완료: {len(_cluster_risk_map)}개 클러스터")
 
     article_count = len(_meta) if _meta is not None else 0
     cluster_count = len(_clusters) if _clusters is not None else 0
@@ -194,19 +205,23 @@ def diagnose(req: DiagnoseRequest):
     model_score = float(_model.predict_proba(q_emb)[0, fail_col])
 
     similar: list[SimilarArticle] = []
+    total_weight = 0.0
+    fail_weight = 0.0
+    max_sim = 0.0
 
     for rank, (sim, idx) in enumerate(zip(scores[0], ids[0]), start=1):
         if int(idx) < 0:
             continue
 
         row = _meta.iloc[int(idx)]
+        label = str(row.get("label_name", "") or "")
 
         similar.append(
             SimilarArticle(
                 rank=rank,
                 title=str(row.get("title", "") or ""),
                 url=str(row.get("url", "") or ""),
-                label=str(row.get("label_name", "") or ""),
+                label=label,
                 similarity=round(float(sim), 4),
                 summary=str(row.get("summary", "") or "") or None,
                 category=str(row.get("category", "") or "") or None,
@@ -215,35 +230,28 @@ def diagnose(req: DiagnoseRequest):
             )
         )
 
-    # 유사 사례 기반 failure 비율 (가중 평균: 유사도 높은 사례에 더 높은 가중치)
-    if similar:
-        total_sim = sum(a.similarity for a in similar)
-        if total_sim > 0:
-            case_score = sum(
-                a.similarity for a in similar if a.label == "failure"
-            ) / total_sim
-        else:
-            case_score = sum(1 for a in similar if a.label == "failure") / len(similar)
-    else:
-        case_score = 0.0
+        # 스코어링용 가중치 누적 (confidence 있으면 활용, 없으면 1.0)
+        conf = float(row.get("confidence", 1.0) or 1.0)
+        sim_f = float(sim)
+        w = sim_f * conf
+        total_weight += w
+        if label == "failure":
+            fail_weight += w
+        if sim_f > max_sim:
+            max_sim = sim_f
 
-    # 모델 점수(40%) + 사례 기반 점수(60%) 결합
-    risk_score = round(0.4 * model_score + 0.6 * case_score, 4)
-
+    # 쿼리 클러스터 / UMAP 좌표 계산 (스코어링 전에 먼저 확정)
     query_cluster_id: int | None = None
     query_umap_x: float | None = None
     query_umap_y: float | None = None
 
     if _umap is not None and "cluster_id" in _umap.columns:
         try:
+            from collections import Counter
             top_idx = [int(i) for i in ids[0].tolist() if int(i) >= 0]
             cluster_ids = _umap["cluster_id"].iloc[top_idx].tolist()
-
             if cluster_ids:
-                from collections import Counter
                 query_cluster_id = int(Counter(cluster_ids).most_common(1)[0][0])
-
-            # 유사 아티클 umap 좌표 평균 → 쿼리 포인트 근사
             if top_idx and "umap_x" in _umap.columns:
                 valid_idx = [i for i in top_idx if i < len(_umap)]
                 if valid_idx:
@@ -251,7 +259,18 @@ def diagnose(req: DiagnoseRequest):
                     query_umap_y = float(_umap["umap_y"].iloc[valid_idx].mean())
         except Exception as e:
             print(f"[/diagnose] 쿼리 클러스터/UMAP 계산 실패: {e}")
-            query_cluster_id = None
+
+    # ── 3-factor 리스크 스코어링 ─────────────────────────────
+    # ① confidence-weighted 유사 사례 실패 비율
+    case_score = fail_weight / total_weight if total_weight > 0 else 0.0
+
+    # ② 클러스터 기반 기준 리스크 (클러스터 평균 실패율)
+    cluster_risk = _cluster_risk_map.get(query_cluster_id, 0.35) if query_cluster_id is not None else 0.35
+
+    # ③ 유사도 신뢰도 보정 (max_sim < 0.65이면 0.5 방향으로 수축)
+    reliability = min(max_sim / 0.65, 1.0)
+    base_score = 0.35 * model_score + 0.45 * case_score + 0.20 * cluster_risk
+    risk_score = round(base_score * reliability + 0.5 * (1 - reliability), 4)
 
     return DiagnoseResponse(
         risk_score=round(risk_score, 4),
@@ -280,12 +299,28 @@ def report(req: DiagnoseRequest):
 
         articles_dict = [a.model_dump() for a in diag.similar_articles]
 
+        # 전략 프레임워크 컨텍스트 검색
+        framework_context = ""
+        if _sbert is not None:
+            try:
+                q_emb = _sbert.encode(
+                    [req.text],
+                    normalize_embeddings=True,
+                    convert_to_numpy=True,
+                ).astype(np.float32)
+                framework_context = find_relevant_frameworks(q_emb[0])
+                if framework_context:
+                    print(f"[/report] 프레임워크 컨텍스트 주입됨: {framework_context[:60]}...")
+            except Exception as fw_err:
+                print(f"[/report] 프레임워크 검색 실패: {fw_err}")
+
         start = time.time()
         raw = generate_report(
             strategy_text=req.text,
             risk_score=diag.risk_score,
             risk_level=diag.risk_level,
             similar_articles=articles_dict,
+            framework_context=framework_context,
         )
         print(f"[/report] GPT 리포트 완료: {time.time() - start:.2f}초")
 
