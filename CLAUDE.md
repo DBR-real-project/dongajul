@@ -26,6 +26,8 @@ DBR 성공/실패 사례 대조분석 기반 전략 리스크 진단 서비스.
 |------|------|------|
 | DBR_articles.csv | 11,273건 | 크롤링/DBR_articles.csv |
 | HBR_articles.csv | 2,062건 | 크롤링/HBR_articles.csv |
+| HBS_articles.csv | 2,116건 | 크롤링/HBS_articles.csv (HBS Working Knowledge, 영어) |
+| HBS_articles_ko.csv | 2,116건 | 크롤링/HBS_articles_ko.csv (title_ko/summary_ko/content_ko_summary 포함) |
 | NAVER JSON (final_news_*.json) | 55,465건 | 크롤링/naver/ (gitignore됨, 모델학습 전용) |
 
 컬럼: title, content, url, category, published_date, source, summary
@@ -185,8 +187,9 @@ ai_server/
 
 ---
 
-## 현재 상태 (2026-06-12 세션9 — 3가지 기획 기능 구현)
+## 현재 상태 (2026-06-12 세션10 — HBS 크롤링 + 번역)
 
+**HBS 크롤링 완료 (세션10)**: 2,116건 수집 → HBS_articles_ko.csv (title_ko/summary_ko/content_ko_summary 한국어 번역 전체 완료, 실패 0건)
 **NLP 파이프라인 전체 완료**: ① 전처리 → ② 라벨링 → ③ 임베딩+FAISS → ④ 리스크 모델 → ⑤ UMAP+K-means
 **v3 클러스터 완료**: 768차원 K-means → 12개 주제 기반 클러스터, DB 반영 완료 (cluster_id 1-12)
 **FastAPI ML 서비스 완료**: POST /diagnose, POST /report (GPT RAG), GET /health, GET /clusters
