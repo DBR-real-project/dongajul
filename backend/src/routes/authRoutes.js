@@ -23,7 +23,7 @@ router.get('/naver/callback', authController.naverCallback);
 // 토큰 재발급
 router.post('/refresh', authController.refresh);
 
-// 로그아웃 (서버 측 refresh token 무효화)
-router.post('/logout', authController.logout);
+// 로그아웃 (서버 측 refresh token 무효화, 인증 필수)
+router.post('/logout', require('../middlewares/auth').verifyToken, authController.logout);
 
 module.exports = router;

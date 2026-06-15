@@ -318,7 +318,7 @@ exports.refresh = async (req, res) => {
 
 // POST /api/auth/logout — refresh token 서버 측 무효화
 exports.logout = async (req, res) => {
-  const { user_id } = req.body;
+  const user_id = req.user?.user_id;
   if (user_id) {
     try {
       await clearRefreshToken(user_id);

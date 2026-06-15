@@ -116,12 +116,27 @@ async def lifespan(app: FastAPI):
         print(f"[startup] WARNING: cluster_info 파일 없음: {cluster_path}")
 
     # 클러스터별 실패율 사전 계산 (3-factor 스코어링에 사용)
-    if _umap is not None and "cluster_id" in _umap.columns and "label" in _umap.columns:
-        for cid, grp in _umap.groupby("cluster_id"):
-            total = len(grp)
-            fail = int((grp["label"] == "failure").sum())
-            _cluster_risk_map[int(cid)] = round(fail / total, 4) if total > 0 else 0.35
-        print(f"[startup] cluster_risk_map 계산 완료: {len(_cluster_risk_map)}개 클러스터")
+    # label 컬럼: 숫자(0=failure,1=success,2=neutral) 또는 텍스트("failure"/"success") 모두 지원
+    if _umap is not None and "cluster_id" in _umap.columns:
+        label_col = None
+        if "label_name" in _umap.columns:
+            label_col = "label_name"
+        elif "label" in _umap.columns:
+            label_col = "label"
+
+        if label_col:
+            sample_val = _umap[label_col].dropna().iloc[0] if len(_umap) > 0 else None
+            use_numeric = isinstance(sample_val, (int, float, np.integer, np.floating))
+
+            for cid, grp in _umap.groupby("cluster_id"):
+                total = len(grp)
+                if use_numeric:
+                    fail = int((grp[label_col] == 0).sum())
+                else:
+                    fail = int((grp[label_col] == "failure").sum())
+                _cluster_risk_map[int(cid)] = round(fail / total, 4) if total > 0 else 0.35
+            print(f"[startup] cluster_risk_map 계산 완료: {len(_cluster_risk_map)}개 클러스터 "
+                  f"(컬럼={label_col}, 타입={'numeric' if use_numeric else 'text'})")
 
     article_count = len(_meta) if _meta is not None else 0
     cluster_count = len(_clusters) if _clusters is not None else 0
@@ -210,7 +225,7 @@ def diagnose(req: DiagnoseRequest):
     max_sim = 0.0
 
     for rank, (sim, idx) in enumerate(zip(scores[0], ids[0]), start=1):
-        if int(idx) < 0:
+        if int(idx) < 0 or int(idx) >= len(_meta):
             continue
 
         row = _meta.iloc[int(idx)]

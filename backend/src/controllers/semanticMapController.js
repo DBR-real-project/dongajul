@@ -6,12 +6,15 @@ async function getSemanticMap(req, res) {
   try {
     const limit = req.query.limit || 2000;
 
-    const response = await axios.get(`${AI_SERVER_URL}/semantic-map`, {
-      params: { limit },
-      timeout: 30000,
-    });
+    const [mapRes, clustersRes] = await Promise.all([
+      axios.get(`${AI_SERVER_URL}/semantic-map`, { params: { limit }, timeout: 30000 }),
+      axios.get(`${AI_SERVER_URL}/clusters`, { timeout: 10000 }).catch(() => ({ data: [] })),
+    ]);
 
-    return res.status(200).json(response.data);
+    return res.status(200).json({
+      ...mapRes.data,
+      clusters: clustersRes.data,
+    });
   } catch (error) {
     console.error("[semantic-map] error:", error.message);
 
