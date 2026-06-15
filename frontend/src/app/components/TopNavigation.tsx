@@ -146,16 +146,18 @@ export function TopNavigation({
           <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
         </button>
 
+        {/* 💡 강제로 금색이 적용되도록 인라인 스타일(style 속성)을 추가한 버튼입니다. */}
         <button
-  onClick={() => onViewChange('subscription')}
-  className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-    darkMode
-      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:opacity-90'
-      : 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:opacity-90'
-  }`}
->
-  {language === 'ko' ? '구독' : 'Upgrade'}
-</button>
+          onClick={() => onViewChange('subscription')}
+          className="px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-md hover:opacity-90"
+          style={{
+            background: 'linear-gradient(to right, #C9A84B, #B58F31)',
+            border: '1px solid #B58F31',
+            color: '#162238'
+          }}
+        >
+          {language === 'ko' ? '구독' : 'Upgrade'}
+        </button>
 
         <button
           onClick={onToggleDarkMode}
