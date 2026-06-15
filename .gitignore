@@ -34,6 +34,11 @@ build/
 데이터처리/output/*.index
 데이터처리/output/*.txt
 
+# ── 크롤링 CSV 예외 (DBR 제외 — 190MB 초과) ─────────────────────────────────
+!크롤링/HBR_articles.csv
+!크롤링/HBS_articles.csv
+!크롤링/HBS_articles_ko.csv
+
 # ── 운영 파일 예외 (팀원 공유 필요, 각 파일 40MB 이내) ──────────────────────
 !데이터처리/output/umap_coords.parquet
 !데이터처리/output/cluster_info.parquet
