@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ArrowLeft, Shield, AlertTriangle, ExternalLink, Bell, User, TrendingUp, TrendingDown, Activity, ChevronRight } from 'lucide-react';
 import { DiagnosisData } from './DiagnosisResult';
 import { apiFetch } from '../utils/api';
+import { useArticleCount } from '../utils/articleCount';
 
 interface RiskAnalysisProps {
   onBack: () => void;
@@ -14,6 +15,7 @@ interface RiskAnalysisProps {
 }
 
 export function RiskAnalysis({ onBack, onArticleClick, onResultClick, onNotificationClick, onProfileClick, darkMode = false, language = 'ko' }: RiskAnalysisProps) {
+  const articleCount = useArticleCount();
   const [strategyText, setStrategyText] = useState('');
   const [result, setResult] = useState<DiagnosisData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -24,7 +26,7 @@ export function RiskAnalysis({ onBack, onArticleClick, onResultClick, onNotifica
       title: 'DBR 전략 리스크 분석기',
       runAnalysis: '분석 실행',
       riskIndex: '통합 전략 리스크 지수',
-      riskDesc: '13,335개 DBR · HBR 사례로 도출한 위험도입니다.',
+      riskDesc: '{articleCount}개 DBR · HBR 사례로 도출한 위험도입니다.',
       riskPossibility: '위험 가능성',
       industryAvg: '클러스터',
       industryGrade: '위험 등급',
@@ -37,7 +39,7 @@ export function RiskAnalysis({ onBack, onArticleClick, onResultClick, onNotifica
       title: 'DBR Strategy Risk Analyzer',
       runAnalysis: 'Run Analysis',
       riskIndex: 'Integrated Strategy Risk Index',
-      riskDesc: 'Risk derived from 13,335 DBR · HBR cases.',
+      riskDesc: 'Risk derived from {articleCount} DBR · HBR cases.',
       riskPossibility: 'Risk Probability',
       industryAvg: 'Cluster',
       industryGrade: 'Risk Level',
@@ -456,7 +458,7 @@ export function RiskAnalysis({ onBack, onArticleClick, onResultClick, onNotifica
         }`}>
           <span className={`text-xs mt-0.5 flex-shrink-0 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>⚠️</span>
           <p className={`text-xs leading-relaxed ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-            본 진단 결과는 DBR·HBR 13,335건 사례를 기반으로 AI가 생성한 <strong className={darkMode ? 'text-gray-400' : 'text-gray-500'}>참고용 자료</strong>입니다.
+            본 진단 결과는 DBR·HBR {articleCount}건 사례를 기반으로 AI가 생성한 <strong className={darkMode ? 'text-gray-400' : 'text-gray-500'}>참고용 자료</strong>입니다.
             실제 경영 의사결정 시 반드시 전문가 자문을 병행하시기 바라며, 본 서비스는 투자·법률·경영 결과에 대한 책임을 지지 않습니다.
           </p>
         </div>

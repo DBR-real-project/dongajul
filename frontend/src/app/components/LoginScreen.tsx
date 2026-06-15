@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useArticleCount } from '../utils/articleCount';
 
 interface LoginScreenProps {
   onLogin: (email: string, token: string) => void;
@@ -8,6 +9,7 @@ interface LoginScreenProps {
 }
 
 export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPassword }: LoginScreenProps) {
+  const articleCount = useArticleCount();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [keepLoggedIn, setKeepLoggedIn] = useState(false);
@@ -115,7 +117,7 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
           </h1>
           <p className="text-xl lg:text-2xl font-medium text-gray-300 mb-6 lg:mb-8 select-none">AI 전략 리스크 진단 플랫폼</p>
           <p className="text-base lg:text-lg text-blue-100/80 leading-relaxed font-light select-none">
-            DBR·HBR <span className="text-[#E5BA73] font-medium">13,335건 성공·실패 사례</span>를 분석해
+            DBR·HBR <span className="text-[#E5BA73] font-medium">{articleCount}건 성공·실패 사례</span>를 분석해
             <br className="hidden lg:block" />
             당신의 전략이 가진 <span className="text-[#E5BA73] font-medium">리스크를 정확히 진단</span>합니다.
           </p>

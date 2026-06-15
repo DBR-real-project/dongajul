@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ArrowRight, ArrowLeft, Shield, CheckCircle, Building2, Target, FileText, Loader2 } from 'lucide-react';
 import { DiagnosisData } from './DiagnosisResult';
 import { apiFetch } from '../utils/api';
+import { useArticleCount } from '../utils/articleCount';
 
 interface DiagnosisInterviewProps {
   onResultClick: (data: DiagnosisData) => void;
@@ -20,6 +21,7 @@ const STRATEGY_TYPES = [
 ];
 
 export function DiagnosisInterview({ onResultClick, darkMode = false }: DiagnosisInterviewProps) {
+  const articleCount = useArticleCount();
   const [step, setStep] = useState(1);
   const [industry, setIndustry] = useState('');
   const [customIndustry, setCustomIndustry] = useState('');
@@ -72,7 +74,7 @@ export function DiagnosisInterview({ onResultClick, darkMode = false }: Diagnosi
             </div>
             <div>
               <h1 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>전략 리스크 진단</h1>
-              <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>DBR·HBR 13,335건 사례 기반 AI 분석</p>
+              <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>DBR·HBR {articleCount}건 사례 기반 AI 분석</p>
             </div>
           </div>
           {/* Progress bar */}
@@ -251,7 +253,7 @@ export function DiagnosisInterview({ onResultClick, darkMode = false }: Diagnosi
         {/* 하단 설명 */}
         <div className={`mt-6 p-4 rounded-xl border ${darkMode ? 'bg-gray-900/30 border-gray-800' : 'bg-blue-50/50 border-blue-100'}`}>
           <p className={`text-xs leading-relaxed ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-            💡 <strong>동아줄 AI</strong>는 13,335건의 DBR·HBR 경영 사례를 SBERT 임베딩으로 분석하여 전략과 가장 유사한 성공·실패 사례를 탐색하고, MLP 분류기로 리스크 확률을 산출합니다.
+            💡 <strong>동아줄 AI</strong>는 {articleCount}건의 DBR·HBR 경영 사례를 SBERT 임베딩으로 분석하여 전략과 가장 유사한 성공·실패 사례를 탐색하고, MLP 분류기로 리스크 확률을 산출합니다.
           </p>
         </div>
       </div>
