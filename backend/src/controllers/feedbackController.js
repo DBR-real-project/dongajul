@@ -2,12 +2,13 @@ const feedbackRepository = require("../repositories/feedbackRepository");
 
 exports.createFeedback = async (req, res) => {
   try {
-    const { user_id, diagnosis_id, rating, opinion_text } = req.body;
+    const user_id = req.user?.user_id ?? null;
+    const { diagnosis_id, rating, opinion_text } = req.body;
 
     if (!user_id) {
       return res.status(400).json({
         success: false,
-        message: "user_id가 필요합니다.",
+        message: "인증이 필요합니다.",
       });
     }
 

@@ -64,7 +64,7 @@ export function RiskAnalysis({ onBack, onArticleClick, onResultClick, onNotifica
     try {
       const response = await apiFetch('/api/diagnose', {
         method: 'POST',
-        body: JSON.stringify({ text: strategyText, top_k: 5 }),
+        body: JSON.stringify({ text: strategyText, top_k: 5, user_id: JSON.parse(localStorage.getItem('user') || '{}').user_id || null }),
       });
 
       const data: DiagnosisData = await response.json();

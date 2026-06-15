@@ -236,7 +236,10 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
     if (!resultData && diagnosisId) {
       setLoading(true);
       apiFetch(`/api/diagnose/${diagnosisId}`)
-        .then((res) => res.json())
+        .then((res) => {
+          if (!res.ok) throw new Error(`${res.status}`);
+          return res.json();
+        })
         .then((json) => { setData(json); setLoading(false); })
         .catch(() => { setError('결과를 불러올 수 없습니다.'); setLoading(false); });
     }
