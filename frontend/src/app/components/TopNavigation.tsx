@@ -137,21 +137,6 @@ export function TopNavigation({
       </nav>
 
       <div className="flex flex-nowrap items-center gap-2">
-        <div
-          className={`px-3 py-1.5 ${
-            darkMode
-              ? 'bg-gradient-to-br from-gray-800/60 to-gray-850/60 border border-gray-700/50'
-              : 'bg-gradient-to-br from-gray-50 to-indigo-50 border border-gray-300/50'
-          } rounded-lg flex items-center gap-2`}
-        >
-          <span className={`text-xs font-bold ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            {language === 'ko' ? 'AI 사용량' : 'AI Usage'}
-          </span>
-          <span className="text-xs font-bold bg-gradient-to-r from-[#142755] to-indigo-600 bg-clip-text text-transparent">
-            -
-          </span>
-        </div>
-
         <button
           onClick={onNotificationClick}
           className={`p-2 ${darkMode ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-600'} rounded-lg transition-colors relative`}

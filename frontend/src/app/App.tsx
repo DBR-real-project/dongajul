@@ -331,9 +331,10 @@ export default function App() {
             <SubscriptionPage
               onStartBasic={() => setCurrentView('dashboard')}
               onSubscribe={() => setCurrentView('checkout')}
+              darkMode={darkMode}
             />
           ) : currentView === 'checkout' ? (
-            <CheckoutPage onBack={() => setCurrentView('subscription')} onSuccess={() => setCurrentView('dashboard')} />
+            <CheckoutPage onBack={() => setCurrentView('subscription')} onSuccess={() => setCurrentView('dashboard')} darkMode={darkMode} />
           ) : (
             <EnterpriseDashboard
               darkMode={darkMode}

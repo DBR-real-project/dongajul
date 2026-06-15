@@ -5,6 +5,7 @@ import {
   Clock, BarChart2, ChevronRight, Check
 } from 'lucide-react';
 import { apiFetch } from '../utils/api';
+import { useArticleCount } from '../utils/articleCount';
 
 export interface SimilarArticle {
   rank: number;
@@ -167,6 +168,7 @@ function CaseCard({
 }
 
 export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap, darkMode = false }: DiagnosisResultProps) {
+  const articleCount = useArticleCount();
   const [data, setData] = useState<DiagnosisData | null>(resultData || null);
   const [loading, setLoading] = useState(!resultData && !!diagnosisId);
   const [error, setError] = useState('');
@@ -273,7 +275,7 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
                 전략 리스크 진단 결과
               </h1>
               <p className={`text-xs mt-0.5 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-                DBR · HBR 13,335건 사례 기반 분석
+                DBR · HBR {articleCount}건 사례 기반 분석
               </p>
             </div>
           </div>
@@ -323,7 +325,7 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
                 통합 전략 리스크 지수
               </h2>
               <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                13,335개 사례 기반 · SBERT + MLP 모델
+                {articleCount}개 사례 기반 · SBERT + MLP 모델
               </p>
             </div>
 
@@ -617,7 +619,7 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
           }`}>
             <span className={`text-xs mt-0.5 flex-shrink-0 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>⚠️</span>
             <p className={`text-xs leading-relaxed ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-              본 진단 결과는 DBR·HBR 13,335건 사례를 기반으로 AI가 생성한 <strong className={darkMode ? 'text-gray-400' : 'text-gray-500'}>참고용 자료</strong>입니다.
+              본 진단 결과는 DBR·HBR {articleCount}건 사례를 기반으로 AI가 생성한 <strong className={darkMode ? 'text-gray-400' : 'text-gray-500'}>참고용 자료</strong>입니다.
               실제 경영 의사결정 시 반드시 전문가 자문을 병행하시기 바라며, 본 서비스는 투자·법률·경영 결과에 대한 책임을 지지 않습니다.
             </p>
           </div>

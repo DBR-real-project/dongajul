@@ -1,5 +1,6 @@
 import { ArrowLeft } from 'lucide-react';
 import React, { useState } from 'react';
+import { useArticleCount } from '../utils/articleCount';
 
 interface SignupScreenProps {
   onSignup: (email: string, token: string) => void;
@@ -7,6 +8,7 @@ interface SignupScreenProps {
 }
 
 export function SignupScreen({ onSignup, onBackToLogin }: SignupScreenProps) {
+  const articleCount = useArticleCount();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -64,7 +66,7 @@ export function SignupScreen({ onSignup, onBackToLogin }: SignupScreenProps) {
         </h1>
         <p className="text-2xl font-medium text-gray-300 mb-8">AI 전략 리스크 진단 플랫폼</p>
         <p className="text-lg text-blue-100/90 max-w-xl leading-relaxed font-light">
-          13,335건 <span className="text-[#E5BA73] font-medium">성공·실패 사례</span>를 바탕으로
+          {articleCount}건 <span className="text-[#E5BA73] font-medium">성공·실패 사례</span>를 바탕으로
           <br />
           당신의 전략 리스크를 <span className="text-[#E5BA73] font-medium">AI가 정확히 진단</span>합니다.
         </p>

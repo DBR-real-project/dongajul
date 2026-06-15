@@ -1,4 +1,5 @@
 import { Shield, TrendingUp, AlertTriangle, ArrowRight, BarChart2, Database, Zap, ChevronRight, CheckCircle } from 'lucide-react';
+import { useArticleCount } from '../utils/articleCount';
 import { BannerAd } from './BannerAd';
 
 interface EnterpriseDashboardProps {
@@ -10,15 +11,17 @@ interface EnterpriseDashboardProps {
 }
 
 export function EnterpriseDashboard({ darkMode = false, onStartDiagnosis, onViewInsights }: EnterpriseDashboardProps) {
+  const totalArticles = useArticleCount();
+
   const stats = [
-    { label: '분석 아티클', value: '13,335', unit: '건', icon: Database, color: 'blue' },
+    { label: '분석 아티클', value: totalArticles || '...', unit: '건', icon: Database, color: 'blue' },
     { label: '진단 정확도', value: '97.7', unit: '%', icon: TrendingUp, color: 'green' },
     { label: '평균 진단 시간', value: '< 3', unit: '초', icon: Zap, color: 'yellow' },
     { label: '리스크 감지율', value: '87', unit: '%', icon: Shield, color: 'red' },
   ];
 
   const features = [
-    { icon: Shield, title: '리스크 정밀 진단', desc: '13,335건의 DBR·HBR 성공·실패 사례와 코사인 유사도 기반으로 전략 리스크를 정량 점수화합니다.', color: 'indigo' },
+    { icon: Shield, title: '리스크 정밀 진단', desc: `${totalArticles ?? '...'}건의 DBR·HBR 성공·실패 사례와 코사인 유사도 기반으로 전략 리스크를 정량 점수화합니다.`, color: 'indigo' },
     { icon: AlertTriangle, title: '실패 패턴 대조 분석', desc: '단순 성공 사례 나열이 아닌, 과거 실패 경로와의 대조를 통해 회피 전략을 즉각 제안합니다.', color: 'red' },
     { icon: BarChart2, title: '시맨틱 인사이트 맵', desc: 'UMAP 기반 2D 벡터 공간에 전략 위치를 시각화해 성공 군집과의 거리를 한눈에 파악합니다.', color: 'green' },
   ];
@@ -53,7 +56,7 @@ export function EnterpriseDashboard({ darkMode = false, onStartDiagnosis, onView
         </div>
         <div className="relative max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/10 backdrop-blur rounded-full text-xs font-semibold text-[#E5BA73] mb-6 border border-white/10">
-            <Zap className="w-3.5 h-3.5" /> DBR · HBR 13,335건 사례 기반 AI 진단
+            <Zap className="w-3.5 h-3.5" /> DBR · HBR {totalArticles ?? '...'}건 사례 기반 AI 진단
           </div>
           <h1 className="text-5xl font-extrabold mb-4 leading-tight">
             당신의 전략,<br /><span className="text-[#E5BA73]">실패할 확률</span>을 알고 계신가요?

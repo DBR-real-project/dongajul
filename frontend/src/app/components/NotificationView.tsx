@@ -5,7 +5,7 @@
  * - 레이아웃 정형화: 대시보드 시스템과 라운딩 규격 및 폰트 가독성 동적 매칭 완료 (생략 없음)
  */
 
-import { ArrowLeft, Bell, TrendingUp, AlertTriangle, Info, CheckCircle, Crown } from 'lucide-react';
+import { ArrowLeft, Bell, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
 import { apiFetch } from '../utils/api';
 import { useState, useEffect } from 'react';
 import { LucideIcon } from 'lucide-react';
@@ -36,7 +36,6 @@ interface Notification {
 export function NotificationView({ onBack, onNavigate, darkMode = false }: NotificationViewProps) {
   const [activeNotifications, setActiveNotifications] = useState<Notification[]>([]);
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [toast, setToast] = useState<{ show: boolean; message: string }>({ show: false, message: '' });
 
   // ─────────────────────────────────────────────
@@ -121,19 +120,6 @@ export function NotificationView({ onBack, onNavigate, darkMode = false }: Notif
     } catch (err) {
       triggerToast('처리 중 오류가 발생했습니다.');
     }
-  };
-
-  const handleUpgrade = () => {
-    if (onNavigate) {
-      onNavigate('subscription');
-      return;
-    }
-    setShowUpgradeModal(true);
-  };
-
-  const handleConfirmUpgrade = () => {
-    setShowUpgradeModal(false);
-    triggerToast('업그레이드 완료되었습니다! 👑');
   };
 
   return (
@@ -222,29 +208,6 @@ export function NotificationView({ onBack, onNavigate, darkMode = false }: Notif
             </div>
           ))}
 
-          {/* 통합 브랜드 테마 프리미엄 솔루션 프로모션 배너 */}
-          <div className={`${darkMode ? 'bg-gradient-to-r from-slate-900 via-[#0B2F61]/20 to-indigo-950/30 border-purple-900/40' : 'bg-gradient-to-r from-[#0B2F61] via-[#1E437A] to-[#2B4B7C] border-slate-200'} p-6 rounded-2xl border-l-4 border-l-[#C8994B] shadow-lg relative overflow-hidden`}>
-            <div className="flex items-start gap-4 relative z-10">
-              <div className="w-9 h-9 bg-gradient-to-br from-[#C8994B] to-[#E3C28B] flex items-center justify-center flex-shrink-0 rounded-xl shadow-md">
-                <Crown className="w-4 h-4 text-[#0B2F61]" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-1.5 flex-wrap gap-2">
-                  <h3 className="text-white font-extrabold text-sm tracking-wide">STRAND 45 GOLD 비즈니스 라이선스</h3>
-                  <span className="text-[9px] font-bold bg-[#C8994B] text-white px-2 py-0.5 rounded-md uppercase tracking-wider">PREMIUM</span>
-                </div>
-                <p className="text-xs text-slate-200 mb-4 leading-relaxed font-medium">
-                  제한 없는 최고 권위 전략 매트릭스 도출, AI 기반 고밀도 마이닝 연동 및 정밀 리스크 임계값 경보 제어 시스템을 경험해 보세요.
-                </p>
-                <button
-                  onClick={handleUpgrade}
-                  className="w-full px-4 py-2.5 bg-white hover:bg-slate-100 text-[#0B2F61] text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer transform active:scale-95"
-                >
-                  지금 업그레이드 활성화
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -292,44 +255,6 @@ export function NotificationView({ onBack, onNavigate, darkMode = false }: Notif
         </div>
       )}
 
-      {/* 프리미엄 플랜 업그레이드 모달 */}
-      {showUpgradeModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[150] p-4 animate-in fade-in duration-200">
-          <div className={`${darkMode ? 'bg-[#0A0E1A] border border-gray-800' : 'bg-white'} rounded-2xl max-w-md w-full shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150`}>
-            <div className="bg-gradient-to-r from-[#0B2F61] to-[#3B547E] px-6 py-5 border-b border-[#0B2F61]/20">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <Crown className="w-5 h-5 text-[#C8994B] animate-pulse" />
-                  <h2 className="text-sm font-bold text-white tracking-tight">STRAND 45 GOLD 라이선스 구독</h2>
-                </div>
-                <button onClick={() => setShowUpgradeModal(false)} className="text-white/80 hover:text-white text-lg font-bold">&times;</button>
-              </div>
-            </div>
-            <div className="p-6">
-              <div className="text-center mb-6">
-                <div className="text-3xl font-black mb-1">
-                  <span className={darkMode ? 'text-blue-400' : 'text-[#0B2F61]'}>₩9,900</span>
-                </div>
-                <p className={`text-xs font-bold ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>월 정기 엔터프라이즈 에디션</p>
-              </div>
-              <div className="flex gap-3">
-                <button 
-                  onClick={() => setShowUpgradeModal(false)} 
-                  className={`flex-1 px-4 py-2.5 text-xs font-bold rounded-xl ${darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'} transition-colors`}
-                >
-                  나중에 하기
-                </button>
-                <button 
-                  onClick={handleConfirmUpgrade} 
-                  className="flex-1 px-4 py-2.5 text-xs font-bold bg-gradient-to-r from-[#0B2F61] via-[#1E437A] to-[#C8994B] text-white rounded-xl shadow-md hover:opacity-95 transition-all transform active:scale-95"
-                >
-                  구독 시작하기
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

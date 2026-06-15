@@ -6,10 +6,9 @@ exports.getArticleStats = async (req, res) => {
     const [[countRow]] = await db.execute(`SELECT COUNT(*) AS total_articles FROM articles`);
     const [[labelRows]] = await db.execute(`
       SELECT
-        SUM(CASE WHEN al.label = 'success' THEN 1 ELSE 0 END)  AS success_count,
-        SUM(CASE WHEN al.label = 'failure' THEN 1 ELSE 0 END)  AS failure_count
-      FROM articles a
-      LEFT JOIN article_labels al ON a.article_id = al.article_id
+        COUNT(DISTINCT CASE WHEN label = 'success' THEN article_id END) AS success_count,
+        COUNT(DISTINCT CASE WHEN label = 'failure' THEN article_id END) AS failure_count
+      FROM article_labels
     `);
     const [[clusterRow]] = await db.execute(`SELECT COUNT(*) AS cluster_count FROM clusters`);
 
