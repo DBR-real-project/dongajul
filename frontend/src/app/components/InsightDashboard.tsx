@@ -328,27 +328,7 @@ export function InsightDashboard({ darkMode = false, onArticleClick, onShowSeman
               <h3 className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>성공·실패 Top 5 카테고리</h3>
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart
-                  data={[
-                    ...statsData.category_dist
-                      .slice()
-                      .sort((a, b) => b.success - a.success)
-                      .slice(0, 5)
-                      .map(c => ({ category: c.category, value: c.success, type: '성공' })),
-                  ].concat(
-                    statsData.category_dist
-                      .slice()
-                      .sort((a, b) => b.failure - a.failure)
-                      .slice(0, 5)
-                      .map(c => ({ category: c.category, value: c.failure, type: '실패' }))
-                  ).reduce((acc: Array<{category: string; 성공?: number; 실패?: number}>, cur) => {
-                    const existing = acc.find(x => x.category === cur.category);
-                    if (existing) {
-                      existing[cur.type as '성공' | '실패'] = cur.value;
-                    } else {
-                      acc.push({ category: cur.category, [cur.type]: cur.value });
-                    }
-                    return acc;
-                  }, []).sort((a, b) => ((b['성공'] || 0) + (b['실패'] || 0)) - ((a['성공'] || 0) + (a['실패'] || 0))).slice(0, 5)}
+                  data={statsData.category_dist.slice(0, 5).map(c => ({ category: c.category, 성공: c.success, 실패: c.failure }))}
                   layout="vertical"
                   margin={{ left: 8, right: 16 }}
                 >
