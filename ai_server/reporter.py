@@ -245,14 +245,18 @@ def generate_report(
     if framework_context and framework_context.strip():
         fw_section = f"[관련 전략 프레임워크 참고]\n{framework_context}"
 
-    result = chain.invoke({
-        "strategy_text": strategy_text,
-        "risk_score": f"{risk_score:.2f}",
-        "risk_level": risk_level,
-        "k": min(len(similar_articles), 3),
-        "similar_cases": _format_similar_cases(similar_articles),
-        "framework_section": fw_section,
-    })
+    try:
+        result = chain.invoke({
+            "strategy_text": strategy_text,
+            "risk_score": f"{risk_score:.2f}",
+            "risk_level": risk_level,
+            "k": min(len(similar_articles), 3),
+            "similar_cases": _format_similar_cases(similar_articles),
+            "framework_section": fw_section,
+        })
+    except Exception as e:
+        print(f"[reporter] GPT 호출 실패, 기본값 반환: {e}")
+        result = {}
 
     if not isinstance(result, dict):
         result = {}

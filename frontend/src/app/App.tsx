@@ -16,6 +16,7 @@ import { CompareView } from './components/CompareView';
 import { SemanticMap } from './components/SemanticMap';
 import { SubscriptionPage } from './components/SubscriptionPage';
 import { CheckoutPage } from './components/CheckoutPage';
+import { AIChatbot } from './components/AIChatbot';
 
 export type ViewType =
   | 'dashboard'
@@ -248,6 +249,8 @@ export default function App() {
         onNotificationClick={() => setCurrentView('notifications')}
         onLogout={handleLogout}
       />
+
+      <AIChatbot darkMode={darkMode} />
 
       <div className="flex-1 flex overflow-hidden">
         <main className="flex-1 overflow-hidden">
