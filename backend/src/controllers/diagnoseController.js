@@ -206,6 +206,36 @@ async function saveToDb(inputText, aiData, userId) {
   }
 }
 
+// POST /api/diagnose/global — HBS 해외 사례 조회 (DB 저장 없음)
+exports.diagnoseGlobal = async (req, res) => {
+  const { text, top_k = 5 } = req.body;
+
+  if (!text || !String(text).trim()) {
+    return res.status(400).json({ error: '전략 텍스트를 입력해주세요.' });
+  }
+
+  try {
+    const aiResponse = await axios.post(
+      `${AI_SERVER_URL}/diagnose/global`,
+      { text: String(text).trim(), top_k },
+      { timeout: AI_TIMEOUT }
+    );
+    return res.json(aiResponse.data);
+  } catch (err) {
+    console.error('[diagnoseGlobal] 오류:', err.message);
+    if (err.code === 'ECONNREFUSED') {
+      return res.status(503).json({ error: 'AI 서버에 연결할 수 없습니다.' });
+    }
+    if (err.response) {
+      return res.status(err.response.status).json({
+        error: 'AI 서버 /diagnose/global 호출 실패',
+        detail: err.response.data,
+      });
+    }
+    return res.status(500).json({ error: '해외 사례 조회 실패', detail: err.message });
+  }
+};
+
 // GET /api/diagnose/:id — 저장된 진단 결과 조회
 exports.getDiagnoseById = async (req, res) => {
   const { id } = req.params;

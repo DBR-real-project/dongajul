@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   ArrowLeft, Shield, AlertTriangle, ExternalLink,
   TrendingDown, TrendingUp, Activity, Tag, Lightbulb,
-  Clock, BarChart2, ChevronRight, Check
+  Clock, BarChart2, ChevronRight, Check, Globe, Loader2
 } from 'lucide-react';
 import { apiFetch } from '../utils/api';
 import { useArticleCount } from '../utils/articleCount';
@@ -178,9 +178,31 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
+  const [globalCases, setGlobalCases] = useState<SimilarArticle[]>([]);
+  const [globalLoading, setGlobalLoading] = useState(false);
+  const [globalFetched, setGlobalFetched] = useState(false);
+
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleFetchGlobal = async () => {
+    if (!data?.input_text || globalLoading || globalFetched) return;
+    setGlobalLoading(true);
+    try {
+      const res = await apiFetch('/api/diagnose/global', {
+        method: 'POST',
+        body: JSON.stringify({ text: data.input_text, top_k: 5 }),
+      });
+      const json = await res.json();
+      setGlobalCases(json.similar_articles || []);
+      setGlobalFetched(true);
+    } catch {
+      showToast('해외 사례를 불러올 수 없습니다.');
+    } finally {
+      setGlobalLoading(false);
+    }
   };
 
   const handleSubmitFeedback = async () => {
@@ -460,6 +482,117 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
               </div>
             </section>
           )}
+
+          {/* ── 해외 사례 CTA ── */}
+          <div className={`rounded-2xl border-2 border-dashed overflow-hidden ${
+            darkMode ? 'border-indigo-500/30 bg-indigo-500/5' : 'border-indigo-200 bg-indigo-50/60'
+          }`}>
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className={`p-2 rounded-xl ${darkMode ? 'bg-indigo-500/15' : 'bg-indigo-100'}`}>
+                  <Globe className={`w-5 h-5 ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`} />
+                </div>
+                <div>
+                  <h3 className={`text-base font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    해외에서는 어떤 사례가 있을까요?
+                  </h3>
+                  <p className={`text-xs mt-0.5 ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>
+                    Harvard Business School · HBR 글로벌 케이스 기반
+                  </p>
+                </div>
+              </div>
+              <p className={`text-sm leading-relaxed mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                동일한 전략을 해외 기업은 어떻게 실행했을까요? HBS 케이스와 HBR 아티클에서 유사 사례를 찾아드립니다.
+              </p>
+
+              {!globalFetched ? (
+                <button
+                  onClick={handleFetchGlobal}
+                  disabled={globalLoading}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all ${
+                    darkMode
+                      ? 'bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-50'
+                      : 'bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50'
+                  }`}
+                >
+                  {globalLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      해외 사례 분석 중...
+                    </>
+                  ) : (
+                    <>
+                      <Globe className="w-4 h-4" />
+                      해외 사례 분석하기
+                      <ChevronRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              ) : globalCases.length === 0 ? (
+                <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                  유사한 해외 사례를 찾지 못했습니다.
+                </p>
+              ) : null}
+            </div>
+
+            {globalFetched && globalCases.length > 0 && (
+              <div className={`border-t px-6 py-5 space-y-3 ${darkMode ? 'border-indigo-500/20' : 'border-indigo-100'}`}>
+                <p className={`text-xs font-semibold uppercase tracking-widest mb-3 ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>
+                  HBS · HBR 유사 사례 Top {globalCases.length}
+                </p>
+                {globalCases.map((a) => (
+                  <a
+                    key={a.rank}
+                    href={a.url || '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`group flex items-start gap-3 p-4 rounded-xl transition-all ${
+                      darkMode
+                        ? 'bg-gray-800/50 hover:bg-gray-800'
+                        : 'bg-white hover:shadow-sm border border-indigo-100'
+                    }`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                        <span className={`px-2 py-0.5 text-xs font-bold rounded-md ${
+                          darkMode ? 'bg-indigo-500/15 text-indigo-300' : 'bg-indigo-100 text-indigo-700'
+                        }`}>
+                          HBS · #{a.rank}
+                        </span>
+                        <span className={`text-xs font-medium ${
+                          a.label === 'success'
+                            ? darkMode ? 'text-green-400' : 'text-green-600'
+                            : a.label === 'failure'
+                              ? darkMode ? 'text-red-400' : 'text-red-600'
+                              : darkMode ? 'text-gray-400' : 'text-gray-500'
+                        }`}>
+                          유사도 {Math.round(a.similarity * 100)}%
+                        </span>
+                        {a.category && (
+                          <span className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                            {a.category}
+                          </span>
+                        )}
+                      </div>
+                      <p className={`text-sm font-semibold leading-snug line-clamp-2 ${
+                        darkMode ? 'text-gray-200' : 'text-gray-800'
+                      }`}>
+                        {a.title}
+                      </p>
+                      {a.summary && (
+                        <p className={`text-xs mt-1 leading-relaxed line-clamp-2 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                          {a.summary}
+                        </p>
+                      )}
+                    </div>
+                    <ExternalLink className={`w-4 h-4 flex-shrink-0 mt-0.5 ${
+                      darkMode ? 'text-gray-600 group-hover:text-indigo-400' : 'text-gray-300 group-hover:text-indigo-500'
+                    } transition-colors`} />
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* GPT AI 진단 리포트 */}
           {data.report && (
