@@ -187,12 +187,12 @@ ai_server/
 
 ---
 
-## 현재 상태 (2026-06-12 세션10 — HBS 크롤링 + 번역)
+## 현재 상태 (2026-06-16 세션12 — InsightDashboard 4개 차트 + DiagnosisResult 키워드 맵)
 
 **HBS 크롤링 완료 (세션10)**: 2,116건 수집 → HBS_articles_ko.csv (title_ko/summary_ko/content_ko_summary 한국어 번역 전체 완료, 실패 0건)
 **NLP 파이프라인 전체 완료**: ① 전처리 → ② 라벨링 → ③ 임베딩+FAISS → ④ 리스크 모델 → ⑤ UMAP+K-means
 **v3 클러스터 완료**: 768차원 K-means → 12개 주제 기반 클러스터, DB 반영 완료 (cluster_id 1-12)
-**FastAPI ML 서비스 완료**: POST /diagnose, POST /report (GPT RAG), GET /health, GET /clusters
+**FastAPI ML 서비스 완료**: POST /diagnose, POST /report (GPT RAG), POST /diagnose/global (HBS 해외 사례), GET /health, GET /clusters
 **RAG 완료**: FAISS 유사 사례 검색 → GPT few-shot 리포트 생성 (reporter.py)
 **JWT Refresh Token 완료**: Access 15분 / Refresh 7일, 자동 재발급
 **카카오 로그인 복구 완료**: charset 버그 + JWT fallback 처리
@@ -202,6 +202,19 @@ ai_server/
 - ① 리스크 스코어 3-factor 고도화: model(35%) + case(45%,신뢰도 가중) + cluster(20%) × reliability 보정
 - ② GPT 리포트 전문화: strategy_analysis + risk_details + framework_insight 섹션 추가
 - ③ 비즈니스 전략 프레임워크 KB: 12개 프레임워크(Porter/블루오션/린스타트업 등) SBERT 임베딩 → 관련 프레임워크 자동 주입
+**HBS 해외모드 완료 (세션11)**: DiagnosisResult 하단 "해외에서는 어떤 사례가 있을까요?" 버튼 → `/api/diagnose/global` → ai_server HBS 전용 FAISS → 5개 영문 사례 인디고 카드 표시
+**기사 비교 기능 실제 구현 완료 (세션11)**: CompareView 하드코딩(전환율/ROI/성장률) → 실제 데이터 기반 차트로 전면 교체
+- 바 차트: 리스크지수 / 정보신뢰도(출처별) / 사례최신성(발행연도) (0-100)
+- 레이더 차트: 전략성공도 / 정보신뢰도 / 최신성 / 리스크수준 / 내용충실도 (5개 차원)
+- 테이블: 출처·발행일·원문링크 추가
+- handleInsightCompare: label→한국어 status 변환 버그 수정 (success→성공, failure→실패)
+- LoginScreen: 비밀번호 찾기 버튼 제거
+**인사이트 대시보드 4개 차트 완료 (세션12)**: `/api/articles/stats` 확장 + InsightDashboard 차트 섹션 추가
+- 파이차트: 성공·실패·기타 비율 (PieChart 도넛형)
+- 가로 바차트: 카테고리별 성공·실패 분포 (상위 8개)
+- 라인차트: 연도별 사례 트렌드 (2015~2026)
+- 가로 바차트: Top5 성공·실패 카테고리 복합 (articles DB에 데이터 있을 때만 표시)
+**DiagnosisResult 키워드 맵 완료 (세션12)**: 유사 사례의 카테고리+키워드 빈도 집계 → 크기별 CSS 태그 클라우드 ("전략 키워드 맵" 섹션)
 
 ---
 
@@ -359,6 +372,60 @@ ai_server/
 
 ---
 
+### 세션11 (2026-06-16) — HBS 해외모드 + 비교 기능 실제 구현
+
+**24. LoginScreen 비밀번호 찾기 버튼 제거 (`frontend/src/app/components/LoginScreen.tsx`)**
+- `onForgotPassword` 렌더 블록 삭제, `justify-between` → `flex`
+
+**25. HBS 해외모드 (`ai_server/main.py`, `ai_server/schemas.py`, `backend/...`, `DiagnosisResult.tsx`)**
+- `GlobalCasesResponse` 스키마 추가
+- ai_server startup 시 `HBS_embeddings.npy` → `_faiss_hbs` IndexFlatIP 동적 빌드
+- `POST /diagnose/global` 엔드포인트 (DB 저장 없음, HBS 전용 FAISS 검색)
+- backend: `diagnoseGlobal` 컨트롤러 + `/api/diagnose/global` 라우트 추가
+- DiagnosisResult: 실패 사례 카드 아래 "해외에서는 어떤 사례가 있을까요?" 버튼 → 클릭 시 HBS 5개 사례 인디고 카드 표시
+
+**26. 기사 비교 기능 실제 구현 (`CompareView.tsx`, `App.tsx`)**
+- App.tsx `CompareItem` 인터페이스: `label?`, `source?`, `url?`, `published_at?` 추가
+- `handleInsightCompare`: `label → '성공'/'실패'/'중립'` 한국어 변환, `riskLevel` label 기반 도출
+- CompareView 바 차트: 전환율/ROI/성장률 가짜값 → **리스크지수/정보신뢰도/사례최신성** (실제 데이터)
+- CompareView 레이더 차트: **전략성공도/정보신뢰도/최신성/리스크수준/내용충실도** 5개 실제 차원
+- CompareView 테이블: 출처·카테고리·발행일·원문링크 행 추가
+- 결론 텍스트: `statusLabel()` 헬퍼로 정확 분기 (영어 label 비교 버그 해결)
+
+---
+
+### 세션12 (2026-06-16) — InsightDashboard 차트 + DiagnosisResult 키워드 맵
+
+**27. `/api/articles/stats` API 확장 (`backend/src/controllers/articleController.js`)**
+- 기존 4개 항목(total/success/failure/cluster)에 `yearly_trend`, `category_dist` 추가
+- `yearly_trend`: YEAR(published_at) GROUP BY + label → `{ year, success, failure }[]` (2015~2026)
+- `category_dist`: 카테고리별 성공/실패 수 집계 → `{ category, success, failure, total }[]` 상위 8개
+
+**28. InsightDashboard 4개 차트 추가 (`frontend/src/app/components/InsightDashboard.tsx`)**
+- Recharts import 추가: PieChart/Pie/Cell, LineChart/Line, CartesianGrid + BarChart/Bar/XAxis/YAxis/Tooltip/Legend/ResponsiveContainer
+- `StatsData` 인터페이스에 `yearly_trend`, `category_dist` 필드 추가
+- KPI 카드 아래 2×2 그리드 차트 섹션 추가 (데이터 있을 때만 표시):
+  - 파이차트 (도넛형): 성공·실패·기타 비율
+  - 가로 바차트: 카테고리별 성공·실패 분포 (상위 8)
+  - 라인차트: 연도별 성공·실패 트렌드 (2015~2026)
+  - 가로 바차트: Top5 카테고리 성공·실패 복합 비교
+
+**29. DiagnosisResult 전략 키워드 맵 추가 (`frontend/src/app/components/DiagnosisResult.tsx`)**
+- 유사 사례(similar_articles)의 category + source + data.keywords 빈도 집계 (최대 20개)
+- 빈도 비율별 4단계 font-size + 색상 (text-xl → text-xs) CSS 태그 클라우드
+- "핵심 키워드" 섹션 바로 아래, 유사 사례 섹션 위에 "전략 키워드 맵" 삽입
+
+**30. HBS DB 임포트 + ai_server 메인 FAISS 업그레이드 (세션12)**
+- `import_hbs_to_db.py` buffered=True 버그 수정 후 실행 → HBS 2,116건 articles/article_labels DB 임포트
+- `import_articles_to_db.py`도 동일 버그 수정 완료
+- 날짜 파싱 버그 수정: `'2024. 7-8월'` 같은 비정형 날짜 → NULL 처리 (regex YYYY-MM-DD 검증 추가)
+- 누락 HBR Korea 1,586건 직접 삽입 완료 → 최종 articles 15,451건 (DBR 11,273 + HBR 2,062 + HBS 2,116)
+- `ai_server/main.py` 메인 FAISS: `faiss.index`(13,335건) → `faiss_with_hbs.index`(15,451건) 우선 로드
+- `ai_server/main.py` 메타데이터: `articles_meta.parquet` → `articles_meta_with_hbs.parquet` 우선 로드
+- 결과: 일반 `/diagnose`에서도 HBS 사례 포함 검색 (기존 HBS 전용 `/diagnose/global`은 유지)
+
+---
+
 ## ⚠️ 주의사항
 - `npm run build`는 VM에서 dist 폴더 권한 오류(EPERM) — Windows에서 `dist` 폴더 삭제 후 빌드
 - DB에 `article_vectors.umap_x/y` 데이터 있어야 시맨틱 맵 점들 표시됨
@@ -370,6 +437,8 @@ ai_server/
 
 ### 팀원 할당
 - **`python 데이터처리/import_articles_to_db.py` 실행** — DBR+HBR 13,335건을 articles/article_labels 테이블에 임포트 (한 번만 실행하면 됨)
+- **HBS 파이프라인 실행** (순서대로): `preprocess_hbs.py` → `label_hbs.py` → `embed_hbs.py` → `import_hbs_to_db.py`
+  → 완료 후 ai_server 재시작 시 HBS 전용 FAISS 자동 로드됨
 - ~~`python 데이터처리/import_umap_to_db.py` 실행~~ → **v3로 교체: `import_umap_to_db_v3.py` 실행 완료**
 - ~~`CheckoutPage.tsx` alert → toast~~ → 팀원 완료 ✅
 - ~~`BannerAd.tsx` alert~~ → 세션8 완료 ✅

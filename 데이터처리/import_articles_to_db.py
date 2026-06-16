@@ -61,15 +61,17 @@ def _safe_str(val, max_len: int | None = None) -> str | None:
     return s[:max_len] if max_len else s
 
 
+_DATE_RE = __import__('re').compile(r'^\d{4}-\d{2}-\d{2}$')
+
 def _safe_date(val) -> str | None:
     if val is None or (isinstance(val, float) and pd.isna(val)):
         return None
     s = str(val).strip()[:10]
-    return s if len(s) == 10 else None
+    return s if _DATE_RE.match(s) else None
 
 
 def import_articles(conn, df: pd.DataFrame) -> None:
-    cursor = conn.cursor()
+    cursor = conn.cursor(buffered=True)
 
     # 기존 url 목록 캐싱 (재실행 시 중복 방지)
     cursor.execute("SELECT url FROM articles WHERE url IS NOT NULL")
@@ -131,8 +133,8 @@ def import_articles(conn, df: pd.DataFrame) -> None:
                     cursor.execute(
                         """
                         INSERT INTO article_labels
-                            (article_id, label, label_method, confidence, created_at)
-                        VALUES (%s, %s, 'auto', %s, NOW())
+                            (article_id, label, label_method, confidence)
+                        VALUES (%s, %s, 'auto', %s)
                         """,
                         (article_id, label_name, confidence),
                     )
