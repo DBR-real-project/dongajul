@@ -225,7 +225,7 @@ export function DiagnosisInterview({ onResultClick, darkMode = false }: Diagnosi
                 className={`w-full text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#142755] rounded-xl px-3 py-2.5 transition-all ${darkMode ? 'bg-gray-900/50 text-white placeholder-gray-600 border border-gray-700' : 'bg-gray-50 text-gray-900 placeholder-gray-400 border border-gray-200'}`}
               />
               <p className={`text-xs mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                {strategyText.length}자 · 최소 50자 이상 입력하면 더 정확합니다
+                {strategyText.length}자 · 50자 이상 입력할수록 분석 정확도가 높아집니다
               </p>
             </div>
 

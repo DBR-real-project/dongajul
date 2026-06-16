@@ -1,7 +1,8 @@
-import { ChevronDown, Plus, FileText, FileUp, TrendingUp, DollarSign, Target, Users, ChevronUp, Image, X } from 'lucide-react';
+import { ChevronDown, Plus, FileText, FileUp, TrendingUp, DollarSign, Target, Users, ChevronUp, Image, X, Trash2 } from 'lucide-react';
 import { TabType } from '../App';
 import { ContextSwitcher } from './ContextSwitcher';
 import { useState, useEffect } from 'react';
+import { apiFetch } from '../utils/api';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from 'recharts';
 
 interface StrategyWorkspaceProps {
@@ -201,6 +202,16 @@ export function StrategyWorkspace({ activeTab, onTabChange, onNotificationClick,
     engagement: 5.0
   });
 
+  // 마운트 시 전략 목록 로드
+  useEffect(() => {
+    apiFetch('/api/strategies')
+      .then(res => res.json())
+      .then(data => {
+        if (data?.strategies) setStrategies(data.strategies);
+      })
+      .catch(err => console.error('전략 로드 실패:', err));
+  }, []);
+
   useEffect(() => {
     setCurrentContext(text.currentContext);
   }, [language]);
@@ -225,14 +236,34 @@ export function StrategyWorkspace({ activeTab, onTabChange, onNotificationClick,
       return 0;
     });
 
-  const addKeyword = (strategyId: number) => {
+  const addKeyword = async (strategyId: number) => {
     if (!newKeyword.trim()) return;
-    setStrategies(prev =>
-      prev.map(s =>
-        s.id === strategyId ? { ...s, keywords: [...s.keywords, newKeyword.trim()] } : s
-      )
-    );
+    const kw = newKeyword.trim();
     setNewKeyword('');
+
+    const updated = strategies.map(s =>
+      s.id === strategyId ? { ...s, keywords: [...s.keywords, kw] } : s
+    );
+    setStrategies(updated);
+
+    const target = updated.find(s => s.id === strategyId);
+    if (target) {
+      apiFetch(`/api/strategies/${strategyId}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          name: target.name,
+          content: target.content,
+          keywords: target.keywords,
+          metrics: target.metrics,
+        }),
+      }).catch(err => console.error('키워드 업데이트 실패:', err));
+    }
+  };
+
+  const handleDeleteStrategy = async (strategyId: number) => {
+    setStrategies(prev => prev.filter(s => s.id !== strategyId));
+    apiFetch(`/api/strategies/${strategyId}`, { method: 'DELETE' })
+      .catch(err => console.error('전략 삭제 실패:', err));
   };
 
   const handleFileUpload = (strategyId: number, event: React.ChangeEvent<HTMLInputElement>) => {
@@ -249,36 +280,40 @@ export function StrategyWorkspace({ activeTab, onTabChange, onNotificationClick,
     );
   };
 
-  const handleAddStrategySubmit = (e: React.FormEvent) => {
+  const handleAddStrategySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newStrategy.name.trim()) return;
 
-    const createdStrategy: Strategy = {
-      id: Date.now(),
-      name: newStrategy.name,
-      keywords: [language === 'en' ? 'New' : '신규'],
-      content: newStrategy.content || (language === 'en' ? 'No description available.' : '등록된 상세 내용이 없습니다.'),
-      files: [],
-      metrics: {
-        conversion: Number(newStrategy.conversion),
-        roi: Number(newStrategy.roi),
-        growth: Number(newStrategy.growth),
-        cost: Number(newStrategy.cost),
-        engagement: Number(newStrategy.engagement),
-      }
+    const metrics = {
+      conversion: Number(newStrategy.conversion),
+      roi: Number(newStrategy.roi),
+      growth: Number(newStrategy.growth),
+      cost: Number(newStrategy.cost),
+      engagement: Number(newStrategy.engagement),
     };
 
-    setStrategies(prev => [...prev, createdStrategy]);
+    const payload = {
+      name: newStrategy.name,
+      content: newStrategy.content || (language === 'en' ? 'No description available.' : '등록된 상세 내용이 없습니다.'),
+      keywords: [language === 'en' ? 'New' : '신규'],
+      metrics,
+    };
+
     setIsAddModalOpen(false);
-    setNewStrategy({
-      name: '',
-      content: '',
-      conversion: 5.0,
-      roi: 100,
-      growth: 10,
-      cost: 1000,
-      engagement: 5.0
-    });
+    setNewStrategy({ name: '', content: '', conversion: 5.0, roi: 100, growth: 10, cost: 1000, engagement: 5.0 });
+
+    try {
+      const res = await apiFetch('/api/strategies', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (res.ok && data.strategy) {
+        setStrategies(prev => [...prev, data.strategy]);
+      }
+    } catch (err) {
+      console.error('전략 저장 실패:', err);
+    }
   };
 
   const radarData = strategiesWithScores.slice(0, 3).map((s) => ({
@@ -439,12 +474,20 @@ export function StrategyWorkspace({ activeTab, onTabChange, onNotificationClick,
                       )}
                     </div>
                   </div>
-                  {/* 🛠️ 우측 가능성 점수 뱃지 다크모드 배경 가인성 정비 */}
-                  <div className={`flex flex-col items-end gap-1 ${darkMode ? 'bg-gray-900 border border-gray-700/50' : 'bg-gray-50/50'} px-4 py-3 rounded-xl ml-4`}>
-                    <div className={`text-3xl font-extrabold ${(strategy.score || 0) >= 70 ? (darkMode ? 'text-green-400' : 'text-green-600') : (strategy.score || 0) >= 50 ? (darkMode ? 'text-amber-400' : 'text-amber-600') : (darkMode ? 'text-red-400' : 'text-red-600')}`}>
-                      {strategy.score}
+                  <div className="flex items-start gap-2 ml-4">
+                    <div className={`flex flex-col items-end gap-1 ${darkMode ? 'bg-gray-900 border border-gray-700/50' : 'bg-gray-50/50'} px-4 py-3 rounded-xl`}>
+                      <div className={`text-3xl font-extrabold ${(strategy.score || 0) >= 70 ? (darkMode ? 'text-green-400' : 'text-green-600') : (strategy.score || 0) >= 50 ? (darkMode ? 'text-amber-400' : 'text-amber-600') : (darkMode ? 'text-red-400' : 'text-red-600')}`}>
+                        {strategy.score}
+                      </div>
+                      <span className={`text-[10px] font-bold ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>{text.possibilityScore}</span>
                     </div>
-                    <span className={`text-[10px] font-bold ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>{text.possibilityScore}</span>
+                    <button
+                      onClick={() => handleDeleteStrategy(strategy.id)}
+                      className={`p-1.5 rounded-lg transition-colors ${darkMode ? 'text-gray-500 hover:text-red-400 hover:bg-red-500/10' : 'text-gray-300 hover:text-red-500 hover:bg-red-50'}`}
+                      title="전략 삭제"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
 

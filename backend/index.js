@@ -54,6 +54,9 @@ const feedbackRoutes = require('./src/routes/feedbackRoutes');
 // AI 챗봇
 const chatRoutes = require('./src/routes/chatRoutes');
 
+// 전략 관리
+const strategyRoutes = require('./src/routes/strategyRoutes');
+
 // ── API 라우트 연결 ───────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api/diagnose', diagnoseRoutes);
@@ -66,6 +69,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use("/api/feedbacks", feedbackRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/strategies', strategyRoutes);
 
 
 // ── 기본 라우트 ───────────────────────────────────────────────────────
