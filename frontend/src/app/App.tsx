@@ -253,12 +253,12 @@ export default function App() {
         id: Number(article.article_id || article.id || 0),
         label: lbl,
         status: lbl === 'success' ? '성공' : lbl === 'failure' ? '실패' : '중립',
-        strategy: String(article.category || article.source || '전략'),
+        strategy: String(article.strategy || article.category || article.source || '전략 정보 없음'),
         riskLevel: lbl === 'failure' ? 'High' : lbl === 'success' ? 'Low' : 'Medium',
-        industry: String(article.source || article.category || '-'),
+        industry: String(article.industry || article.source || article.category || '-'),
         title: String(article.title || '제목 없음'),
-        strategySum: String(article.summary || ''),
-        riskSum: String(article.summary || ''),
+        strategySum: String(article.summary || article.strategySum || '전략 요약 없음'),
+        riskSum: String(article.summary || article.riskSum || '리스크 요약 없음'),
         source: article.source,
         url: article.url,
         published_at: article.published_at,
@@ -372,6 +372,7 @@ export default function App() {
             <ArticleDetail
               articleId={selectedArticle}
               onBack={() => setCurrentView(previousView || 'analysis')}
+              darkMode={darkMode}
             />
           ) : currentView === 'notifications' ? (
             <NotificationView
