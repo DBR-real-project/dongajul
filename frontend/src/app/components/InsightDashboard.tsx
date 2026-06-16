@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import {
   BarChart2,
   TrendingUp,
@@ -39,11 +39,14 @@ interface StatsData {
 interface InsightDashboardProps {
   darkMode?: boolean;
   onArticleClick?: (id: number) => void;
+  onShowSemanticMap?: (article: Article & { umap_x?: number; umap_y?: number }) => void;
+  onCompareSelected?: (articles: Array<Article>) => void;
 }
 
-export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDashboardProps) {
+export function InsightDashboard({ darkMode = false, onArticleClick, onShowSemanticMap, onCompareSelected }: InsightDashboardProps) {
   const [articles, setArticles] = useState<Article[]>([]);
   const [clusters, setClusters] = useState<Cluster[]>([]);
+  const [selectedCompareIds, setSelectedCompareIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'success' | 'failure'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -131,6 +134,29 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
   }, [searchQuery, filter]);
 
   const filtered = articles;
+
+  const toggleCompareSelection = (id: number) => {
+    setSelectedCompareIds((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((item) => item !== id);
+      }
+      if (prev.length >= 2) {
+        return prev;
+      }
+      return [...prev, id];
+    });
+  };
+
+  const handleCompareSubmit = () => {
+    if (!onCompareSelected || selectedCompareIds.length !== 2) return;
+    const selectedArticles = articles.filter((article) => selectedCompareIds.includes(article.article_id));
+    onCompareSelected(selectedArticles);
+  };
+
+  const handleShowSemanticMap = (article: Article) => {
+    if (!onShowSemanticMap) return;
+    onShowSemanticMap(article);
+  };
 
   // 브랜드 컬러를 KPI 지표에 반영 (Navy & Gold 포인트 추가)
   const stats = [
@@ -292,6 +318,22 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
             />
           </div>
 
+          <div className="flex items-center gap-2">
+            {selectedCompareIds.length > 0 && (
+              <span className={`text-xs font-bold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                {selectedCompareIds.length}개 선택됨
+              </span>
+            )}
+            {selectedCompareIds.length === 2 && (
+              <button
+                onClick={handleCompareSubmit}
+                className="px-4 py-2.5 bg-gradient-to-r from-[#142755] to-[#444655] text-white text-xs font-semibold rounded-xl hover:shadow-lg transition-all"
+              >
+                비교 분석 보기
+              </button>
+            )}
+          </div>
+          
           {(['all', 'success', 'failure'] as const).map((f) => (
             <button
               key={f}
@@ -413,6 +455,37 @@ export function InsightDashboard({ darkMode = false, onArticleClick }: InsightDa
                       darkMode ? 'text-gray-600' : 'text-gray-300'
                     } group-hover:text-[#142755] transition-colors`}
                   />
+                </div>
+
+                <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleShowSemanticMap(article);
+                      }}
+                      className="px-3 py-2 text-xs font-semibold rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-all"
+                    >
+                      시맨틱 맵 보기
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleCompareSelection(article.article_id);
+                      }}
+                      className={`px-3 py-2 text-xs font-semibold rounded-xl transition-all ${
+                        selectedCompareIds.includes(article.article_id)
+                          ? 'bg-[#142755] text-white'
+                          : darkMode
+                            ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                            : 'bg-gray-100 text-[#142755] hover:bg-gray-200'
+                      }`}
+                    >
+                      {selectedCompareIds.includes(article.article_id) ? '선택됨' : '비교 선택'}
+                    </button>
+                  </div>
                 </div>
               </button>
             ))}

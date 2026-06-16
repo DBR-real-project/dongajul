@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { apiFetchJson } from '../utils/api';
 
 interface CheckoutPageProps {
@@ -99,10 +99,16 @@ export function CheckoutPage({ onBack, onSuccess, darkMode = false }: CheckoutPa
                   {errorMessage}
                 </div>
               )}
+              
+              {/* 🌟 [디자인 튜닝 완료] 동아줄 프리미엄 골드 그라데이션 및 다크네이비 텍스트 매핑 단추 */}
               <button
                 onClick={handlePayment}
                 disabled={loading || alreadySubscribed}
-                className="w-full rounded-xl bg-gradient-to-r from-[#4285f4] via-[#9b72cb] to-[#d96570] py-3 text-white font-bold transition hover:opacity-90 active:scale-95 shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+                className={`w-full rounded-xl bg-gradient-to-r from-[#E5BA73] via-[#F3D596] to-[#C8994B] text-[#060B16] py-3 font-extrabold transition shadow-[0_4px_14px_rgba(229,186,115,0.25)] ${
+                  loading || alreadySubscribed
+                    ? 'opacity-50 cursor-not-allowed bg-none bg-slate-200 dark:bg-gray-700 !text-slate-500 shadow-none'
+                    : 'hover:opacity-95 hover:shadow-[0_6px_20px_rgba(229,186,115,0.35)] active:scale-[0.98]'
+                }`}
               >
                 {loading ? '구독 처리 중...' : alreadySubscribed ? '현재 구독 중' : '결제 진행하기'}
               </button>

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * src/app/components/ProfileView.tsx - 프로필/설정 화면
  */
 
@@ -45,6 +45,9 @@ export function ProfileView({ onBack, darkMode = false }: ProfileViewProps) {
   const [activePanel, setActivePanel] = useState<SettingsPanel>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [cancelingSubscription, setCancelingSubscription] = useState(false);
+
+  // 🌟 기존 기본 코드는 그대로 두고, 커스텀 모달 제어용 상태만 안전하게 추가
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   const [userData, setUserData] = useState<UserData | null>(() => {
     const saved = localStorage.getItem('user');
@@ -158,10 +161,14 @@ export function ProfileView({ onBack, darkMode = false }: ProfileViewProps) {
     showToast('프로필 사진이 삭제되었습니다');
   };
 
-  // 구독 취소
-  const handleCancelSubscription = async () => {
-    if (!window.confirm('구독을 취소하시겠습니까?')) return;
+  // 🌟 변경된 로직: window.confirm 창을 지우고, 우리가 만든 커스텀 디자인 모달을 띄웁니다.
+  const handleCancelSubscription = () => {
+    setShowCancelModal(true);
+  };
 
+  // 🌟 모달 안에서 [구독 해지하기]를 최종 클릭했을 때 작동하는 순수 기존 비즈니스 로직
+  const executeCancelSubscription = async () => {
+    setShowCancelModal(false);
     setCancelingSubscription(true);
     try {
       const res = await apiFetch('/api/subscriptions/cancel', {
@@ -418,6 +425,55 @@ export function ProfileView({ onBack, darkMode = false }: ProfileViewProps) {
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* 🌟 🌟 🌟 [추가] 하단에 마운트된 프리미엄 구독 해지 전용 디자인 커스텀 모달 🌟 🌟 🌟 */}
+      {showCancelModal && (
+        <>
+          {/* 흐림 효과(Backdrop Blur)가 적용된 암전 배경 레이어 */}
+          <div
+            className="fixed inset-0 bg-black/60 z-50 backdrop-blur-sm"
+            onClick={() => setShowCancelModal(false)}
+          />
+          {/* 중앙 가시성 정렬 컨테이너 */}
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className={`w-full max-w-sm ${dm ? 'bg-[#0d1220] border-gray-800' : 'bg-white border-slate-200'} rounded-[24px] shadow-2xl border overflow-hidden p-6 text-center`}>
+              
+              {/* 상단 소프트 레드 경고 엠블럼 기호 */}
+              <div className={`w-12 h-12 rounded-full mx-auto flex items-center justify-center mb-4 ${dm ? 'bg-red-950/40 text-red-400' : 'bg-red-50 text-red-500'}`}>
+                <X className="w-5 h-5" />
+              </div>
+
+              {/* 가이드 메시지 텍스트 래퍼 */}
+              <h3 className={`text-base font-bold mb-2 ${dm ? 'text-white' : 'text-slate-900'}`}>
+                구독을 취소하시겠습니까?
+              </h3>
+              <p className={`text-xs mb-6 leading-relaxed ${dm ? 'text-gray-400' : 'text-gray-500'}`}>
+                구독을 취소하셔도 현재 결제 주기의 남은 기간 동안은<br />
+                동아줄 AI 분석 서비스를 정상적으로 계속 이용할 수 있습니다.
+              </p>
+
+              {/* 하단 인터랙션 액션 버튼 제어 그룹 */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowCancelModal(false)}
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-bold border transition-colors ${
+                    dm ? 'border-gray-700 text-gray-300 hover:bg-gray-800' : 'border-slate-200 text-gray-600 hover:bg-slate-50'
+                  }`}
+                >
+                  구독 유지하기
+                </button>
+                <button
+                  onClick={executeCancelSubscription}
+                  className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-colors shadow-md active:scale-95"
+                >
+                  구독 해지하기
+                </button>
+              </div>
+
             </div>
           </div>
         </>
