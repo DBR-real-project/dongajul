@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useArticleCount } from '../utils/articleCount';
 
 interface LoginScreenProps {
@@ -167,7 +167,7 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
               />
             </div>
 
-            <div className="flex items-center justify-between text-sm pt-1">
+            <div className="flex items-center text-sm pt-1">
               <label htmlFor="keep-logged-in" className="flex items-center cursor-pointer select-none">
                 <input
                   id="keep-logged-in"
@@ -179,15 +179,6 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
                 <span className="ml-2 text-gray-600">로그인 유지</span>
               </label>
               
-              {onForgotPassword && (
-                <button 
-                  type="button" 
-                  onClick={onForgotPassword}
-                  className="text-[#142755] hover:text-[#1f3a7a] font-medium hover:underline transition-colors"
-                >
-                  비밀번호 찾기
-                </button>
-              )}
             </div>
 
             <button

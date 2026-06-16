@@ -1,4 +1,4 @@
-"""
+﻿"""
 동아줄 FastAPI ML 서비스
 
 엔드포인트
@@ -69,13 +69,16 @@ async def lifespan(app: FastAPI):
     init_frameworks(_sbert)
 
     print("[startup] FAISS 인덱스 로드 중...")
-    if (OUT_DIR / "faiss.index").exists():
-        index_bytes = (OUT_DIR / "faiss.index").read_bytes()
+    faiss_path = OUT_DIR / "faiss_with_hbs.index"
+    if not faiss_path.exists():
+        faiss_path = OUT_DIR / "faiss.index"
+    if faiss_path.exists():
+        index_bytes = faiss_path.read_bytes()
         _faiss_index = faiss.deserialize_index(np.frombuffer(index_bytes, dtype=np.uint8))
-        print("[startup] FAISS 인덱스 로드 완료")
+        print(f"[startup] FAISS 인덱스 로드 완료: {faiss_path.name}")
     else:
         _faiss_index = None
-        print(f"[startup] WARNING: FAISS 인덱스 파일 없음: {OUT_DIR / 'faiss.index'}")
+        print(f"[startup] WARNING: FAISS 인덱스 파일 없음 ({faiss_path.name})")
 
     print("[startup] 리스크 모델 로드 중...")
     if (OUT_DIR / "risk_model.pkl").exists():
@@ -87,12 +90,15 @@ async def lifespan(app: FastAPI):
         print(f"[startup] WARNING: 리스크 모델 파일 없음: {OUT_DIR / 'risk_model.pkl'}")
 
     print("[startup] 메타데이터 로드 중...")
-    if (OUT_DIR / "articles_meta.parquet").exists():
-        _meta = pd.read_parquet(OUT_DIR / "articles_meta.parquet")
-        print("[startup] articles_meta.parquet 로드 완료")
+    meta_path = OUT_DIR / "articles_meta_with_hbs.parquet"
+    if not meta_path.exists():
+        meta_path = OUT_DIR / "articles_meta.parquet"
+    if meta_path.exists():
+        _meta = pd.read_parquet(meta_path)
+        print(f"[startup] {meta_path.name} 로드 완료")
     else:
         _meta = None
-        print(f"[startup] WARNING: articles_meta.parquet 없음: {OUT_DIR / 'articles_meta.parquet'}")
+        print(f"[startup] WARNING: articles_meta.parquet 없음 ({meta_path.name})")
 
     # v3 우선 로드, 없으면 구버전 fallback
     umap_path = OUT_DIR / "umap_coords_v3.parquet"
