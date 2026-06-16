@@ -39,12 +39,16 @@ export type TabType = 'dashboard' | 'strategy' | 'history';
 interface CompareItem {
   id: number;
   status: string;
+  label?: string;
   strategy: string;
   riskLevel: string;
   industry: string;
   title: string;
   strategySum: string;
   riskSum: string;
+  source?: string;
+  url?: string;
+  published_at?: string;
 }
 
 export default function App() {
@@ -243,16 +247,23 @@ export default function App() {
   };
 
   const handleInsightCompare = (articles: Array<any>) => {
-    const compareItems = articles.map((article) => ({
-      id: Number(article.article_id || article.id || 0),
-      status: String(article.label || article.status || ''),
-      strategy: String(article.strategy || article.category || article.source || '전략 정보 없음'),
-      riskLevel: String(article.riskLevel || 'Medium'),
-      industry: String(article.industry || article.source || article.category || '산업 정보 없음'),
-      title: String(article.title || '제목 없음'),
-      strategySum: String(article.strategySum || article.summary || '전략 요약 없음'),
-      riskSum: String(article.riskSum || article.summary || '리스크 요약 없음'),
-    }));
+    const compareItems = articles.map((article) => {
+      const lbl = article.label || '';
+      return {
+        id: Number(article.article_id || article.id || 0),
+        label: lbl,
+        status: lbl === 'success' ? '성공' : lbl === 'failure' ? '실패' : '중립',
+        strategy: String(article.category || article.source || '전략'),
+        riskLevel: lbl === 'failure' ? 'High' : lbl === 'success' ? 'Low' : 'Medium',
+        industry: String(article.source || article.category || '-'),
+        title: String(article.title || '제목 없음'),
+        strategySum: String(article.summary || ''),
+        riskSum: String(article.summary || ''),
+        source: article.source,
+        url: article.url,
+        published_at: article.published_at,
+      };
+    });
 
     setComparedItems(compareItems);
     navigateTo('compare', 'analysis');

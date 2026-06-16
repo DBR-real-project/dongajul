@@ -28,7 +28,7 @@ from sentence_transformers import SentenceTransformer
 
 from .frameworks import find_relevant_frameworks, init_frameworks
 from .reporter import generate_report
-from .schemas import DiagnoseRequest, DiagnoseResponse, ReportResponse, SimilarArticle
+from .schemas import DiagnoseRequest, DiagnoseResponse, GlobalCasesResponse, ReportResponse, SimilarArticle
 
 
 try:
@@ -45,8 +45,10 @@ OUT_DIR = ROOT / "데이터처리" / "output"
 
 _sbert: SentenceTransformer | None = None
 _faiss_index: Any = None
+_faiss_hbs: Any = None
 _risk_model: Any = None
 _meta: pd.DataFrame | None = None
+_meta_hbs: pd.DataFrame | None = None
 _umap: pd.DataFrame | None = None
 _clusters: pd.DataFrame | None = None
 _cluster_risk_map: dict = {}
@@ -62,23 +64,37 @@ def _risk_level(score: float) -> str:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _sbert, _faiss_index, _risk_model, _meta, _umap, _clusters, _cluster_risk_map
+    global _sbert, _faiss_index, _faiss_hbs, _risk_model, _meta, _meta_hbs, _umap, _clusters, _cluster_risk_map
 
     print("[startup] SentenceTransformer (ko-sroberta, 768차원) 로드 중...")
     _sbert = SentenceTransformer("jhgan/ko-sroberta-multitask")
     init_frameworks(_sbert)
 
-    print("[startup] FAISS 인덱스 로드 중...")
-    faiss_path = OUT_DIR / "faiss_with_hbs.index"
-    if not faiss_path.exists():
-        faiss_path = OUT_DIR / "faiss.index"
+    # 메인 FAISS: DBR+HBR (faiss.index) — 기본 진단 전용
+    print("[startup] FAISS 인덱스 (DBR+HBR) 로드 중...")
+    faiss_path = OUT_DIR / "faiss.index"
     if faiss_path.exists():
         index_bytes = faiss_path.read_bytes()
         _faiss_index = faiss.deserialize_index(np.frombuffer(index_bytes, dtype=np.uint8))
-        print(f"[startup] FAISS 인덱스 로드 완료: {faiss_path.name}")
+        print(f"[startup] FAISS 인덱스 로드 완료: {_faiss_index.ntotal:,}건")
     else:
         _faiss_index = None
-        print(f"[startup] WARNING: FAISS 인덱스 파일 없음 ({faiss_path.name})")
+        print(f"[startup] WARNING: FAISS 인덱스 파일 없음: {faiss_path}")
+
+    # HBS 전용 인덱스: 해외 사례 모드 전용
+    print("[startup] HBS 전용 인덱스 로드 중...")
+    hbs_emb_path = OUT_DIR / "HBS_embeddings.npy"
+    hbs_meta_path = OUT_DIR / "HBS_meta.parquet"
+    if hbs_emb_path.exists() and hbs_meta_path.exists():
+        hbs_emb = np.load(hbs_emb_path).astype(np.float32)
+        _faiss_hbs = faiss.IndexFlatIP(hbs_emb.shape[1])
+        _faiss_hbs.add(hbs_emb)
+        _meta_hbs = pd.read_parquet(hbs_meta_path)
+        print(f"[startup] HBS 전용 인덱스 완료: {_faiss_hbs.ntotal:,}건")
+    else:
+        _faiss_hbs = None
+        _meta_hbs = None
+        print("[startup] WARNING: HBS 임베딩 파일 없음 — /diagnose/global 비활성화")
 
     print("[startup] 리스크 모델 로드 중...")
     if (OUT_DIR / "risk_model.pkl").exists():
@@ -90,15 +106,12 @@ async def lifespan(app: FastAPI):
         print(f"[startup] WARNING: 리스크 모델 파일 없음: {OUT_DIR / 'risk_model.pkl'}")
 
     print("[startup] 메타데이터 로드 중...")
-    meta_path = OUT_DIR / "articles_meta_with_hbs.parquet"
-    if not meta_path.exists():
-        meta_path = OUT_DIR / "articles_meta.parquet"
-    if meta_path.exists():
-        _meta = pd.read_parquet(meta_path)
-        print(f"[startup] {meta_path.name} 로드 완료")
+    if (OUT_DIR / "articles_meta.parquet").exists():
+        _meta = pd.read_parquet(OUT_DIR / "articles_meta.parquet")
+        print(f"[startup] articles_meta.parquet 로드 완료: {len(_meta):,}건")
     else:
         _meta = None
-        print(f"[startup] WARNING: articles_meta.parquet 없음 ({meta_path.name})")
+        print(f"[startup] WARNING: articles_meta.parquet 없음")
 
     # v3 우선 로드, 없으면 구버전 fallback
     umap_path = OUT_DIR / "umap_coords_v3.parquet"
@@ -301,6 +314,47 @@ def diagnose(req: DiagnoseRequest):
         query_umap_x=query_umap_x,
         query_umap_y=query_umap_y,
     )
+
+
+@app.post("/diagnose/global", response_model=GlobalCasesResponse)
+def diagnose_global(req: DiagnoseRequest):
+    if _sbert is None:
+        raise HTTPException(status_code=503, detail="모델 로딩 중입니다.")
+    if _faiss_hbs is None or _meta_hbs is None:
+        raise HTTPException(
+            status_code=503,
+            detail="HBS 인덱스가 없습니다. embed_hbs.py를 먼저 실행하세요.",
+        )
+
+    q_emb = _sbert.encode(
+        [req.text],
+        normalize_embeddings=True,
+        convert_to_numpy=True,
+    ).astype(np.float32)
+
+    top_k = min(req.top_k, _faiss_hbs.ntotal)
+    scores, ids = _faiss_hbs.search(q_emb, top_k)
+
+    articles: list[SimilarArticle] = []
+    for rank, (sim, idx) in enumerate(zip(scores[0], ids[0]), start=1):
+        if int(idx) < 0 or int(idx) >= len(_meta_hbs):
+            continue
+        row = _meta_hbs.iloc[int(idx)]
+        articles.append(
+            SimilarArticle(
+                rank=rank,
+                title=str(row.get("title", "") or ""),
+                url=str(row.get("url", "") or ""),
+                label=str(row.get("label_name", "") or ""),
+                similarity=round(float(sim), 4),
+                summary=str(row.get("summary", "") or "") or None,
+                category=str(row.get("category", "") or "") or None,
+                published_date=str(row.get("published_date", "") or "") or None,
+                source="HBS",
+            )
+        )
+
+    return GlobalCasesResponse(similar_articles=articles, total=len(articles))
 
 
 @app.post("/report", response_model=ReportResponse)

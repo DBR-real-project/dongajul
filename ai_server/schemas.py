@@ -49,3 +49,8 @@ class ReportResponse(BaseModel):
     query_umap_x: Optional[float] = None
     query_umap_y: Optional[float] = None
     report: DiagnosisReport
+
+
+class GlobalCasesResponse(BaseModel):
+    similar_articles: list[SimilarArticle]
+    total: int
