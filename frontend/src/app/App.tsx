@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { LoginScreen } from './components/LoginScreen';
 import { SignupScreen } from './components/SignupScreen';
 import { TopNavigation } from './components/TopNavigation';
@@ -54,6 +54,11 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [selectedArticle, setSelectedArticle] = useState<number | null>(null);
   const [comparedItems, setComparedItems] = useState<CompareItem[]>([]);
+  const [semanticQueryPoint, setSemanticQueryPoint] = useState<{
+    umap_x: number;
+    umap_y: number;
+    cluster_name?: string;
+  } | null>(null);
   const [previousView, setPreviousView] = useState<ViewType>('dashboard');
   const [darkMode, setDarkMode] = useState<boolean>(() =>
     JSON.parse(localStorage.getItem('darkMode') || 'false')
@@ -217,6 +222,42 @@ export default function App() {
     navigateTo('result', from);
   };
 
+  const handleInsightSemanticMap = (article: {
+    umap_x?: number;
+    umap_y?: number;
+    cluster_name?: string;
+    category?: string;
+    source?: string;
+  }) => {
+    if (article.umap_x == null || article.umap_y == null) {
+      setSemanticQueryPoint(null);
+    } else {
+      setSemanticQueryPoint({
+        umap_x: article.umap_x,
+        umap_y: article.umap_y,
+        cluster_name: article.cluster_name || article.category || article.source,
+      });
+    }
+
+    navigateTo('semantic-map', 'analysis');
+  };
+
+  const handleInsightCompare = (articles: Array<any>) => {
+    const compareItems = articles.map((article) => ({
+      id: Number(article.article_id || article.id || 0),
+      status: String(article.label || article.status || ''),
+      strategy: String(article.strategy || article.category || article.source || '전략 정보 없음'),
+      riskLevel: String(article.riskLevel || 'Medium'),
+      industry: String(article.industry || article.source || article.category || '산업 정보 없음'),
+      title: String(article.title || '제목 없음'),
+      strategySum: String(article.strategySum || article.summary || '전략 요약 없음'),
+      riskSum: String(article.riskSum || article.summary || '리스크 요약 없음'),
+    }));
+
+    setComparedItems(compareItems);
+    navigateTo('compare', 'analysis');
+  };
+
   if (!isLoggedIn) {
     return showSignup ? (
       <SignupScreen
@@ -271,6 +312,8 @@ export default function App() {
                 setSelectedArticle(id);
                 navigateTo('article', 'analysis');
               }}
+              onShowSemanticMap={handleInsightSemanticMap}
+              onCompareSelected={handleInsightCompare}
             />
           ) : currentView === 'strategy' ? (
             <StrategyWorkspace
@@ -308,11 +351,11 @@ export default function App() {
             <SemanticMap
               darkMode={darkMode}
               onBack={() => setCurrentView(previousView || 'dashboard')}
-              queryPoint={diagnosisResult?.query_umap_x != null ? {
+              queryPoint={semanticQueryPoint ?? (diagnosisResult?.query_umap_x != null ? {
                 umap_x: diagnosisResult.query_umap_x!,
                 umap_y: diagnosisResult.query_umap_y!,
                 cluster_name: diagnosisResult.cluster_name,
-              } : null}
+              } : null)}
             />
           ) : currentView === 'article' && selectedArticle !== null ? (
             <ArticleDetail
