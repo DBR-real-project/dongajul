@@ -1,10 +1,10 @@
 const db = require('../config/db');
 
-// GET /api/articles/stats — 기사 통계 (total, success, failure, cluster_count)
+// GET /api/articles/stats — 기사 통계
 exports.getArticleStats = async (req, res) => {
   try {
-    const [[countRow]] = await db.execute(`SELECT COUNT(*) AS total_articles FROM articles`);
-    const [[labelRows]] = await db.execute(`
+    const [[countRow]]   = await db.execute(`SELECT COUNT(*) AS total_articles FROM articles`);
+    const [[labelRows]]  = await db.execute(`
       SELECT
         COUNT(DISTINCT CASE WHEN label = 'success' THEN article_id END) AS success_count,
         COUNT(DISTINCT CASE WHEN label = 'failure' THEN article_id END) AS failure_count
@@ -12,12 +12,65 @@ exports.getArticleStats = async (req, res) => {
     `);
     const [[clusterRow]] = await db.execute(`SELECT COUNT(*) AS cluster_count FROM clusters`);
 
+    // 연도별 트렌드 (2015~2026)
+    const [yearlyRows] = await db.execute(`
+      SELECT
+        YEAR(a.published_at) AS year,
+        al.label,
+        COUNT(*) AS cnt
+      FROM articles a
+      INNER JOIN article_labels al ON a.article_id = al.article_id
+      WHERE al.label IN ('success','failure')
+        AND a.published_at IS NOT NULL
+        AND YEAR(a.published_at) BETWEEN 2015 AND 2026
+      GROUP BY YEAR(a.published_at), al.label
+      ORDER BY year ASC
+    `);
+
+    // 카테고리별 분포 (상위 8개)
+    const [catRows] = await db.execute(`
+      SELECT
+        a.category,
+        al.label,
+        COUNT(*) AS cnt
+      FROM articles a
+      INNER JOIN article_labels al ON a.article_id = al.article_id
+      WHERE al.label IN ('success','failure')
+        AND a.category IS NOT NULL AND a.category != ''
+      GROUP BY a.category, al.label
+      ORDER BY cnt DESC
+      LIMIT 80
+    `);
+
+    // 연도별 변환: { year, success, failure }[]
+    const yrMap = {};
+    for (const row of yearlyRows) {
+      const y = String(row.year);
+      if (!yrMap[y]) yrMap[y] = { year: y, success: 0, failure: 0 };
+      yrMap[y][row.label] = Number(row.cnt);
+    }
+    const yearly_trend = Object.values(yrMap)
+      .sort((a, b) => Number(a.year) - Number(b.year));
+
+    // 카테고리 변환: { category, success, failure, total }[] 상위 8
+    const catMap = {};
+    for (const row of catRows) {
+      if (!catMap[row.category]) catMap[row.category] = { category: row.category, success: 0, failure: 0 };
+      catMap[row.category][row.label] = Number(row.cnt);
+    }
+    const category_dist = Object.values(catMap)
+      .map(c => ({ ...c, total: (c.success || 0) + (c.failure || 0) }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 8);
+
     res.json({
       success: true,
-      total_articles: Number(countRow?.total_articles)   || 0,
-      success_count:  Number(labelRows?.success_count)   || 0,
-      failure_count:  Number(labelRows?.failure_count)   || 0,
-      cluster_count:  Number(clusterRow?.cluster_count)  || 0,
+      total_articles: Number(countRow?.total_articles)  || 0,
+      success_count:  Number(labelRows?.success_count)  || 0,
+      failure_count:  Number(labelRows?.failure_count)  || 0,
+      cluster_count:  Number(clusterRow?.cluster_count) || 0,
+      yearly_trend,
+      category_dist,
     });
   } catch (err) {
     console.error('[articleController] getArticleStats 오류:', err);

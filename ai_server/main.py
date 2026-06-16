@@ -70,16 +70,22 @@ async def lifespan(app: FastAPI):
     _sbert = SentenceTransformer("jhgan/ko-sroberta-multitask")
     init_frameworks(_sbert)
 
-    # 메인 FAISS: DBR+HBR (faiss.index) — 기본 진단 전용
-    print("[startup] FAISS 인덱스 (DBR+HBR) 로드 중...")
+    # 메인 FAISS: faiss_with_hbs.index (DBR+HBR+HBS) 우선, 없으면 faiss.index fallback
+    faiss_with_hbs_path = OUT_DIR / "faiss_with_hbs.index"
     faiss_path = OUT_DIR / "faiss.index"
-    if faiss_path.exists():
+    if faiss_with_hbs_path.exists():
+        print("[startup] FAISS 인덱스 (DBR+HBR+HBS) 로드 중...")
+        index_bytes = faiss_with_hbs_path.read_bytes()
+        _faiss_index = faiss.deserialize_index(np.frombuffer(index_bytes, dtype=np.uint8))
+        print(f"[startup] FAISS 인덱스 로드 완료: {_faiss_index.ntotal:,}건 (with HBS)")
+    elif faiss_path.exists():
+        print("[startup] FAISS 인덱스 (DBR+HBR) 로드 중...")
         index_bytes = faiss_path.read_bytes()
         _faiss_index = faiss.deserialize_index(np.frombuffer(index_bytes, dtype=np.uint8))
         print(f"[startup] FAISS 인덱스 로드 완료: {_faiss_index.ntotal:,}건")
     else:
         _faiss_index = None
-        print(f"[startup] WARNING: FAISS 인덱스 파일 없음: {faiss_path}")
+        print(f"[startup] WARNING: FAISS 인덱스 파일 없음")
 
     # HBS 전용 인덱스: 해외 사례 모드 전용
     print("[startup] HBS 전용 인덱스 로드 중...")
@@ -106,8 +112,13 @@ async def lifespan(app: FastAPI):
         print(f"[startup] WARNING: 리스크 모델 파일 없음: {OUT_DIR / 'risk_model.pkl'}")
 
     print("[startup] 메타데이터 로드 중...")
-    if (OUT_DIR / "articles_meta.parquet").exists():
-        _meta = pd.read_parquet(OUT_DIR / "articles_meta.parquet")
+    meta_with_hbs = OUT_DIR / "articles_meta_with_hbs.parquet"
+    meta_base = OUT_DIR / "articles_meta.parquet"
+    if meta_with_hbs.exists():
+        _meta = pd.read_parquet(meta_with_hbs)
+        print(f"[startup] articles_meta_with_hbs.parquet 로드 완료: {len(_meta):,}건")
+    elif meta_base.exists():
+        _meta = pd.read_parquet(meta_base)
         print(f"[startup] articles_meta.parquet 로드 완료: {len(_meta):,}건")
     else:
         _meta = None

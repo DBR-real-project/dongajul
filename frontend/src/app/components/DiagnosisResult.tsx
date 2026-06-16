@@ -439,6 +439,58 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
             </div>
           )}
 
+          {/* 전략 키워드 맵 */}
+          {data.similar_articles && data.similar_articles.length > 0 && (() => {
+            // 카테고리 + 키워드 빈도 집계
+            const freq: Record<string, number> = {};
+            data.similar_articles.forEach((a) => {
+              if (a.category) {
+                const cats = a.category.split(/[,/·]/).map((s) => s.trim()).filter(Boolean);
+                cats.forEach((c) => { freq[c] = (freq[c] || 0) + 1; });
+              }
+              if (a.source) freq[a.source] = (freq[a.source] || 0) + 0.5;
+            });
+            (data.keywords || []).forEach((kw) => { freq[kw] = (freq[kw] || 0) + 2; });
+            const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 20);
+            if (sorted.length === 0) return null;
+            const max = sorted[0][1];
+            const sizeClass = (cnt: number) => {
+              const r = cnt / max;
+              if (r > 0.75) return 'text-xl font-black';
+              if (r > 0.5) return 'text-base font-bold';
+              if (r > 0.25) return 'text-sm font-semibold';
+              return 'text-xs font-medium';
+            };
+            const colorClass = (cnt: number) => {
+              const r = cnt / max;
+              if (r > 0.75) return darkMode ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' : 'bg-indigo-100 text-indigo-800 border-indigo-200';
+              if (r > 0.5) return darkMode ? 'bg-blue-500/15 text-blue-300 border-blue-500/20' : 'bg-blue-50 text-blue-700 border-blue-200';
+              if (r > 0.25) return darkMode ? 'bg-gray-700/60 text-gray-300 border-gray-600' : 'bg-gray-100 text-gray-600 border-gray-200';
+              return darkMode ? 'bg-gray-800/60 text-gray-400 border-gray-700' : 'bg-gray-50 text-gray-500 border-gray-100';
+            };
+            return (
+              <div className={`p-5 rounded-2xl ${darkMode ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30' : 'bg-white shadow-sm'}`}>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className={`p-2 rounded-lg ${darkMode ? 'bg-purple-500/10' : 'bg-purple-50'}`}>
+                    <Tag className={`w-4 h-4 ${darkMode ? 'text-purple-400' : 'text-purple-600'}`} />
+                  </div>
+                  <h3 className={`text-base font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>전략 키워드 맵</h3>
+                  <span className={`ml-auto text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>유사 사례 기반</span>
+                </div>
+                <div className="flex flex-wrap gap-2 items-center">
+                  {sorted.map(([word, cnt]) => (
+                    <span
+                      key={word}
+                      className={`px-3 py-1.5 rounded-xl border transition-all ${sizeClass(cnt)} ${colorClass(cnt)}`}
+                    >
+                      {word}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
           {/* 유사 성공 사례 */}
           {successCases.length > 0 && (
             <section>
