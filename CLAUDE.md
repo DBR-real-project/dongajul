@@ -218,6 +218,8 @@ ai_server/
 
 **세션13 완료**: strategies 테이블 생성 + StrategyWorkspace 백엔드 정상화, 알림 설정 GET/PATCH API + ProfileView 토글 UI, NAVER 트렌드 컨텍스트 추출(23개 카테고리) + ai_server 주입, reporter.py few-shot 예시 내 `'우리 서비스'` 미이스케이프 SyntaxError 수정
 
+**세션14 완료**: 기사 비교 6차원 GPT 스코어링 + 플로팅 비교 버튼 + AI 챗 ChatGPT 스타일 전면 개편
+
 ---
 
 ## ✅ 전체 완료 작업 이력
@@ -467,6 +469,55 @@ ai_server/
 
 ---
 
+### 세션14 (2026-06-18) — 기사 비교 6차원 GPT 스코어링 + AI 챗 ChatGPT 스타일 개편
+
+**36. 기사 비교 6차원 GPT 스코어링 (`backend/src/controllers/compareController.js` 전면 재작성)**
+- `trend_keywords.json` 로드 + CAT_MAP(17개 항목)으로 기사 카테고리 → NAVER 트렌드 매핑
+- `buildTrendContext(cat1, cat2)`: 전체 트렌드 + 카테고리 특화 트렌드 최대 4줄 생성
+- GPT 프롬프트: 6차원 점수(시장타이밍/실행력/고객이해도/경쟁대응력/자원충분성/트렌드부합도) 0~100
+- JSON.parse try-catch 추가 (파싱 실패 시 500 반환)
+- 응답 포함 필드: `scores.A/B`, `analysis`, `key_differences`, `trend_insight`, `recommendation`
+
+**37. CompareView 6차원 차트 전면 교체 (`frontend/src/app/components/CompareView.tsx`)**
+- `DimScores` 인터페이스 (6개 차원 키)
+- `fallbackDimScores(item)`: GPT 없을 때 label/year/source/keywords 기반 휴리스틱 점수
+- 바 차트: 6개 차원 × 2개 사례 실제 GPT 점수 (기존 하드코딩 제거)
+- 레이더 차트: 동일 6차원
+- 결론 섹션: `trend_insight` 트렌드 인사이트 초록 박스 표시
+
+**38. InsightDashboard 플로팅 비교 버튼 (`frontend/src/app/components/InsightDashboard.tsx`)**
+- `fixed bottom-[82px] right-6 z-40` — 챗봇 버튼 바로 위에 고정
+- 1개 선택 시: "사례 1개 더 선택하세요" 안내 배지
+- 2개 선택 시: "비교 분석 보기" 버튼 활성화 → `handleCompareSubmit()` 호출
+- "선택 취소" 버튼 함께 표시
+
+**39. AI 챗 ChatGPT 스타일 전면 개편 (`frontend/src/app/components/AIChatbot.tsx`)**
+- 전체화면 모달 오버레이 (bg-black/40 backdrop)
+- 좌측 다크 사이드바 (240px, #171717): 새 대화 버튼 + 세션 목록(날짜 그룹) + 하단 푸터
+- 세션 아이템: hover 시 연필/휴지통 아이콘, 클릭 시 인라인 제목 편집 (editingSessionId)
+- 빈 상태: Bot 아이콘 + 서비스 소개 + 3개 기능 카드 (🔍 사례 검색, 📊 리스크 분석, 📚 프레임워크)
+- 메시지: max-w-2xl mx-auto 중앙 정렬, 봇=흰/회색 버블, 유저=네이비 버블
+- 타이핑 인디케이터: 3개 점 bounce 애니메이션 (staggered delay)
+- `RenderText` 컴포넌트: `**bold**` 마크다운 → `<strong>` 파싱
+- `formatTime/relativeDate`: 오늘/어제/N일 전 날짜 표시
+- 답변 불가 버그 수정: `!res.ok` 체크로 `data.message` 표시 (기존 fallback 텍스트 오류 해결)
+- 예시 질문 버튼 3개 제거
+
+**40. chat_sessions + chat_messages DB 마이그레이션 (`backend/scripts/migrate_chat_sessions.js`)**
+- `chat_sessions` 테이블: session_id, user_id, title VARCHAR(200), created/updated_at
+- `chat_messages`에 `session_id INT DEFAULT NULL` 컬럼 추가
+- 두 마이그레이션 모두 실행 완료
+
+**41. chatController 세션 관리 (`backend/src/controllers/chatController.js` 전면 재작성)**
+- 전략 컨설턴트 시스템 프롬프트 (DBR·HBR·HBS 13,000건 기반)
+- 첫 메시지 시 자동 세션 생성 (title = 첫 30자), 이후 session_id 재사용
+- DB에서 최근 20개 메시지 로드 → GPT 컨텍스트에 주입 (대화 연속성)
+- getSessions / updateSession / deleteSession / getHistory 엔드포인트 구현
+- 오류 처리: 429→속도제한 메시지, 401→인증 오류, ECONNABORTED→타임아웃
+- 응답: `{ success: true, reply, session_id }`
+
+---
+
 ## 📋 남은 작업
 
 ### 팀원 할당
@@ -484,5 +535,5 @@ ai_server/
 - CompareView DB 연동 — **보류** (실제 메트릭 없음, 하드코딩 차트 데모)
 
 ### 신규 기획 (세션6 논의, 구현 검토 중)
-- **트렌드 컨텍스트**: NAVER 뉴스 55,465건 → 산업별 시계열 키워드 추출 → GPT 프롬프트 주입
-- **전략 프레임워크 knowledge base**: Porter/Christensen/블루오션 등 → FAISS RAG에 추가
+- ~~**트렌드 컨텍스트**~~ → **세션13 완료** ✅
+- ~~**전략 프레임워크 knowledge base**~~ → **세션9 완료** ✅

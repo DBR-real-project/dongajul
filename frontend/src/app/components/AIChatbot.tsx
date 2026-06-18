@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import {
-  MessageCircle, X, Send, Bot, User, Trash2, Plus, MessageSquare, Menu,
+  MessageCircle, X, Send, Bot, User, Trash2, Plus, MessageSquare, Menu, Pencil, Check,
 } from 'lucide-react';
 import { apiFetch } from '../utils/api';
 
@@ -69,8 +69,12 @@ export function AIChatbot({ darkMode = false }: AIChatbotProps) {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [sessionLoading, setSessionLoading] = useState(false);
+  const [editingSessionId, setEditingSessionId] = useState<number | null>(null);
+  const [editingTitle, setEditingTitle] = useState('');
+  // historyLoaded 제거됨 → sessionsFetchedRef 로 대체
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
   const sessionsFetchedRef = useRef(false);
 
   // 세션 목록 로드
@@ -125,6 +129,28 @@ export function AIChatbot({ darkMode = false }: AIChatbotProps) {
       await apiFetch(`/api/chat/sessions/${session_id}`, { method: 'DELETE' });
       setSessions(prev => prev.filter(s => s.session_id !== session_id));
       if (currentSessionId === session_id) startNewChat();
+    } catch {}
+  };
+
+  // 세션 제목 편집 시작
+  const startEdit = (e: React.MouseEvent, s: Session) => {
+    e.stopPropagation();
+    setEditingSessionId(s.session_id);
+    setEditingTitle(s.title);
+    setTimeout(() => editInputRef.current?.select(), 50);
+  };
+
+  // 세션 제목 저장
+  const saveTitle = async (session_id: number) => {
+    const title = editingTitle.trim();
+    if (!title) { setEditingSessionId(null); return; }
+    setEditingSessionId(null);
+    setSessions(prev => prev.map(s => s.session_id === session_id ? { ...s, title } : s));
+    try {
+      await apiFetch(`/api/chat/sessions/${session_id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ title }),
+      });
     } catch {}
   };
 
@@ -256,24 +282,60 @@ export function AIChatbot({ darkMode = false }: AIChatbotProps) {
                     <div key={group.label}>
                       <p className="text-[10px] text-gray-500 uppercase tracking-wider px-3 py-2 mt-2">{group.label}</p>
                       {group.items.map(s => (
-                        <button
+                        <div
                           key={s.session_id}
-                          onClick={() => switchSession(s.session_id)}
-                          className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-left group transition-colors ${
+                          onClick={() => editingSessionId !== s.session_id && switchSession(s.session_id)}
+                          className={`w-full flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs text-left group transition-colors cursor-pointer ${
                             currentSessionId === s.session_id
                               ? 'bg-white/15 text-white'
                               : 'text-gray-400 hover:bg-white/10 hover:text-white'
                           }`}
                         >
-                          <MessageSquare className="w-3.5 h-3.5 flex-shrink-0" />
-                          <span className="flex-1 truncate">{s.title}</span>
-                          <button
-                            onClick={e => deleteSession(e, s.session_id)}
-                            className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:text-red-400 transition-all"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </button>
+                          <MessageSquare className="w-3.5 h-3.5 flex-shrink-0 mt-px" />
+                          {editingSessionId === s.session_id ? (
+                            /* 편집 모드 */
+                            <input
+                              ref={editInputRef}
+                              value={editingTitle}
+                              onChange={e => setEditingTitle(e.target.value)}
+                              onKeyDown={e => {
+                                if (e.key === 'Enter') saveTitle(s.session_id);
+                                if (e.key === 'Escape') setEditingSessionId(null);
+                              }}
+                              onBlur={() => saveTitle(s.session_id)}
+                              onClick={e => e.stopPropagation()}
+                              className="flex-1 min-w-0 bg-white/10 text-white text-xs px-1.5 py-0.5 rounded outline-none border border-white/20 focus:border-white/40"
+                              maxLength={60}
+                              autoFocus
+                            />
+                          ) : (
+                            /* 일반 모드 */
+                            <span className="flex-1 truncate">{s.title}</span>
+                          )}
+                          {editingSessionId === s.session_id ? (
+                            <button
+                              onClick={e => { e.stopPropagation(); saveTitle(s.session_id); }}
+                              className="p-0.5 rounded text-emerald-400 flex-shrink-0"
+                            >
+                              <Check className="w-3 h-3" />
+                            </button>
+                          ) : (
+                            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                              <button
+                                onClick={e => startEdit(e, s)}
+                                className="p-0.5 rounded hover:text-blue-400 transition-colors"
+                              >
+                                <Pencil className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={e => deleteSession(e, s.session_id)}
+                                className="p-0.5 rounded hover:text-red-400 transition-colors"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       ))}
                     </div>
                   ))
@@ -311,7 +373,9 @@ export function AIChatbot({ darkMode = false }: AIChatbotProps) {
                     <p className={`text-sm font-bold truncate ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                       동아줄 AI 어시스턴트
                     </p>
-                    <p className={`text-[10px] ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>DBR·HBR·HBS 13,000+ 사례 기반</p>
+                    <p className={`text-[10px] ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                      전략 리스크 사전진단 · 사례 기반 Q&A · 프레임워크 해설
+                    </p>
                   </div>
                 </div>
                 <button
@@ -331,9 +395,26 @@ export function AIChatbot({ darkMode = false }: AIChatbotProps) {
                       <Bot className="w-8 h-8 text-white" />
                     </div>
                     <h2 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>동아줄 AI 어시스턴트</h2>
-                    <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                      DBR·HBR·HBS 13,000+ 사례 기반<br />전략 리스크 & 경영 Q&A
+                    <p className={`text-sm mb-6 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                      DBR·HBR·HBS 13,000+ 사례를 학습한 전략 리스크 전문 AI입니다
                     </p>
+                    <div className="grid grid-cols-1 gap-2 w-full max-w-sm text-left">
+                      {([
+                        { icon: '🔍', title: '전략 사전진단', desc: '아이디어 단계에서 리스크 포인트 파악' },
+                        { icon: '📊', title: '진단 결과 해석', desc: '점수·유사 사례의 의미를 심층 분석' },
+                        { icon: '📚', title: '프레임워크 Q&A', desc: 'Porter·블루오션·린스타트업 실전 적용' },
+                      ] as const).map(item => (
+                        <div key={item.title} className={`flex items-start gap-3 px-3 py-2.5 rounded-xl ${
+                          darkMode ? 'bg-gray-800/60' : 'bg-gray-50 border border-gray-100'
+                        }`}>
+                          <span className="text-lg flex-shrink-0">{item.icon}</span>
+                          <div>
+                            <p className={`text-xs font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{item.title}</p>
+                            <p className={`text-[11px] ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>{item.desc}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ) : (
                   /* 메시지 목록 */

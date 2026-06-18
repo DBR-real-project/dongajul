@@ -138,7 +138,13 @@ ${trendCtx || '트렌드 데이터 없음'}
       }
     );
 
-    const result = JSON.parse(response.data.choices[0].message.content);
+    let result;
+    try {
+      result = JSON.parse(response.data.choices[0].message.content);
+    } catch (parseErr) {
+      console.error('[compare] JSON 파싱 실패:', parseErr.message);
+      return res.status(500).json({ error: 'AI 응답 파싱 실패' });
+    }
     return res.json(result);
   } catch (err) {
     console.error('[compareController]', err.response?.data || err.message);

@@ -240,50 +240,46 @@ exports.diagnoseGlobal = async (req, res) => {
 exports.getDiagnoseById = async (req, res) => {
   const { id } = req.params;
 
+  if (!id || isNaN(Number(id))) {
+    return res.status(400).json({ error: '유효하지 않은 진단 ID입니다.' });
+  }
+
   try {
+    // analysis_results 컬럼이 DB 환경마다 다를 수 있어 risk_score만 명시 조회
     const [diagRows] = await db.execute(
-      `
-      SELECT
-        dr.*,
-        ar.risk_score,
-        ar.success_keywords,
-        ar.failure_keywords
-      FROM diagnosis_requests dr
-      LEFT JOIN analysis_results ar
-        ON dr.diagnosis_id = ar.diagnosis_id
-      WHERE dr.diagnosis_id = ?
-      `,
+      `SELECT dr.diagnosis_id, dr.user_id, dr.input_text, dr.status, dr.created_at,
+              ar.risk_score
+       FROM diagnosis_requests dr
+       LEFT JOIN analysis_results ar ON dr.diagnosis_id = ar.diagnosis_id
+       WHERE dr.diagnosis_id = ?`,
       [id]
     );
 
     if (!diagRows.length) {
-      return res.status(404).json({
-        error: '진단 결과를 찾을 수 없습니다.',
-      });
+      return res.status(404).json({ error: '진단 결과를 찾을 수 없습니다.' });
     }
 
     const diag = diagRows[0];
 
-    const [matches] = await db.execute(
-      `
-      SELECT
-        sam.recommend_rank AS rank,
-        sam.similarity_score AS similarity,
-        sam.case_type AS label,
-        a.title,
-        a.url,
-        a.summary,
-        a.category,
-        a.source,
-        a.published_at AS published_date
-      FROM similar_article_matches sam
-      JOIN articles a
-        ON sam.article_id = a.article_id
-      WHERE sam.diagnosis_id = ?
-      ORDER BY sam.recommend_rank
-      `,
-      [id]
-    );
+    // similar_article_matches 쿼리는 실패해도 빈 배열로 대체
+    let matches = [];
+    try {
+      const [rows] = await db.execute(
+        `SELECT sam.recommend_rank AS rank,
+                sam.similarity_score AS similarity,
+                sam.case_type AS label,
+                a.title, a.url, a.summary, a.category, a.source,
+                a.published_at AS published_date
+         FROM similar_article_matches sam
+         JOIN articles a ON sam.article_id = a.article_id
+         WHERE sam.diagnosis_id = ?
+         ORDER BY sam.recommend_rank`,
+        [id]
+      );
+      matches = rows;
+    } catch (matchErr) {
+      console.error('[getDiagnoseById] similar_article_matches 조회 실패 (무시):', matchErr.message);
+    }
 
     const riskScore = parseFloat(diag.risk_score) || 0;
 
@@ -298,10 +294,6 @@ exports.getDiagnoseById = async (req, res) => {
     });
   } catch (err) {
     console.error('[getDiagnoseById]', err.message);
-
-    return res.status(500).json({
-      error: '진단 결과 조회 실패',
-      detail: err.message,
-    });
+    return res.status(500).json({ error: '진단 결과 조회 실패', detail: err.message });
   }
 };

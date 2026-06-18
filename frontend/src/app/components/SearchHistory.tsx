@@ -29,25 +29,29 @@ interface SearchHistoryProps {
 export function SearchHistory({ onResultByIdClick, darkMode = false }: SearchHistoryProps) {
   const [history, setHistory] = useState<DiagnosisHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
+
+  const fetchHistory = async () => {
+    setLoading(true);
+    setFetchError(false);
+    try {
+      if (!localStorage.getItem('token')) { setLoading(false); return; }
+      const res = await apiFetch('/api/history');
+      if (res.ok) {
+        const json = await res.json();
+        const rows = Array.isArray(json) ? json : (json.data ?? []);
+        setHistory(rows);
+      } else {
+        setFetchError(true);
+      }
+    } catch {
+      setFetchError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchHistory = async () => {
-      setLoading(true);
-      try {
-        if (!localStorage.getItem('token')) { setLoading(false); return; }
-        const res = await apiFetch('/api/history');
-        if (res.ok) {
-          const json = await res.json();
-          // 응답 형태: { success: true, data: [...] }
-          const rows = Array.isArray(json) ? json : (json.data ?? []);
-          setHistory(rows);
-        }
-      } catch {
-        setHistory([]);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchHistory();
   }, []);
 
@@ -74,6 +78,20 @@ export function SearchHistory({ onResultByIdClick, darkMode = false }: SearchHis
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="w-8 h-8 border-4 border-[#142755] border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : fetchError ? (
+          <div className="text-center py-20">
+            <div className={`w-16 h-16 ${darkMode ? 'bg-red-500/10' : 'bg-red-50'} rounded-2xl flex items-center justify-center mx-auto mb-4`}>
+              <AlertTriangle className="w-8 h-8 text-red-400" />
+            </div>
+            <p className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>이력을 불러올 수 없습니다</p>
+            <p className={`text-xs mt-1 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>서버 연결을 확인하고 다시 시도해주세요.</p>
+            <button
+              onClick={fetchHistory}
+              className="mt-4 px-4 py-2 text-sm bg-[#142755] text-white rounded-lg hover:bg-[#1a3470] transition-colors"
+            >
+              다시 시도
+            </button>
           </div>
         ) : history.length === 0 ? (
           <div className="text-center py-20">

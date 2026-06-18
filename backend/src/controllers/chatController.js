@@ -37,6 +37,24 @@ exports.getSessions = async (req, res) => {
   }
 };
 
+// ── 세션 제목 수정 ────────────────────────────────────────────────────
+exports.updateSession = async (req, res) => {
+  const user_id = req.user?.user_id;
+  const { id } = req.params;
+  const { title } = req.body;
+  if (!title?.trim()) return res.status(400).json({ error: '제목을 입력해주세요.' });
+  try {
+    await db.execute(
+      'UPDATE chat_sessions SET title = ? WHERE session_id = ? AND user_id = ?',
+      [title.trim().slice(0, 100), id, user_id]
+    );
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('[updateSession]', err.message);
+    return res.status(500).json({ error: '제목 수정 실패' });
+  }
+};
+
 // ── 세션 삭제 ─────────────────────────────────────────────────────────
 exports.deleteSession = async (req, res) => {
   const user_id = req.user?.user_id;
