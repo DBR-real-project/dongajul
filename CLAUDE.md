@@ -433,6 +433,38 @@ ai_server/
 - REFRESH_SECRET 환경변수 없으면 자동으로 `JWT_SECRET + '_refresh'` 사용
 - `db.js`에 `charset` 옵션 절대 추가 금지 — DB 서버(campus.smhrd.com)가 latin1 기반이라 charset 변환 시 한글 garbling 발생
 
+---
+
+### 세션13 (2026-06-18) — strategies DB 연동 + 알림 설정 + 트렌드 컨텍스트
+
+**31. DB 마이그레이션 (`데이터처리/migrate_db.py` 신규)**
+- strategies 테이블 생성 (user_id, name, content, keywords JSON, metrics_* 컬럼)
+- users 테이블에 notif_email / notif_push / notif_marketing TINYINT(1) 컬럼 추가
+- 실행 완료
+
+**32. 전략 워크스페이스 백엔드 연동 (`backend/src/routes/strategyRoutes.js`)**
+- 테이블이 없어서 500 에러나던 문제 해결 (테이블 생성으로 해결)
+- GET/POST/PUT/DELETE CRUD 모두 완성된 상태로 정상 동작 확인
+
+**33. 알림 설정 API (`backend/src/routes/profileRoutes.js`)**
+- `GET /api/profile/notifications` — notif_email/notif_push/notif_marketing 조회
+- `PATCH /api/profile/notifications` — 변경된 항목만 UPDATE
+
+**34. ProfileView 알림 설정 토글 UI (`frontend/src/app/components/ProfileView.tsx`)**
+- 이메일 알림 / 푸시 알림 / 마케팅 수신 동의 3개 토글 스위치
+- 토글 클릭 즉시 PATCH API 호출, 실패 시 state 롤백
+- 구독 정보 카드 아래에 알림 설정 카드 삽입
+
+**35. NAVER 트렌드 컨텍스트 (`데이터처리/extract_trends.py`, `ai_server/trend_context.py`)**
+- NAVER 55,465건 → 2024~2025년 데이터 31,848건 → 23개 카테고리 TF-IDF 키워드 추출
+- trend_keywords.json 저장 (카테고리별 상위 15개 + 전체 상위 20개)
+- ai_server startup 시 로드 (`init_trend_context`)
+- `/report` 호출 시 query_cluster_id → 클러스터명 → 관련 카테고리 키워드 매핑 → GPT 프롬프트 주입
+- reporter.py `generate_report()` 파라미터에 `trend_context` 추가
+- HUMAN_PROMPT에 `[최근 시장 트렌드 키워드 (2024~2025)]` 섹션 삽입
+
+---
+
 ## 📋 남은 작업
 
 ### 팀원 할당
@@ -445,9 +477,9 @@ ai_server/
 
 ### 보류 결정됨
 - ~~비밀번호 변경/찾기~~ **완전 제거, 다시 꺼내지 말 것**
-- ProfileView 알림 토글 DB 연동 — **보류** (users 테이블에 알림 설정 컬럼 없음)
+- ~~ProfileView 알림 토글 DB 연동~~ → **세션13 완료** ✅
 - CompareView DB 연동 — **보류** (실제 메트릭 없음, 하드코딩 차트 데모)
-- StrategyWorkspace 백엔드 연동 — **보류** (strategies 테이블 없음)
+- ~~StrategyWorkspace 백엔드 연동~~ → **세션13 완료** (strategies 테이블 생성) ✅
 
 ### 신규 기획 (세션6 논의, 구현 검토 중)
 - **트렌드 컨텍스트**: NAVER 뉴스 55,465건 → 산업별 시계열 키워드 추출 → GPT 프롬프트 주입
