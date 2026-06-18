@@ -28,6 +28,7 @@ from sentence_transformers import SentenceTransformer
 
 from .frameworks import find_relevant_frameworks, init_frameworks
 from .reporter import generate_report
+from .risk_rag import init_risk_rag, score_risk_rag
 from .schemas import DiagnoseRequest, DiagnoseResponse, GlobalCasesResponse, ReportResponse, SimilarArticle
 from .trend_context import get_trend_context, init_trend_context
 
@@ -48,6 +49,9 @@ _sbert: SentenceTransformer | None = None
 _faiss_index: Any = None
 _faiss_hbs: Any = None
 _risk_model: Any = None
+_anomaly_model: Any = None          # Isolation Forest
+_anomaly_mean: float = -0.435       # 학습 데이터 score 평균
+_anomaly_std: float  = 0.02         # 학습 데이터 score 표준편차
 _meta: pd.DataFrame | None = None
 _meta_hbs: pd.DataFrame | None = None
 _umap: pd.DataFrame | None = None
@@ -65,11 +69,12 @@ def _risk_level(score: float) -> str:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _sbert, _faiss_index, _faiss_hbs, _risk_model, _meta, _meta_hbs, _umap, _clusters, _cluster_risk_map
+    global _sbert, _faiss_index, _faiss_hbs, _risk_model, _anomaly_model, _anomaly_mean, _anomaly_std, _meta, _meta_hbs, _umap, _clusters, _cluster_risk_map
 
     print("[startup] SentenceTransformer (ko-sroberta, 768차원) 로드 중...")
     _sbert = SentenceTransformer("jhgan/ko-sroberta-multitask")
     init_frameworks(_sbert)
+    init_risk_rag(_sbert)
 
     # 메인 FAISS: faiss_with_hbs.index (DBR+HBR+HBS) 우선, 없으면 faiss.index fallback
     faiss_with_hbs_path = OUT_DIR / "faiss_with_hbs.index"
@@ -111,6 +116,19 @@ async def lifespan(app: FastAPI):
     else:
         _risk_model = None
         print(f"[startup] WARNING: 리스크 모델 파일 없음: {OUT_DIR / 'risk_model.pkl'}")
+
+    print("[startup] 이상감지 모델 로드 중...")
+    anomaly_path = OUT_DIR / "anomaly_model.pkl"
+    if anomaly_path.exists():
+        with open(anomaly_path, "rb") as f:
+            _payload = pickle.load(f)
+        _anomaly_model = _payload["model"]
+        _anomaly_mean  = _payload.get("mean_score", -0.435)
+        _anomaly_std   = _payload.get("std_score",  0.02)
+        print(f"[startup] 이상감지 모델 로드 완료 (mean={_anomaly_mean:.4f}, std={_anomaly_std:.4f})")
+    else:
+        _anomaly_model = None
+        print("[startup] WARNING: anomaly_model.pkl 없음 — python 데이터처리/train_anomaly.py 실행 필요")
 
     print("[startup] 메타데이터 로드 중...")
     meta_with_hbs = OUT_DIR / "articles_meta_with_hbs.parquet"
@@ -418,11 +436,28 @@ def report(req: DiagnoseRequest):
         except Exception as tr_err:
             print(f"[/report] 트렌드 컨텍스트 실패: {tr_err}")
 
+        # ── RAG 리스크 점수 (NAVER 실패 FAISS + 비즈니스 저서 원칙 + GPT) ──
+        q_emb_rag = _sbert.encode(
+            [req.text], normalize_embeddings=True, convert_to_numpy=True
+        ).astype(np.float32)[0]
+
+        rag_result = score_risk_rag(req.text, q_emb_rag)
+        rag_score  = rag_result["rag_risk_score"]
+
+        # 앙상블: RAG 90% + ML 10%
+        # (GPT 실패 시 NAVER 유사도 fallback 점수가 rag_score에 담겨있음)
+        if rag_score is not None:
+            final_risk = round(0.90 * rag_score + 0.10 * diag.risk_score, 4)
+            print(f"[/report] RAG={rag_score:.3f} ML={diag.risk_score:.3f} → final={final_risk:.3f}")
+        else:
+            final_risk = diag.risk_score
+            print(f"[/report] RAG 완전 실패 → ML score 사용: {final_risk:.3f}")
+
         start = time.time()
         raw = generate_report(
             strategy_text=req.text,
-            risk_score=diag.risk_score,
-            risk_level=diag.risk_level,
+            risk_score=final_risk,
+            risk_level=_risk_level(final_risk),
             similar_articles=articles_dict,
             framework_context=framework_context,
             trend_context=trend_ctx,
@@ -432,8 +467,8 @@ def report(req: DiagnoseRequest):
         from .schemas import DiagnosisReport
 
         return ReportResponse(
-            risk_score=diag.risk_score,
-            risk_level=diag.risk_level,
+            risk_score=final_risk,
+            risk_level=_risk_level(final_risk),
             similar_articles=diag.similar_articles,
             query_cluster_id=diag.query_cluster_id,
             query_umap_x=diag.query_umap_x,

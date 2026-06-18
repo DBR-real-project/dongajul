@@ -662,10 +662,18 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
               </div>
 
               {/* 종합 평가 */}
-              <div className={`p-4 rounded-xl ${darkMode ? 'bg-gray-900/40' : 'bg-gray-50'}`}>
-                <p className={`text-xs font-semibold uppercase tracking-widest mb-2 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>종합 평가</p>
-                <p className={`text-sm leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{data.report.summary}</p>
-              </div>
+              {data.report.summary ? (
+                <div className={`p-4 rounded-xl ${darkMode ? 'bg-gray-900/40' : 'bg-gray-50'}`}>
+                  <p className={`text-xs font-semibold uppercase tracking-widest mb-2 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>종합 평가</p>
+                  <p className={`text-sm leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{data.report.summary}</p>
+                </div>
+              ) : (
+                <div className={`p-4 rounded-xl border ${darkMode ? 'bg-yellow-900/20 border-yellow-500/30' : 'bg-yellow-50 border-yellow-200'}`}>
+                  <p className={`text-sm ${darkMode ? 'text-yellow-400' : 'text-yellow-700'}`}>
+                    ⚠️ AI 리포트를 생성할 수 없습니다. GPT API 사용량 한도를 초과했습니다. 유사 사례와 리스크 점수를 참고해주세요.
+                  </p>
+                </div>
+              )}
 
               {/* 전략 구조 분석 */}
               {(data.report as any).strategy_analysis && (

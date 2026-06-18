@@ -587,6 +587,39 @@ export function InsightDashboard({ darkMode = false, onArticleClick, onShowSeman
           </div>
         )}
       </div>
+
+      {/* 플로팅 비교 버튼 — 스크롤해도 항상 보임 */}
+      {selectedCompareIds.length > 0 && (
+        <div
+          className="fixed bottom-[82px] right-6 z-40 flex flex-col items-end gap-2"
+          style={{ pointerEvents: 'auto' }}
+        >
+          {selectedCompareIds.length === 2 ? (
+            <button
+              onClick={handleCompareSubmit}
+              className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-[#0B2F61] to-[#1E3E7A] text-white text-sm font-bold rounded-2xl shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              비교 분석 보기
+            </button>
+          ) : (
+            <div className="flex items-center gap-2 px-4 py-2.5 bg-[#0B2F61]/90 text-white text-xs font-semibold rounded-2xl shadow-lg backdrop-blur-sm">
+              <span className="w-5 h-5 rounded-full bg-[#C8994B] flex items-center justify-center text-xs font-bold">1</span>
+              사례 1개 더 선택하세요
+            </div>
+          )}
+          <button
+            onClick={() => setSelectedCompareIds([])}
+            className={`px-3 py-1.5 text-xs rounded-xl shadow-md transition-all ${
+              darkMode ? 'bg-gray-800 text-gray-400 hover:bg-gray-700' : 'bg-white text-gray-500 hover:bg-gray-100'
+            }`}
+          >
+            선택 취소
+          </button>
+        </div>
+      )}
     </div>
   );
 }

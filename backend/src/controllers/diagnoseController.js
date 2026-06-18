@@ -247,8 +247,7 @@ exports.getDiagnoseById = async (req, res) => {
         dr.*,
         ar.risk_score,
         ar.success_keywords,
-        ar.failure_keywords,
-        ar.improvement_guides
+        ar.failure_keywords
       FROM diagnosis_requests dr
       LEFT JOIN analysis_results ar
         ON dr.diagnosis_id = ar.diagnosis_id
@@ -293,7 +292,7 @@ exports.getDiagnoseById = async (req, res) => {
       input_text: diag.input_text,
       risk_score: riskScore,
       risk_level: riskScore >= 0.6 ? 'high' : riskScore >= 0.3 ? 'medium' : 'low',
-      improvement: diag.improvement_guides || null,
+      improvement: null,
       similar_articles: matches,
       created_at: diag.created_at,
     });

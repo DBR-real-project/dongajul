@@ -57,6 +57,9 @@ const chatRoutes = require('./src/routes/chatRoutes');
 // 전략 관리
 const strategyRoutes = require('./src/routes/strategyRoutes');
 
+// 기사 비교 분석
+const compareRoutes = require('./src/routes/compareRoutes');
+
 // ── API 라우트 연결 ───────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api/diagnose', diagnoseRoutes);
@@ -70,6 +73,7 @@ app.use('/api/subscriptions', subscriptionRoutes);
 app.use("/api/feedbacks", feedbackRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/strategies', strategyRoutes);
+app.use('/api/compare', compareRoutes);
 
 
 // ── 기본 라우트 ───────────────────────────────────────────────────────

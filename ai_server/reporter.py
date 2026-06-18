@@ -276,6 +276,10 @@ def generate_report(
     result.setdefault("framework_insight", None)
     result.setdefault("verdict", "")
 
+    # GPT 실패(summary 비어있음)인 경우 verdict에 안내 메시지 삽입
+    if not result.get("summary") and not result.get("verdict"):
+        result["verdict"] = "AI 리포트를 생성할 수 없습니다. GPT API 사용량 한도를 초과했거나 오류가 발생했습니다."
+
     if not isinstance(result["risk_factors"], list):
         result["risk_factors"] = []
     if not isinstance(result["improvement"], list):
