@@ -187,7 +187,7 @@ ai_server/
 
 ---
 
-## 현재 상태 (2026-06-16 세션12 — InsightDashboard 4개 차트 + DiagnosisResult 키워드 맵)
+## 현재 상태 (2026-06-18 세션13 — strategies DB 연동 + 알림 설정 + 트렌드 컨텍스트 + reporter.py 버그픽스)
 
 **HBS 크롤링 완료 (세션10)**: 2,116건 수집 → HBS_articles_ko.csv (title_ko/summary_ko/content_ko_summary 한국어 번역 전체 완료, 실패 0건)
 **NLP 파이프라인 전체 완료**: ① 전처리 → ② 라벨링 → ③ 임베딩+FAISS → ④ 리스크 모델 → ⑤ UMAP+K-means
@@ -215,6 +215,8 @@ ai_server/
 - 라인차트: 연도별 사례 트렌드 (2015~2026)
 - 가로 바차트: Top5 성공·실패 카테고리 복합 (articles DB에 데이터 있을 때만 표시)
 **DiagnosisResult 키워드 맵 완료 (세션12)**: 유사 사례의 카테고리+키워드 빈도 집계 → 크기별 CSS 태그 클라우드 ("전략 키워드 맵" 섹션)
+
+**세션13 완료**: strategies 테이블 생성 + StrategyWorkspace 백엔드 정상화, 알림 설정 GET/PATCH API + ProfileView 토글 UI, NAVER 트렌드 컨텍스트 추출(23개 카테고리) + ai_server 주입, reporter.py few-shot 예시 내 `'우리 서비스'` 미이스케이프 SyntaxError 수정
 
 ---
 
@@ -478,8 +480,8 @@ ai_server/
 ### 보류 결정됨
 - ~~비밀번호 변경/찾기~~ **완전 제거, 다시 꺼내지 말 것**
 - ~~ProfileView 알림 토글 DB 연동~~ → **세션13 완료** ✅
-- CompareView DB 연동 — **보류** (실제 메트릭 없음, 하드코딩 차트 데모)
 - ~~StrategyWorkspace 백엔드 연동~~ → **세션13 완료** (strategies 테이블 생성) ✅
+- CompareView DB 연동 — **보류** (실제 메트릭 없음, 하드코딩 차트 데모)
 
 ### 신규 기획 (세션6 논의, 구현 검토 중)
 - **트렌드 컨텍스트**: NAVER 뉴스 55,465건 → 산업별 시계열 키워드 추출 → GPT 프롬프트 주입
