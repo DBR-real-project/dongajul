@@ -2,7 +2,7 @@
  * src/app/components/ProfileView.tsx - 프로필/설정 화면
  */
 
-import { ArrowLeft, User, Mail, Shield, Clock, Edit2, Check, X, Camera, Loader } from 'lucide-react';
+import { ArrowLeft, User, Mail, Shield, Clock, Edit2, Check, X, Camera, Loader, Bell } from 'lucide-react';
 import { apiFetch } from '../utils/api';
 import { useState, useEffect, useRef } from 'react';
 
@@ -45,6 +45,12 @@ export function ProfileView({ onBack, darkMode = false }: ProfileViewProps) {
   const [activePanel, setActivePanel] = useState<SettingsPanel>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [cancelingSubscription, setCancelingSubscription] = useState(false);
+
+  const [notifSettings, setNotifSettings] = useState({
+    notif_email: true,
+    notif_push: true,
+    notif_marketing: false,
+  });
 
   // 🌟 기존 기본 코드는 그대로 두고, 커스텀 모달 제어용 상태만 안전하게 추가
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -119,10 +125,38 @@ export function ProfileView({ onBack, darkMode = false }: ProfileViewProps) {
     }
   };
 
+  const fetchNotifSettings = async () => {
+    try {
+      const res = await apiFetch('/api/profile/notifications');
+      const data = await res.json();
+      if (data.success && data.data) {
+        setNotifSettings({
+          notif_email:     !!data.data.notif_email,
+          notif_push:      !!data.data.notif_push,
+          notif_marketing: !!data.data.notif_marketing,
+        });
+      }
+    } catch {}
+  };
+
+  const handleNotifToggle = async (key: keyof typeof notifSettings) => {
+    const next = { ...notifSettings, [key]: !notifSettings[key] };
+    setNotifSettings(next);
+    try {
+      await apiFetch('/api/profile/notifications', {
+        method: 'PATCH',
+        body: JSON.stringify({ [key]: next[key] }),
+      });
+    } catch {
+      setNotifSettings(notifSettings); // 실패 시 롤백
+    }
+  };
+
   // 서버에서 프로필과 구독 상태 로드
   useEffect(() => {
     fetchProfile();
     fetchSubscriptionInfo();
+    fetchNotifSettings();
   }, []);
 
   const showToast = (message: string) => {
@@ -358,6 +392,39 @@ export function ProfileView({ onBack, darkMode = false }: ProfileViewProps) {
               구독 중이 아닙니다
             </div>
           )}
+        </div>
+
+        {/* 알림 설정 */}
+        <div className={`${dm ? 'bg-gray-800/40 border-gray-700/40' : 'bg-white border-slate-200'} p-5 rounded-2xl border shadow-sm`}>
+          <div className="flex items-center gap-2 mb-4">
+            <Bell className={`w-4 h-4 ${dm ? 'text-[#C8994B]' : 'text-[#0B2F61]'}`} />
+            <h3 className={`text-xs font-bold uppercase tracking-wider ${dm ? 'text-gray-400' : 'text-gray-500'}`}>알림 설정</h3>
+          </div>
+          <div className="space-y-4">
+            {([
+              { key: 'notif_email',     label: '이메일 알림',   desc: '진단 결과 및 서비스 안내 메일 수신' },
+              { key: 'notif_push',      label: '푸시 알림',     desc: '새 사례 추가 및 리스크 업데이트 알림' },
+              { key: 'notif_marketing', label: '마케팅 수신 동의', desc: '이벤트, 혜택, 신기능 안내 수신' },
+            ] as const).map(({ key, label, desc }, i) => (
+              <div key={key} className={`flex items-center justify-between pt-3 ${i > 0 ? (dm ? 'border-t border-gray-800' : 'border-t border-slate-100') : ''}`}>
+                <div>
+                  <div className={`text-sm font-bold ${dm ? 'text-gray-200' : 'text-gray-800'}`}>{label}</div>
+                  <div className={`text-[11px] mt-0.5 ${dm ? 'text-gray-500' : 'text-gray-400'}`}>{desc}</div>
+                </div>
+                <button
+                  onClick={() => handleNotifToggle(key)}
+                  className={`relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none ${
+                    notifSettings[key] ? 'bg-[#0B2F61]' : (dm ? 'bg-gray-700' : 'bg-gray-200')
+                  }`}
+                  aria-label={label}
+                >
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+                    notifSettings[key] ? 'translate-x-5' : 'translate-x-0'
+                  }`} />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="text-center pt-2">

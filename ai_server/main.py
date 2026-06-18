@@ -29,6 +29,7 @@ from sentence_transformers import SentenceTransformer
 from .frameworks import find_relevant_frameworks, init_frameworks
 from .reporter import generate_report
 from .schemas import DiagnoseRequest, DiagnoseResponse, GlobalCasesResponse, ReportResponse, SimilarArticle
+from .trend_context import get_trend_context, init_trend_context
 
 
 try:
@@ -180,6 +181,9 @@ async def lifespan(app: FastAPI):
             print(f"[startup] WARNING: FAISS 차원({_faiss_index.d}) ≠ SBERT 차원({sbert_dim})")
     else:
         print("[startup] FAISS 인덱스 없음")
+
+    # 트렌드 컨텍스트 로드 (NAVER 카테고리별 키워드)
+    init_trend_context(OUT_DIR)
 
     import os
     if os.getenv("OPENAI_API_KEY"):
@@ -400,6 +404,20 @@ def report(req: DiagnoseRequest):
             except Exception as fw_err:
                 print(f"[/report] 프레임워크 검색 실패: {fw_err}")
 
+        # 트렌드 컨텍스트 주입 (쿼리 클러스터 이름 기반)
+        trend_ctx = ""
+        try:
+            cluster_name = None
+            if diag.query_cluster_id is not None and _clusters is not None:
+                c_rows = _clusters[_clusters["cluster_id"] == diag.query_cluster_id]
+                if not c_rows.empty:
+                    cluster_name = str(c_rows.iloc[0].get("cluster_name", ""))
+            trend_ctx = get_trend_context(cluster_name=cluster_name, strategy_text=req.text)
+            if trend_ctx:
+                print(f"[/report] 트렌드 컨텍스트 주입됨: {trend_ctx[:60]}...")
+        except Exception as tr_err:
+            print(f"[/report] 트렌드 컨텍스트 실패: {tr_err}")
+
         start = time.time()
         raw = generate_report(
             strategy_text=req.text,
@@ -407,6 +425,7 @@ def report(req: DiagnoseRequest):
             risk_level=diag.risk_level,
             similar_articles=articles_dict,
             framework_context=framework_context,
+            trend_context=trend_ctx,
         )
         print(f"[/report] GPT 리포트 완료: {time.time() - start:.2f}초")
 

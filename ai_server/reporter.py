@@ -147,6 +147,8 @@ HUMAN_PROMPT = """[분석 대상 전략]
 [유사 사례 Top-{k} — 벡터 유사도 기반]
 {similar_cases}
 
+{trend_section}
+
 {framework_section}
 
 아래 순서로 판단한 뒤, 최종 결과는 반드시 JSON만 출력하세요.
@@ -237,13 +239,17 @@ def generate_report(
     risk_level: str,
     similar_articles: list[dict],
     framework_context: str = "",
+    trend_context: str = "",
 ) -> dict:
     chain = _get_chain()
 
-    # 프레임워크 컨텍스트 섹션 구성 (있을 때만 삽입)
     fw_section = ""
     if framework_context and framework_context.strip():
         fw_section = f"[관련 전략 프레임워크 참고]\n{framework_context}"
+
+    trend_section = ""
+    if trend_context and trend_context.strip():
+        trend_section = f"[최근 시장 트렌드 키워드 (2024~2025)]\n{trend_context}"
 
     try:
         result = chain.invoke({
@@ -252,6 +258,7 @@ def generate_report(
             "risk_level": risk_level,
             "k": min(len(similar_articles), 3),
             "similar_cases": _format_similar_cases(similar_articles),
+            "trend_section": trend_section,
             "framework_section": fw_section,
         })
     except Exception as e:
