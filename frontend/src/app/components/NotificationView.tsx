@@ -162,7 +162,7 @@ export function NotificationView({ onBack, onNavigate, darkMode = false }: Notif
       <div className="px-6 py-8 max-w-[1440px] mx-auto space-y-6">
         <div className="space-y-4">
           {activeNotifications.map((item) => (
-            <div key={item.id} className={`${darkMode ? 'bg-gray-900/30 border-gray-800/80 shadow-inner' : 'bg-white border-slate-200'} p-5 rounded-2xl border transition-all shadow-sm flex flex-col md:flex-row items-start gap-4 border-l-4 border-l-${item.border === 'red' ? 'red' : item.border === 'green' ? 'green' : 'blue'}-500`}>
+            <div key={item.id} className={`${darkMode ? 'bg-gray-900/30 border-gray-800/80 shadow-inner' : 'bg-white border-slate-200'} p-5 rounded-2xl border transition-all shadow-sm flex flex-col md:flex-row items-start gap-4 border-l-4 ${item.border === 'red' ? 'border-l-red-500' : item.border === 'green' ? 'border-l-green-500' : 'border-l-blue-500'}`}>
               <div className={`w-9 h-9 ${item.bg} flex items-center justify-center flex-shrink-0 rounded-xl`}>
                 <item.Icon className={`w-4 h-4 ${item.iconColor}`} />
               </div>

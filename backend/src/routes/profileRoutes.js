@@ -47,7 +47,10 @@ router.put('/password', verifyToken, async (req, res) => {
     const [rows] = await db.query('SELECT password_hash FROM users WHERE user_id = ?', [userId]);
     const user = rows[0];
 
-    // 2. 중요: 단순 비교(==)가 아닌 bcrypt.compare를 사용해야 합니다.
+    if (!user || !user.password_hash) {
+      return res.status(400).json({ success: false, message: '비밀번호가 설정되지 않은 계정입니다.' });
+    }
+
     const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
 
     if (!isMatch) {

@@ -195,6 +195,7 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
         method: 'POST',
         body: JSON.stringify({ text: data.input_text, top_k: 5 }),
       });
+      if (!res.ok) throw new Error(`${res.status}`);
       const json = await res.json();
       setGlobalCases(json.similar_articles || []);
       setGlobalFetched(true);

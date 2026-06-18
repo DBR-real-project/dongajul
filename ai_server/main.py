@@ -366,6 +366,8 @@ def diagnose_global(req: DiagnoseRequest):
     ).astype(np.float32)
 
     top_k = min(req.top_k, _faiss_hbs.ntotal)
+    if top_k < 1:
+        return GlobalCasesResponse(similar_articles=[])
     scores, ids = _faiss_hbs.search(q_emb, top_k)
 
     articles: list[SimilarArticle] = []

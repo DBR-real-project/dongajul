@@ -90,6 +90,7 @@ router.put('/:id', verifyToken, async (req, res) => {
   try {
     const userId = req.user.user_id || req.user.id;
     const strategyId = parseInt(req.params.id, 10);
+    if (isNaN(strategyId)) return res.status(400).json({ message: '유효하지 않은 전략 ID입니다.' });
     const { name, content, keywords, metrics } = req.body;
 
     const [result] = await db.query(
@@ -128,6 +129,7 @@ router.delete('/:id', verifyToken, async (req, res) => {
   try {
     const userId = req.user.user_id || req.user.id;
     const strategyId = parseInt(req.params.id, 10);
+    if (isNaN(strategyId)) return res.status(400).json({ message: '유효하지 않은 전략 ID입니다.' });
 
     await db.query(
       'DELETE FROM strategies WHERE strategy_id = ? AND user_id = ?',
