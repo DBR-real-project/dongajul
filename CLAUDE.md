@@ -187,7 +187,7 @@ ai_server/
 
 ---
 
-## 현재 상태 (2026-06-18 세션13 — strategies DB 연동 + 알림 설정 + 트렌드 컨텍스트 + reporter.py 버그픽스)
+## 현재 상태 (2026-06-19 세션19 — 시맨틱맵 하이라이트/히스토리 전체 수정)
 
 **HBS 크롤링 완료 (세션10)**: 2,116건 수집 → HBS_articles_ko.csv (title_ko/summary_ko/content_ko_summary 한국어 번역 전체 완료, 실패 0건)
 **NLP 파이프라인 전체 완료**: ① 전처리 → ② 라벨링 → ③ 임베딩+FAISS → ④ 리스크 모델 → ⑤ UMAP+K-means
@@ -219,6 +219,129 @@ ai_server/
 **세션13 완료**: strategies 테이블 생성 + StrategyWorkspace 백엔드 정상화, 알림 설정 GET/PATCH API + ProfileView 토글 UI, NAVER 트렌드 컨텍스트 추출(23개 카테고리) + ai_server 주입, reporter.py few-shot 예시 내 `'우리 서비스'` 미이스케이프 SyntaxError 수정
 
 **세션14 완료**: 기사 비교 6차원 GPT 스코어링 + 플로팅 비교 버튼 + AI 챗 ChatGPT 스타일 전면 개편
+
+**세션15 완료**: 진단이력 불러오기 버그 수정 (INNER→LEFT JOIN + 에러 UI), 전체 코드 버그 검수 8개 수정, NCP Docker 배포 설정 구축 (frontend Dockerfile/nginx.conf + docker-compose 전면 개편 + deploy.sh)
+
+---
+
+### 세션17 완료 (2026-06-19) — SemanticMap D3 전면 재설계
+
+**54. SemanticMap ECharts → D3.js Canvas+SVG 하이브리드 전면 교체 (`frontend/src/app/components/SemanticMap.tsx`)**
+- 기존: `ReactECharts` (echarts-for-react) 스캐터 차트 — 클러스터 레이블 겹침, 가독성 불량
+- 신규: D3.js v7 Canvas+SVG 하이브리드 (`D3Map` 컴포넌트)
+  - **Canvas** (points layer): 15,000+ 점을 canvas로 고성능 렌더링
+    - neutral=슬레이트(반투명), success=에메랄드(필터 활성시 선명), failure=빨강+방사형 glow 효과
+    - query point=황금색+glow 강조
+  - **SVG** (hull/label layer): 클러스터 경계 + 레이블을 SVG로 렌더링
+    - `d3.polygonHull()` → 각 클러스터의 convex hull 다각형 (inflate 22px 여백)
+    - 클러스터 실패율에 따라 경계선 색상 자동 분기: 빨강(≥25%)/주황(≥12%)/인디고(안전)
+    - Pill 형태 레이블: 클러스터명 + 실패율 서브텍스트 (배경 사각형+테두리)
+    - 쿼리 포인트: 3중 ripple 링 + "⭐ 내 전략 위치" 황금 라벨
+  - **Transparent overlay div** (mouse events): mousemove/click 전용
+  - `d3.zoom()` pan/zoom — 줌 시 canvas 재드로 + SVG group transform만 갱신 (SVG 풀 재렌더 없음)
+  - `d3.quadtree()` 호버 최근접점 탐색 (scale-space, 14/k px threshold)
+  - ResizeObserver로 width 동적 대응, scale 재계산 시 zoom 리셋
+  - 줌 컨트롤 버튼 (+/−/↺), 우하단 고정
+  - 범례 (성공/실패/중립 + 조작법 힌트), 좌하단 고정
+  - 툴팁: 절대위치 div, label색상+제목+카테고리·출처+클릭이동 안내
+- renderCanvas ref 패턴으로 zoom handler에서 항상 최신 함수 참조 (zoom 재셋업 방지)
+- ECharts 전용 useMemo 6개 제거, `handleChartClick`/`onEvents` 제거
+- `import ReactECharts from 'echarts-for-react'` → `import * as d3 from 'd3'`
+- Vite 빌드 확인: `✓ built in 5.54s` (TypeScript 에러 0)
+
+---
+
+### 세션18 완료 (2026-06-19) — 브라우저 뒤로/앞으로 가기 + 시맨틱맵 하이라이트
+
+**55. 브라우저 뒤로/앞으로 가기 History API 연동 (`frontend/src/app/App.tsx`)**
+- 기존: React state(`currentView`)만 관리 → URL 항상 `localhost:3000/` → Chrome 뒤로/앞으로 가기 무동작
+- 신규: `window.history.pushState` + `popstate` 이벤트 기반 SPA 라우팅
+  - `VIEW_PATHS` 매핑: ViewType → URL 경로 (`dashboard→/`, `analysis→/analysis`, `risk→/risk` 등 14개)
+  - `PATH_TO_VIEW` 역방향 매핑: URL 경로 → ViewType (새로고침·직접 URL 접근 초기화용)
+  - `currentView` 초기값을 `window.location.pathname`에서 결정 (새로고침 시 올바른 뷰 복원)
+  - `popstate` 리스너: Chrome 뒤로/앞으로 버튼 클릭 시 `e.state.view`로 `setCurrentView` 업데이트
+  - `navigateTo(view)`: `pushState({ view, depth: depth+1 })` → URL 변경 + React state 동시 업데이트
+  - `navigateBack(fallback)`: `depth > 0`이면 `window.history.back()`, depth=0이면 fallback replaceState
+  - `depth` 필드를 history state에 저장해 "뒤로 갈 항목 있음" 판단 (CSS state XSS 안전)
+  - 탭 전환(`handleTabChange`): `pushState({ view, depth: 0 })` — 탭은 최상위라 depth 0 리셋
+  - 로그인/회원가입/로그아웃/소셜콜백: `replaceState({ view:'dashboard', depth:0 }, '', '/')` 적용
+  - JSX의 bare `setCurrentView('risk')` 등 → `navigateTo('risk')` 전면 교체
+  - `navStack` state 완전 제거 (브라우저가 스택 관리하므로 불필요)
+- Vite dev server가 404 경로에 자동으로 `index.html` 반환 (historyApiFallback 불필요)
+- nginx.conf는 이미 `try_files $uri $uri/ /index.html` 설정돼 있어 그대로 사용
+
+---
+
+### 세션19 완료 (2026-06-19) — 시맨틱맵 하이라이트 근본 수정 + 진단이력 전체 데이터
+
+**57. 진단이력 삭제 기능 (`SearchHistory.tsx`, `diagnoseController.js`, `diagnoseRoutes.js`)**
+- 각 이력 카드에 휴지통 버튼 추가 (hover 시 표시)
+- `DELETE /api/diagnose/:id` — 소유권 체크 + `similar_article_matches → analysis_results → diagnosis_requests` cascade 삭제
+- 삭제 중 카드 반투명 + 클릭 차단, 성공 시 목록 즉시 갱신
+
+**58. 시맨틱맵 하이라이트 근본 수정 (`App.tsx`, `SemanticMap.tsx`)**
+- **버그 원인**: ai_server `/semantic-map`이 반환하는 `id`는 DataFrame 행 인덱스(0,1,2...)로 DB `article_id`와 완전 다름 → `points.find(p => p.article_id === highlightArticleId)` 항상 실패
+- **InsightDashboard → 시맨틱맵**: `article_vectors` JOIN으로 가져온 `umap_x/y`를 `semanticQueryPoint`에 직접 설정 (article_id 룩업 제거)
+- **히스토리 → 시맨틱맵**: `onSemanticMap` 콜백 타입 변경 → `DiagnosisResult`가 로컬 `data.query_umap_x/y`를 좌표로 전달
+- SemanticMap의 `queryPoint` prop을 단순화: `semanticQueryPoint` 하나만 사용 (복잡한 삼항 제거)
+- 직접 진단 시 `navigateToResult`에서도 `semanticQueryPoint` 즉시 저장
+
+**59. 진단이력 전체 데이터 보존 (DB 마이그레이션 + 백엔드 + 프론트)**
+- `analysis_results` 테이블 컬럼 추가: `query_umap_x FLOAT, query_umap_y FLOAT, query_cluster_id INT, report_json MEDIUMTEXT`
+- `backend/scripts/migrate_analysis_columns.js` 실행 완료
+- `saveToDb`: 위 4개 컬럼 저장 (`aiData.report → JSON.stringify`)
+- `getDiagnoseById`: `report_json` 파싱해 `report` 객체 반환, `query_umap_x/y/cluster_id` 포함
+- `DiagnosisReport` 인터페이스: `strategy_analysis, risk_details[], framework_insight` 필드 추가
+- 히스토리에서 불러올 때 GPT 리포트 전체 (종합평가/리스크요인/개선제언/판정/전략분석/프레임워크) 표시
+
+**56. 시맨틱맵 하이라이트 완전 재설계 (`App.tsx`, `SemanticMap.tsx`)**
+- 기존 방식: DB의 `umap_x/umap_y` 컬럼에 의존 → HBS 기사(2,116건)는 article_vectors 없어 항상 null
+- 신규 방식: SemanticMap이 ai_server에서 로드한 13,335건 UMAP 포인트 내에서 `article_id`로 직접 검색
+  - 정확 좌표 우선순위: ① 진단결과 query_umap_x/y ② article_id 검색 ③ cluster_id 센터 폴백
+  - `effectiveQueryPoint` useMemo: queryPoint > article_id lookup > cluster center 순서
+  - App.tsx: `semanticHighlightArticleId` / `semanticHighlightClusterId` state 추가
+  - `handleInsightSemanticMap`: article_id + cluster_id 전달, queryPoint 클리어
+  - `handleDiagnosisSemanticMap`: highlight ID 클리어, diagnosisResult 좌표 사용
+  - SemanticMap 헤더 표시: `highlightArticleId` 있으면 "기사 위치 표시 중" / 없으면 "내 전략 위치 표시 중"
+- **뒤로가기 화살표 제거**: SemanticMap 헤더 ArrowLeft 버튼 삭제 (브라우저 뒤로가기 사용)
+- Vite 빌드 확인: `✓ built in 5.51s` (TypeScript 에러 0)
+
+---
+
+### 세션16 완료 (2026-06-19) — 성능 전체 검수 + 8개 버그 수정
+
+**46. historyRepository.js getHistoryDetail INNER→LEFT JOIN**
+- `FROM analysis_results r INNER JOIN diagnosis_requests d` → `FROM diagnosis_requests d LEFT JOIN analysis_results r`
+- 분석 결과 없는 진단이력 detail 조회 시 null 반환하던 버그 수정
+- COALESCE로 result_id/created_at null 안전 처리
+
+**47. DiagnosisResult.tsx RiskGauge 각도 공식 수정**
+- `const angle = -90 + pct * 1.8` → `const angle = -(pct * 1.8)`
+- 기존: pct=0이면 바늘이 위를 가리키고 pct=100이면 게이지 아래로 벗어남
+- 수정: pct=0→오른쪽(안전), pct=50→위, pct=100→왼쪽(위험) 정확한 반원 동작
+
+**48. DiagnosisInterview.tsx res.ok 체크 순서 + promptLoading 블로킹**
+- `handleAnalyze()`: `res.json()` 호출 전 `res.ok` 체크 추가 (non-JSON 5xx 크래시 방지)
+- 분석 시작 버튼: `disabled={loading || promptLoading || ...}` — AI 작성 중에 분석 버튼 비활성화
+
+**49. reporter.py 사례 요약 절사 250→450자**
+- `_format_similar_cases()`: `summary[:250]` → `summary[:450]` — 실패 사례 결론 잘림 방지
+
+**50. reporter.py few-shot 예시 3에 framework_insight 실제 예시 추가**
+- 기존 3개 예시 모두 `framework_insight: null` → GPT가 프레임워크 컨텍스트 주입 시 작성 방법 미학습
+- 예시 3(AI SaaS 전략)에 린스타트업 기반 실제 framework_insight 추가
+
+**51. failure_principles.py fallback 분산 선택**
+- 키워드 미매칭 시 `FAILURE_PRINCIPLES[:top_k]` → `random.shuffle` 후 상위 선택
+- 항상 Porter/Christensen 원칙만 반환하던 편향 제거
+
+**52. main.py /report SBERT 임베딩 중복 제거**
+- `/report` 엔드포인트: 동일 텍스트에 대해 `_sbert.encode()` 3회 → 2회로 감소
+- 프레임워크 검색 + RAG 임베딩을 `q_emb_shared`로 통합 (약 100~200ms 절약)
+
+**53. api.ts tryRefresh() refresh_token 갱신 저장**
+- 서버가 새 refresh_token 반환 시 `localStorage.setItem('refresh_token', data.refresh_token)` 저장
+- Refresh Token Rotation 완전 지원
 
 ---
 
@@ -518,6 +641,36 @@ ai_server/
 
 ---
 
+### 세션15 (2026-06-19) — 진단이력 버그픽스 + 전체 코드 검수 + NCP Docker 배포 구성
+
+**42. 진단이력 불러오기 버그 수정**
+- `historyRepository.js` INNER JOIN → LEFT JOIN + COALESCE (분석 결과 없는 진단도 이력에 표시)
+- `diagnoseController.js` getDiagnoseById: unused SELECT 컬럼 제거, similar_article_matches 조회 try-catch 래핑 (SQL 오류 시 빈 배열 반환, 500 방지)
+- `SearchHistory.tsx` fetchError state + 재시도 버튼 UI 추가
+
+**43. 전체 코드 버그 검수 8개 수정**
+- `NotificationView.tsx`: 동적 Tailwind 클래스 `border-l-${color}-500` → 정적 삼항 (purge 버그)
+- `LoginScreen.tsx` / `SignupScreen.tsx`: hardcoded `http://localhost:3001` → `apiFetch` + `BASE_URL` (OAuth redirect 포함)
+- `RiskAnalysis.tsx`: `.json()` 호출 전 `res.ok` 체크 (non-JSON 5xx 대응)
+- `DiagnosisResult.tsx` handleFetchGlobal: `res.ok` 체크 추가
+- `profileRoutes.js`: `password_hash` null 가드 (소셜 로그인 계정 400 반환)
+- `strategyRoutes.js` PUT/DELETE: `isNaN(strategyId)` 검증 추가
+- `ai_server/main.py` /diagnose/global: FAISS `top_k=0` 방지 가드
+
+**44. api.ts BASE_URL 프로덕션 대응 (`frontend/src/app/utils/api.ts`)**
+- `import.meta.env.PROD ? '' : 'http://localhost:3001'` — 빌드 시 자동 상대 URL
+- export로 변경해 LoginScreen/SignupScreen에서 OAuth redirect 시 재사용
+
+**45. NCP Docker 배포 구성 (신규 파일 5개 + docker-compose 전면 개편)**
+- `frontend/Dockerfile`: node:20-slim 빌드 → nginx:alpine 서빙 (멀티스테이지)
+- `frontend/nginx.conf`: `/api/*` → `backend:3001` 리버스 프록시, SPA 라우팅, gzip, 정적 캐시
+- `frontend/.dockerignore` / `backend/.dockerignore`
+- `docker-compose.yml` 전면 개편: frontend 서비스 활성화, `dongajul_net` 네트워크 추가, backend/ai_server `expose`(내부 전용), frontend만 `ports: 80:80`, `AI_SERVER_URL=http://ai_server:8000` 자동 주입, ai_server healthcheck
+- `backend/.env.example`: 모든 환경변수 템플릿 (시크릿 제외, 배포 시 변경 항목 주석 포함)
+- `deploy.sh`: git pull → .env 검사 → docker compose down/build/up 원클릭 스크립트
+
+---
+
 ## 📋 남은 작업
 
 ### 팀원 할당
@@ -533,6 +686,13 @@ ai_server/
 - ~~ProfileView 알림 토글 DB 연동~~ → **세션13 완료** ✅
 - ~~StrategyWorkspace 백엔드 연동~~ → **세션13 완료** (strategies 테이블 생성) ✅
 - CompareView DB 연동 — **보류** (실제 메트릭 없음, 하드코딩 차트 데모)
+
+### NCP 배포 체크리스트 (서버 받은 후 수행)
+1. `backend/.env` 에 실제 시크릿 값 채우기 (`.env.example` 참고)
+2. OAuth 콜백 URL 수정: 카카오·구글·네이버 개발자 콘솔 → 리다이렉트 URI를 NCP 공인IP로 변경
+3. `backend/.env` 의 `FRONTEND_URL`, `KAKAO/GOOGLE/NAVER_REDIRECT_URI` → `http://NCP_공인IP/api/auth/...` 로 변경
+4. NCP 서버에서 `bash deploy.sh` 실행 (Docker + Docker Compose 설치 필요)
+5. 방화벽: 포트 80 인바운드 허용 (8000·3001은 내부 expose만, 외부 열 필요 없음)
 
 ### 신규 기획 (세션6 논의, 구현 검토 중)
 - ~~**트렌드 컨텍스트**~~ → **세션13 완료** ✅

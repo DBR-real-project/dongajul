@@ -30,6 +30,7 @@ export function SearchHistory({ onResultByIdClick, darkMode = false }: SearchHis
   const [history, setHistory] = useState<DiagnosisHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const fetchHistory = async () => {
     setLoading(true);
@@ -48,6 +49,25 @@ export function SearchHistory({ onResultByIdClick, darkMode = false }: SearchHis
       setFetchError(true);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (e: React.MouseEvent, diagnosisId: number) => {
+    e.stopPropagation(); // 카드 클릭 이벤트 전파 차단
+    if (!window.confirm('이 진단 이력을 삭제하시겠습니까?')) return;
+    setDeletingId(diagnosisId);
+    try {
+      const res = await apiFetch(`/api/diagnose/${diagnosisId}`, { method: 'DELETE' });
+      if (res.ok) {
+        setHistory(prev => prev.filter(h => h.diagnosis_id !== diagnosisId));
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || '삭제에 실패했습니다.');
+      }
+    } catch {
+      alert('삭제 중 오류가 발생했습니다.');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -104,11 +124,12 @@ export function SearchHistory({ onResultByIdClick, darkMode = false }: SearchHis
         ) : (
           history.map((item) => {
             const pct = Math.round(item.risk_score * 100);
+            const isDeleting = deletingId === item.diagnosis_id;
             return (
               <div
                 key={item.diagnosis_id}
-                onClick={() => onResultByIdClick?.(item.diagnosis_id)}
-                className={`group ${darkMode ? 'bg-gray-800/50 border-gray-700/40 hover:bg-gray-800/80' : 'bg-white border-gray-100 hover:shadow-md'} border rounded-2xl p-5 cursor-pointer transition-all`}
+                onClick={() => !isDeleting && onResultByIdClick?.(item.diagnosis_id)}
+                className={`group ${darkMode ? 'bg-gray-800/50 border-gray-700/40 hover:bg-gray-800/80' : 'bg-white border-gray-100 hover:shadow-md'} border rounded-2xl p-5 cursor-pointer transition-all ${isDeleting ? 'opacity-50 pointer-events-none' : ''}`}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
@@ -128,7 +149,20 @@ export function SearchHistory({ onResultByIdClick, darkMode = false }: SearchHis
                       {item.input_text}
                     </p>
                   </div>
-                  <ChevronRight className={`w-5 h-5 flex-shrink-0 ${darkMode ? 'text-gray-600' : 'text-gray-300'} group-hover:text-[#142755] transition-colors mt-1`} />
+                  <div className="flex items-center gap-2 flex-shrink-0 mt-1">
+                    <button
+                      onClick={(e) => handleDelete(e, item.diagnosis_id)}
+                      className={`p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all ${
+                        darkMode
+                          ? 'text-gray-500 hover:text-red-400 hover:bg-red-500/10'
+                          : 'text-gray-300 hover:text-red-500 hover:bg-red-50'
+                      }`}
+                      title="이력 삭제"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    <ChevronRight className={`w-5 h-5 ${darkMode ? 'text-gray-600' : 'text-gray-300'} group-hover:text-[#142755] transition-colors`} />
+                  </div>
                 </div>
               </div>
             );

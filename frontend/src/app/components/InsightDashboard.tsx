@@ -25,6 +25,10 @@ interface Article {
   source?: string;
   published_at?: string;
   label?: string;
+  umap_x?: number | null;
+  umap_y?: number | null;
+  cluster_id?: number | null;
+  cluster_name?: string | null;
 }
 
 interface Cluster {
@@ -46,7 +50,7 @@ interface StatsData {
 interface InsightDashboardProps {
   darkMode?: boolean;
   onArticleClick?: (id: number) => void;
-  onShowSemanticMap?: (article: Article & { umap_x?: number; umap_y?: number }) => void;
+  onShowSemanticMap?: (article: Article) => void;
   onCompareSelected?: (articles: Array<Article>) => void;
 }
 
@@ -56,7 +60,14 @@ export function InsightDashboard({ darkMode = false, onArticleClick, onShowSeman
   const [selectedCompareIds, setSelectedCompareIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'success' | 'failure'>('all');
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'DBR' | 'HBR' | 'HBS'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [toast, setToast] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const [statsData, setStatsData] = useState<StatsData>({
     total_articles: 0,
@@ -115,11 +126,15 @@ export function InsightDashboard({ darkMode = false, onArticleClick, onShowSeman
 
       try {
         const params = new URLSearchParams({
-          limit: '20',
+          limit: '30',
         });
 
         if (filter !== 'all') {
           params.append('label', filter);
+        }
+
+        if (sourceFilter !== 'all') {
+          params.append('source', sourceFilter);
         }
 
         if (searchQuery.trim()) {
@@ -130,7 +145,7 @@ export function InsightDashboard({ darkMode = false, onArticleClick, onShowSeman
 
         if (artRes.ok) {
           const artData = await artRes.json();
-          setArticles(Array.isArray(artData) ? artData : artData.articles || artData.data || []);
+          setArticles(Array.isArray(artData) ? artData : artData.data || artData.articles || []);
         }
       } catch (e) {
         console.error('아티클 로드 실패:', e);
@@ -142,7 +157,7 @@ export function InsightDashboard({ darkMode = false, onArticleClick, onShowSeman
     const timer = setTimeout(fetchArticles, 300);
 
     return () => clearTimeout(timer);
-  }, [searchQuery, filter]);
+  }, [searchQuery, filter, sourceFilter]);
 
   const filtered = articles;
 
@@ -164,8 +179,15 @@ export function InsightDashboard({ darkMode = false, onArticleClick, onShowSeman
     onCompareSelected(selectedArticles);
   };
 
+  const hasMapData = (article: Article) =>
+    (article.umap_x != null && article.umap_y != null) || article.cluster_id != null;
+
   const handleShowSemanticMap = (article: Article) => {
     if (!onShowSemanticMap) return;
+    if (!hasMapData(article)) {
+      showToast('HBS 기사는 시맨틱맵 데이터가 없습니다. (DBR·HBR 기사만 위치 표시 가능)');
+      return;
+    }
     onShowSemanticMap(article);
   };
 
@@ -208,6 +230,11 @@ export function InsightDashboard({ darkMode = false, onArticleClick, onShowSeman
 
   return (
     <div className={`h-full overflow-y-auto ${darkMode ? 'bg-[#0A0E1A]' : 'bg-[#F8FAFC]'} pb-20`}>
+      {toast && (
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold shadow-xl">
+          {toast}
+        </div>
+      )}
       <div
         className={`sticky top-0 z-40 border-b px-6 py-4 ${
           darkMode
@@ -448,6 +475,22 @@ export function InsightDashboard({ darkMode = false, onArticleClick, onShowSeman
               {f === 'all' ? '전체' : f === 'success' ? '성공' : '실패'}
             </button>
           ))}
+          <div className={`w-px h-6 ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`} />
+          {(['all', 'DBR', 'HBR', 'HBS'] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => setSourceFilter(s)}
+              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                sourceFilter === s
+                  ? 'bg-indigo-600 text-white'
+                  : darkMode
+                    ? 'bg-gray-800 text-gray-400 border border-gray-700'
+                    : 'bg-white text-gray-500 border border-gray-200'
+              }`}
+            >
+              {s === 'all' ? '출처 전체' : s}
+            </button>
+          ))}
         </div>
 
         {loading ? (
@@ -455,8 +498,17 @@ export function InsightDashboard({ darkMode = false, onArticleClick, onShowSeman
             <div className="w-8 h-8 border-4 border-[#E1B764] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : filtered.length === 0 ? (
-          <div className={`text-center py-16 ${darkMode ? 'text-gray-500' : 'text-gray-400'} text-sm`}>
-            아티클이 없습니다.
+          <div className={`text-center py-16 ${darkMode ? 'text-gray-500' : 'text-gray-400'} text-sm space-y-2`}>
+            <p>검색 결과가 없습니다.</p>
+            <p className="text-xs">검색어를 바꾸거나 필터를 조정해보세요.</p>
+            {(filter !== 'all' || sourceFilter !== 'all') && (
+              <button
+                onClick={() => { setFilter('all'); setSourceFilter('all'); setSearchQuery(''); }}
+                className={`mt-2 px-4 py-2 rounded-xl text-xs font-semibold ${darkMode ? 'bg-gray-800 text-gray-300 border border-gray-700' : 'bg-white text-gray-600 border border-gray-200'} hover:opacity-80 transition-all`}
+              >
+                필터 초기화
+              </button>
+            )}
           </div>
         ) : (
           <div className="space-y-3">
@@ -560,9 +612,16 @@ export function InsightDashboard({ darkMode = false, onArticleClick, onShowSeman
                         e.stopPropagation();
                         handleShowSemanticMap(article);
                       }}
-                      className="px-3 py-2 text-xs font-semibold rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-all"
+                      title={hasMapData(article) ? '시맨틱 맵에서 위치 보기' : 'HBS 기사는 시맨틱맵 미포함 (DBR·HBR만 지원)'}
+                      className={`px-3 py-2 text-xs font-semibold rounded-xl transition-all ${
+                        hasMapData(article)
+                          ? 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                          : darkMode
+                            ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      }`}
                     >
-                      시맨틱 맵 보기
+                      {hasMapData(article) ? '시맨틱 맵 보기' : '맵 미지원'}
                     </button>
                     <button
                       type="button"

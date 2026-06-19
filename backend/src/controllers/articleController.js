@@ -131,10 +131,18 @@ exports.getArticles = async (req, res) => {
       a.category,
       a.published_at,
       al.label,
-      al.confidence
+      al.confidence,
+      av.umap_x,
+      av.umap_y,
+      av.cluster_id,
+      c.cluster_name
     FROM articles a
     LEFT JOIN article_labels al
       ON a.article_id = al.article_id
+    LEFT JOIN article_vectors av
+      ON a.article_id = av.article_id
+    LEFT JOIN clusters c
+      ON av.cluster_id = c.cluster_id
     ${where}
     ORDER BY a.published_at DESC
     LIMIT ${limitNum}

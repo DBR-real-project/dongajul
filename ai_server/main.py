@@ -332,7 +332,7 @@ def diagnose(req: DiagnoseRequest):
     case_score = fail_weight / total_weight if total_weight > 0 else 0.0
 
     # ② 클러스터 기반 기준 리스크 (클러스터 평균 실패율)
-    cluster_risk = _cluster_risk_map.get(query_cluster_id, 0.35) if query_cluster_id is not None else 0.35
+    cluster_risk = _cluster_risk_map.get(query_cluster_id, 0.10) if query_cluster_id is not None else 0.10
 
     # ③ 유사도 신뢰도 보정 (max_sim < 0.65이면 0.5 방향으로 수축)
     reliability = min(max_sim / 0.65, 1.0)
@@ -409,16 +409,23 @@ def report(req: DiagnoseRequest):
 
         articles_dict = [a.model_dump() for a in diag.similar_articles]
 
-        # 전략 프레임워크 컨텍스트 검색
-        framework_context = ""
+        # SBERT 임베딩 1회 계산 (프레임워크 + RAG 공유)
+        q_emb_shared: np.ndarray | None = None
         if _sbert is not None:
             try:
-                q_emb = _sbert.encode(
+                q_emb_shared = _sbert.encode(
                     [req.text],
                     normalize_embeddings=True,
                     convert_to_numpy=True,
                 ).astype(np.float32)
-                framework_context = find_relevant_frameworks(q_emb[0])
+            except Exception as enc_err:
+                print(f"[/report] SBERT 인코딩 실패: {enc_err}")
+
+        # 전략 프레임워크 컨텍스트 검색
+        framework_context = ""
+        if q_emb_shared is not None:
+            try:
+                framework_context = find_relevant_frameworks(q_emb_shared[0])
                 if framework_context:
                     print(f"[/report] 프레임워크 컨텍스트 주입됨: {framework_context[:60]}...")
             except Exception as fw_err:
@@ -439,17 +446,17 @@ def report(req: DiagnoseRequest):
             print(f"[/report] 트렌드 컨텍스트 실패: {tr_err}")
 
         # ── RAG 리스크 점수 (NAVER 실패 FAISS + 비즈니스 저서 원칙 + GPT) ──
-        q_emb_rag = _sbert.encode(
+        q_emb_rag = q_emb_shared[0] if q_emb_shared is not None else _sbert.encode(
             [req.text], normalize_embeddings=True, convert_to_numpy=True
         ).astype(np.float32)[0]
 
         rag_result = score_risk_rag(req.text, q_emb_rag)
         rag_score  = rag_result["rag_risk_score"]
 
-        # 앙상블: RAG 90% + ML 10%
-        # (GPT 실패 시 NAVER 유사도 fallback 점수가 rag_score에 담겨있음)
+        # 앙상블: RAG 75% + ML 25%
+        # ML AUC=0.9771을 더 반영해 재현성·일관성 향상
         if rag_score is not None:
-            final_risk = round(0.90 * rag_score + 0.10 * diag.risk_score, 4)
+            final_risk = round(0.75 * rag_score + 0.25 * diag.risk_score, 4)
             print(f"[/report] RAG={rag_score:.3f} ML={diag.risk_score:.3f} → final={final_risk:.3f}")
         else:
             final_risk = diag.risk_score

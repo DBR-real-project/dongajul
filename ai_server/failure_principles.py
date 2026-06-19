@@ -164,9 +164,12 @@ def find_relevant_principles(strategy_text: str, top_k: int = 5) -> list[dict]:
 
     scored.sort(key=lambda x: -x[0])
 
-    # 매칭 없으면 전체에서 상위 top_k 반환
+    # 매칭 없으면 전체에서 분산 선택 (항상 Porter+Christensen만 반환 방지)
     if not scored:
-        return FAILURE_PRINCIPLES[:top_k]
+        import random as _random
+        pool = list(FAILURE_PRINCIPLES)
+        _random.shuffle(pool)
+        return pool[:top_k]
 
     return [p for _, p in scored[:top_k]]
 

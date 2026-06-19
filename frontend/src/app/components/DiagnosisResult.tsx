@@ -24,6 +24,9 @@ export interface DiagnosisReport {
   risk_factors: string[];
   improvement: string[];
   verdict: string;
+  strategy_analysis?: string;
+  risk_details?: string[];
+  framework_insight?: string;
 }
 
 export interface DiagnosisData {
@@ -32,26 +35,27 @@ export interface DiagnosisData {
   risk_score: number;
   risk_level: 'low' | 'medium' | 'high';
   keywords?: string[];
-  improvement?: string;
+  improvement?: string | string[];
   similar_articles: SimilarArticle[];
   cluster_name?: string;
   created_at?: string;
   report?: DiagnosisReport;
   query_umap_x?: number;
   query_umap_y?: number;
+  query_cluster_id?: number;
 }
 
 interface DiagnosisResultProps {
   diagnosisId?: number;
   resultData?: DiagnosisData;
   onBack: () => void;
-  onSemanticMap?: () => void;
+  onSemanticMap?: (coords?: { umap_x: number; umap_y: number; cluster_name?: string }) => void;
   darkMode?: boolean;
 }
 
 function RiskGauge({ score, darkMode }: { score: number; darkMode: boolean }) {
   const pct = Math.round(score * 100);
-  const angle = -90 + pct * 1.8;
+  const angle = -(pct * 1.8);
   const rad = (angle * Math.PI) / 180;
   const nx = 100 + 62 * Math.cos(rad);
   const ny = 100 + 62 * Math.sin(rad);
@@ -825,7 +829,11 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
           <div className="flex justify-center gap-3 pt-2 flex-wrap">
             {onSemanticMap && (
               <button
-                onClick={onSemanticMap}
+                onClick={() => onSemanticMap(
+                  data?.query_umap_x != null
+                    ? { umap_x: data.query_umap_x!, umap_y: data.query_umap_y!, cluster_name: data.cluster_name }
+                    : undefined
+                )}
                 className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all border ${darkMode
                   ? 'border-indigo-500/40 text-indigo-300 hover:bg-indigo-500/10'
                   : 'border-indigo-200 text-indigo-700 hover:bg-indigo-50'

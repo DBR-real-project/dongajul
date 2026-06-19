@@ -53,4 +53,4 @@ class ReportResponse(BaseModel):
 
 class GlobalCasesResponse(BaseModel):
     similar_articles: list[SimilarArticle]
-    total: int
+    total: int = 0

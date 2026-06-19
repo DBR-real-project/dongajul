@@ -119,7 +119,7 @@ EXAMPLES = [
             '"risk_factors": ["중소기업 고객이 AI 결과를 업무에 어떻게 활용할지 명확하지 않아 결제 전환 저조 위험", "대상 고객군이 넓으면 핵심 가치 제안이 흐려져 차별화 불가 위험", "AI 분석 결과의 신뢰성 부족 시 전략 의사결정 도구로 인정받기 어려움"], '
             '"risk_details": ["DBR 실패 사례에서 보듯 기술 기능이 뛰어나도 고객이 실제 업무에 어떻게 적용해야 할지 모르면 도입이 지연되고 이탈로 이어집니다. 활용 시나리오(언제, 어떤 상황에서, 어떤 결정을 내릴 때 사용하는지)를 명확히 설계해야 합니다.", "범용 서비스로 출시하면 메시지가 분산되어 \'우리 서비스\'라는 인식이 없는 고객에게는 선택받기 어렵습니다. 특정 산업의 특정 문제를 완벽히 해결한다는 포지셔닝이 없으면 마케팅 비용 대비 전환율이 낮습니다.", "AI 분석 결과가 단순 점수나 확률로만 제공되면 의사결정 근거로 활용하기 어렵습니다. 신뢰성 있는 사례 비교와 구체적 개선 방향이 없으면 고객은 결과를 참고하지 않게 됩니다."], '
             '"improvement": ["초기에는 특정 산업(예: 제조업 신사업 기획팀)으로 타깃을 좁히고, 그 산업에서 반복되는 의사결정 실패 유형을 3가지 이상 사전 검증해야 합니다.", "AI 점수뿐만 아니라 유사 사례 비교·리스크 근거·실행 제안까지 포함한 한 장짜리 리포트 형식으로 제공해 의사결정자가 바로 사용할 수 있게 설계해야 합니다.", "첫 3개 고객에게 3개월 무료 파일럿을 제공하고, 실제로 서비스 사용 후 결정이 달라진 사례를 수집해 마케팅 자료와 구독 전환 근거로 활용해야 합니다."], '
-            '"framework_insight": null, '
+            '"framework_insight": "린스타트업 관점에서 이 전략은 고객 개발(Customer Development) 없이 제품을 구축하는 전형적인 위험 패턴을 따르고 있습니다. 먼저 특정 산업 내 의사결정자 10명 이상을 인터뷰해 \'어떤 결정을 내릴 때 AI 분석이 실제로 필요한가\'를 검증한 뒤 제품을 개발해야 실패 위험을 줄일 수 있습니다.", '
             '"verdict": "시장성은 있으나 초기 타깃 산업을 좁히고 활용 시나리오를 구체화해야 성공 가능성이 높아지는 전략입니다."}'
         ),
     },
@@ -193,7 +193,7 @@ def _get_chain() -> Any:
             model=model,
             temperature=0.3,
             timeout=30,
-            max_retries=1,
+            max_retries=2,
         )
 
         _chain = _PROMPT | llm | JsonOutputParser()
@@ -210,7 +210,7 @@ def _format_similar_cases(articles: list[dict]) -> str:
 
     lines = []
 
-    for a in articles[:3]:
+    for a in articles[:5]:
         lk = label_kor.get(a.get("label", ""), "중립")
         title = str(a.get("title", "") or "")[:80]
         sim = float(a.get("similarity", 0) or 0)
@@ -218,8 +218,8 @@ def _format_similar_cases(articles: list[dict]) -> str:
         cat = a.get("category", "") or "분류 없음"
         summary = str(a.get("summary", "") or "").strip()
 
-        if len(summary) > 250:
-            summary = summary[:250] + "..."
+        if len(summary) > 450:
+            summary = summary[:450] + "..."
 
         lines.append(
             f"{a.get('rank', '-')}. [{lk}] {title}\n"
@@ -256,7 +256,7 @@ def generate_report(
             "strategy_text": strategy_text,
             "risk_score": f"{risk_score:.2f}",
             "risk_level": risk_level,
-            "k": min(len(similar_articles), 3),
+            "k": min(len(similar_articles), 5),
             "similar_cases": _format_similar_cases(similar_articles),
             "trend_section": trend_section,
             "framework_section": fw_section,

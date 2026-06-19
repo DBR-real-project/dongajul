@@ -178,30 +178,53 @@ def init_frameworks(sbert_model) -> None:
     print(f"[frameworks] {len(FRAMEWORKS)}개 프레임워크 임베딩 완료 ({embs.shape[1]}차원)")
 
 
-def find_relevant_frameworks(query_embedding: np.ndarray, top_k: int = 1) -> str:
+_PORTER_NAMES = {
+    "Porter의 5가지 경쟁요인 (Five Forces)",
+    "Porter의 본원적 전략 (Generic Strategies)",
+    "가치사슬 분석 (Value Chain Analysis)",
+}
+
+def find_relevant_frameworks(query_embedding: np.ndarray, top_k: int = 2) -> str:
     """
     쿼리 임베딩과 가장 유사한 프레임워크를 찾아 GPT 프롬프트용 텍스트 반환.
-    유사도가 임계값 미만이면 빈 문자열 반환(관련 없음).
+    - 유사도 0.35 미만이면 빈 문자열 반환
+    - Porter 계열 3개 중 최대 1개만 포함 (다양성 보장)
+    - top_k=2로 상위 2개 반환해 GPT 비교 인사이트 제공
     """
     if _fw_embeddings is None:
         return ""
 
-    # 코사인 유사도 (정규화된 벡터이므로 내적 = 코사인 유사도)
     q = query_embedding.flatten().astype(np.float32)
     if np.linalg.norm(q) > 0:
         q = q / np.linalg.norm(q)
 
     sims = _fw_embeddings @ q   # (N,)
-    top_idx = int(np.argmax(sims))
-    top_sim = float(sims[top_idx])
+    ranked = np.argsort(sims)[::-1]  # 유사도 내림차순 인덱스
 
-    # 유사도 0.35 미만이면 관련 프레임워크 없음 판단
-    if top_sim < 0.35:
+    selected = []
+    porter_used = False
+    for idx in ranked:
+        if len(selected) >= top_k:
+            break
+        sim = float(sims[idx])
+        if sim < 0.35:
+            break
+        fw = FRAMEWORKS[int(idx)]
+        is_porter = fw["name"] in _PORTER_NAMES
+        if is_porter and porter_used:
+            continue
+        if is_porter:
+            porter_used = True
+        selected.append((fw, sim))
+
+    if not selected:
         return ""
 
-    fw = FRAMEWORKS[top_idx]
-    return (
-        f"[관련 전략 프레임워크: {fw['name']}]\n"
-        f"출처: {fw['author']}\n"
-        f"{fw['text']}"
-    )
+    parts = []
+    for fw, sim in selected:
+        parts.append(
+            f"[관련 전략 프레임워크: {fw['name']}] (유사도: {sim:.2f})\n"
+            f"출처: {fw['author']}\n"
+            f"{fw['text']}"
+        )
+    return "\n\n".join(parts)

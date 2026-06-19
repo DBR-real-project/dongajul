@@ -1,5 +1,5 @@
 ﻿import React, { useState } from 'react';
-import { apiFetch } from '../utils/api';
+import { apiFetch, BASE_URL } from '../utils/api';
 import { useArticleCount } from '../utils/articleCount';
 
 interface LoginScreenProps {
@@ -199,7 +199,7 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
             <div className="grid grid-cols-3 gap-3">
               <button
                 type="button"
-                onClick={() => { window.location.href = 'http://localhost:3001/api/auth/kakao'; }}
+                onClick={() => { window.location.href = `${BASE_URL}/api/auth/kakao`; }}
                 className="flex flex-col items-center justify-center py-2.5 bg-[#FEE500] hover:bg-[#FDD835] rounded-lg transition-all border border-transparent shadow-sm"
               >
                 <span className="text-xl mb-0.5">💬</span>
@@ -207,7 +207,7 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
               </button>
               <button
                 type="button"
-                onClick={() => { window.location.href = 'http://localhost:3001/api/auth/naver'; }}
+                onClick={() => { window.location.href = `${BASE_URL}/api/auth/naver`; }}
                 className="flex flex-col items-center justify-center py-2.5 bg-[#03C75A] hover:bg-[#02B350] rounded-lg transition-all border border-transparent shadow-sm"
               >
                 <span className="text-lg text-white mb-0.5 font-black leading-none">N</span>
@@ -215,7 +215,7 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
               </button>
               <button
                 type="button"
-                onClick={() => { window.location.href = 'http://localhost:3001/api/auth/google'; }}
+                onClick={() => { window.location.href = `${BASE_URL}/api/auth/google`; }}
                 className="flex flex-col items-center justify-center py-2.5 bg-gray-50 hover:bg-gray-100 rounded-lg transition-all border border-gray-200 shadow-sm"
               >
                 <span className="text-xl mb-0.5 font-bold text-gray-700">G</span>

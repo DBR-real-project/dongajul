@@ -17,6 +17,7 @@ import { SemanticMap } from './components/SemanticMap';
 import { SubscriptionPage } from './components/SubscriptionPage';
 import { CheckoutPage } from './components/CheckoutPage';
 import { AIChatbot } from './components/AIChatbot';
+import { BASE_URL } from './utils/api';
 
 export type ViewType =
   | 'dashboard'
@@ -33,6 +34,28 @@ export type ViewType =
   | 'semantic-map'
   | 'subscription'
   | 'checkout';
+
+// URL path ↔ ViewType 매핑 (브라우저 뒤로/앞으로 가기 지원)
+const VIEW_PATHS: Record<ViewType, string> = {
+  dashboard:    '/',
+  analysis:     '/analysis',
+  strategy:     '/strategy',
+  history:      '/history',
+  compare:      '/compare',
+  risk:         '/risk',
+  result:       '/result',
+  'semantic-map': '/semantic-map',
+  article:      '/article',
+  notifications: '/notifications',
+  profile:      '/profile',
+  settings:     '/settings',
+  subscription: '/subscription',
+  checkout:     '/checkout',
+};
+
+const PATH_TO_VIEW: Record<string, ViewType> = Object.fromEntries(
+  (Object.entries(VIEW_PATHS) as [ViewType, string][]).map(([v, p]) => [p, v])
+);
 
 export type TabType = 'dashboard' | 'strategy' | 'history';
 
@@ -54,7 +77,11 @@ interface CompareItem {
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('token'));
   const [showSignup, setShowSignup] = useState(false);
-  const [currentView, setCurrentView] = useState<ViewType>('dashboard');
+  const [currentView, setCurrentView] = useState<ViewType>(() => {
+    // URL 경로에서 초기 뷰 결정 (직접 URL 접근 또는 새로고침 대응)
+    const path = window.location.pathname;
+    return PATH_TO_VIEW[path] ?? 'dashboard';
+  });
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [selectedArticle, setSelectedArticle] = useState<number | null>(null);
   const [comparedItems, setComparedItems] = useState<CompareItem[]>([]);
@@ -63,12 +90,32 @@ export default function App() {
     umap_y: number;
     cluster_name?: string;
   } | null>(null);
-  const [previousView, setPreviousView] = useState<ViewType>('dashboard');
+  const [semanticHighlightArticleId, setSemanticHighlightArticleId] = useState<number | null>(null);
+  const [semanticHighlightClusterId, setSemanticHighlightClusterId] = useState<number | null>(null);
   const [darkMode, setDarkMode] = useState<boolean>(() =>
     JSON.parse(localStorage.getItem('darkMode') || 'false')
   );
   const [diagnosisResult, setDiagnosisResult] = useState<DiagnosisData | null>(null);
   const [diagnosisId, setDiagnosisId] = useState<number | undefined>(undefined);
+
+  // 브라우저 뒤로/앞으로 가기 처리
+  useEffect(() => {
+    // 초기 history 엔트리에 view 정보 주입 (없으면 replaceState)
+    if (!window.history.state?.view) {
+      window.history.replaceState(
+        { view: currentView, depth: 0 },
+        '',
+        VIEW_PATHS[currentView] ?? '/'
+      );
+    }
+
+    const handlePopState = (e: PopStateEvent) => {
+      const view = (e.state?.view as ViewType) ?? 'dashboard';
+      setCurrentView(view);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);
@@ -117,7 +164,7 @@ export default function App() {
       }
 
       setIsLoggedIn(true);
-      window.history.replaceState({}, '', '/');
+      window.history.replaceState({ view: 'dashboard', depth: 0 }, '', '/');
     } catch (e) {
       // 토큰 자체가 손상된 경우에만 제거
       console.error('토큰 파싱 실패:', e);
@@ -142,6 +189,7 @@ export default function App() {
     window.dispatchEvent(new Event('storage'));
     setIsLoggedIn(true);
     setShowSignup(false);
+    window.history.replaceState({ view: 'dashboard', depth: 0 }, '', '/');
     setCurrentView('dashboard');
   };
 
@@ -159,18 +207,19 @@ export default function App() {
 
     setIsLoggedIn(true);
     setShowSignup(false);
+    window.history.replaceState({ view: 'dashboard', depth: 0 }, '', '/');
     setCurrentView('dashboard');
   };
 
   const handleSocialLogin = (provider: string) => {
-    window.location.href = `http://localhost:3001/api/auth/${provider}`;
+    window.location.href = `${BASE_URL}/api/auth/${provider}`;
   };
 
   const handleLogout = () => {
     // 서버 측 refresh token 무효화 (fire-and-forget)
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     if (user?.id) {
-      fetch('http://localhost:3001/api/auth/logout', {
+      fetch(`${BASE_URL}/api/auth/logout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: user.id }),
@@ -182,41 +231,56 @@ export default function App() {
     localStorage.removeItem('userName');
     setIsLoggedIn(false);
     setShowSignup(false);
-    setCurrentView('dashboard');
-    setActiveTab('dashboard');
-    setPreviousView('dashboard');
     setSelectedArticle(null);
     setDiagnosisResult(null);
     setDiagnosisId(undefined);
+    setActiveTab('dashboard');
+    window.history.replaceState({ view: 'dashboard', depth: 0 }, '', '/');
+    setCurrentView('dashboard');
   };
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
-
     const viewMap: Record<TabType, ViewType> = {
       dashboard: 'analysis',
       strategy: 'strategy',
       history: 'history',
     };
-
-    setCurrentView(viewMap[tab]);
+    const view = viewMap[tab];
+    // 탭 전환은 depth=0 (최상위), pushState로 히스토리에 쌓음
+    window.history.pushState({ view, depth: 0 }, '', VIEW_PATHS[view] ?? '/');
+    setCurrentView(view);
   };
 
   const handleViewChange = (view: string) => {
-    setCurrentView(view as ViewType);
+    navigateTo(view as ViewType);
   };
 
-  const navigateTo = (view: ViewType, from?: ViewType) => {
-    if (from) {
-      setPreviousView(from);
-    }
-
+  const navigateTo = (view: ViewType, _from?: ViewType) => {
+    const depth = (window.history.state?.depth ?? 0) + 1;
+    window.history.pushState({ view, depth }, '', VIEW_PATHS[view] ?? '/');
     setCurrentView(view);
+  };
+
+  const navigateBack = (fallback: ViewType = 'dashboard') => {
+    const depth = window.history.state?.depth ?? 0;
+    if (depth > 0) {
+      // 브라우저 히스토리에 이전 엔트리 있음 → popstate가 뷰 업데이트
+      window.history.back();
+    } else {
+      // 최상위(탭 루트) — 히스토리 없이 대체
+      window.history.replaceState({ view: fallback, depth: 0 }, '', VIEW_PATHS[fallback] ?? '/');
+      setCurrentView(fallback);
+    }
   };
 
   const navigateToResult = (data: DiagnosisData, from: ViewType = 'risk') => {
     setDiagnosisResult(data);
     setDiagnosisId(undefined);
+    // 새 진단 결과 좌표 미리 저장 (시맨틱맵에서 바로 사용 가능하도록)
+    if (data.query_umap_x != null) {
+      setSemanticQueryPoint({ umap_x: data.query_umap_x, umap_y: data.query_umap_y!, cluster_name: data.cluster_name });
+    }
     navigateTo('result', from);
   };
 
@@ -227,23 +291,42 @@ export default function App() {
   };
 
   const handleInsightSemanticMap = (article: {
-    umap_x?: number;
-    umap_y?: number;
-    cluster_name?: string;
-    category?: string;
-    source?: string;
+    article_id?: number | null;
+    umap_x?: number | null;
+    umap_y?: number | null;
+    cluster_id?: number | null;
+    cluster_name?: string | null;
+    category?: string | null;
+    source?: string | null;
   }) => {
-    if (article.umap_x == null || article.umap_y == null) {
-      setSemanticQueryPoint(null);
-    } else {
+    // ai_server 시맨틱맵 포인트의 id는 행 인덱스라 DB article_id와 불일치
+    // → article_vectors에서 JOIN된 umap_x/y 좌표를 직접 queryPoint로 사용
+    setSemanticHighlightArticleId(null);
+    setSemanticHighlightClusterId(null);
+    if (article.umap_x != null && article.umap_y != null) {
       setSemanticQueryPoint({
         umap_x: article.umap_x,
         umap_y: article.umap_y,
-        cluster_name: article.cluster_name || article.category || article.source,
+        cluster_name: article.cluster_name || article.category || article.source || undefined,
       });
+    } else if (article.cluster_id != null) {
+      // 좌표 없는 경우(HBS 등) → cluster 센터 폴백은 SemanticMap이 처리
+      setSemanticHighlightClusterId(article.cluster_id);
+      setSemanticQueryPoint(null);
+    } else {
+      setSemanticQueryPoint(null);
     }
-
     navigateTo('semantic-map', 'analysis');
+  };
+
+  const handleDiagnosisSemanticMap = (coords?: { umap_x: number; umap_y: number; cluster_name?: string }) => {
+    // 진단 결과 → 시맨틱맵: DiagnosisResult 로컬 데이터에서 좌표 전달받음
+    setSemanticHighlightArticleId(null);
+    setSemanticHighlightClusterId(null);
+    if (coords) {
+      setSemanticQueryPoint(coords);
+    }
+    navigateTo('semantic-map', 'result');
   };
 
   const handleInsightCompare = (articles: Array<any>) => {
@@ -287,8 +370,8 @@ export default function App() {
 
   const commonProps = {
     darkMode,
-    onNotificationClick: () => setCurrentView('notifications'),
-    onProfileClick: () => setCurrentView('profile'),
+    onNotificationClick: () => navigateTo('notifications'),
+    onProfileClick: () => navigateTo('profile'),
   };
 
   return (
@@ -298,7 +381,7 @@ export default function App() {
         onViewChange={handleViewChange}
         darkMode={darkMode}
         onToggleDarkMode={() => setDarkMode((d) => !d)}
-        onNotificationClick={() => setCurrentView('notifications')}
+        onNotificationClick={() => navigateTo('notifications')}
         onLogout={handleLogout}
       />
 
@@ -309,8 +392,8 @@ export default function App() {
           {currentView === 'dashboard' ? (
             <EnterpriseDashboard
               darkMode={darkMode}
-              onStartDiagnosis={() => setCurrentView('risk')}
-              onViewInsights={() => setCurrentView('analysis')}
+              onStartDiagnosis={() => navigateTo('risk')}
+              onViewInsights={() => navigateTo('analysis')}
               onCompareClick={(items: CompareItem[]) => {
                 setComparedItems(items);
                 navigateTo('compare', 'dashboard');
@@ -342,7 +425,7 @@ export default function App() {
           ) : currentView === 'compare' ? (
             <CompareView
               items={comparedItems}
-              onBack={() => setCurrentView(previousView)}
+              onBack={() => navigateBack('analysis')}
               darkMode={darkMode}
             />
           ) : currentView === 'risk' ? (
@@ -354,50 +437,47 @@ export default function App() {
             <DiagnosisResult
               resultData={diagnosisResult ?? undefined}
               diagnosisId={diagnosisId}
-              onBack={() => setCurrentView(previousView || 'risk')}
-              onSemanticMap={() => navigateTo('semantic-map', 'result')}
+              onBack={() => navigateBack('risk')}
+              onSemanticMap={handleDiagnosisSemanticMap}
               darkMode={darkMode}
             />
           ) : currentView === 'semantic-map' ? (
             <SemanticMap
               darkMode={darkMode}
-              onBack={() => setCurrentView(previousView || 'dashboard')}
-              queryPoint={semanticQueryPoint ?? (diagnosisResult?.query_umap_x != null ? {
-                umap_x: diagnosisResult.query_umap_x!,
-                umap_y: diagnosisResult.query_umap_y!,
-                cluster_name: diagnosisResult.cluster_name,
-              } : null)}
+              queryPoint={semanticQueryPoint}
+              highlightArticleId={semanticHighlightArticleId}
+              highlightClusterId={semanticHighlightClusterId}
             />
           ) : currentView === 'article' && selectedArticle !== null ? (
             <ArticleDetail
               articleId={selectedArticle}
-              onBack={() => setCurrentView(previousView || 'analysis')}
+              onBack={() => navigateBack('analysis')}
               darkMode={darkMode}
             />
           ) : currentView === 'notifications' ? (
             <NotificationView
-              onBack={() => setCurrentView('dashboard')}
-              onNavigate={(view) => setCurrentView(view as any)}
+              onBack={() => navigateBack('dashboard')}
+              onNavigate={(view) => navigateTo(view as any)}
               darkMode={darkMode}
             />
           ) : currentView === 'profile' || currentView === 'settings' ? (
             <ProfileView
-              onBack={() => setCurrentView('dashboard')}
+              onBack={() => navigateBack('dashboard')}
               darkMode={darkMode}
             />
           ) : currentView === 'subscription' ? (
             <SubscriptionPage
-              onStartBasic={() => setCurrentView('dashboard')}
-              onSubscribe={() => setCurrentView('checkout')}
+              onStartBasic={() => navigateTo('dashboard')}
+              onSubscribe={() => navigateTo('checkout')}
               darkMode={darkMode}
             />
           ) : currentView === 'checkout' ? (
-            <CheckoutPage onBack={() => setCurrentView('subscription')} onSuccess={() => setCurrentView('dashboard')} darkMode={darkMode} />
+            <CheckoutPage onBack={() => navigateBack('subscription')} onSuccess={() => navigateTo('dashboard')} darkMode={darkMode} />
           ) : (
             <EnterpriseDashboard
               darkMode={darkMode}
-              onStartDiagnosis={() => setCurrentView('risk')}
-              onViewInsights={() => setCurrentView('analysis')}
+              onStartDiagnosis={() => navigateTo('risk')}
+              onViewInsights={() => navigateTo('analysis')}
               onCompareClick={(items: CompareItem[]) => {
                 setComparedItems(items);
                 navigateTo('compare', 'dashboard');

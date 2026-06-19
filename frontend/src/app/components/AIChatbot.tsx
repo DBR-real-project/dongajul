@@ -38,8 +38,76 @@ function relativeDate(iso: string) {
   return d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
 }
 
-// 간단한 마크다운 렌더러 (**bold**, 줄바꿈, 번호 목록)
-function RenderText({ text }: { text: string }) {
+// 진단 프롬프트 추출
+function extractPrompt(text: string): { before: string; prompt: string; after: string } | null {
+  const start = text.indexOf('===PROMPT_START===');
+  const end = text.indexOf('===PROMPT_END===');
+  if (start === -1 || end === -1 || end <= start) return null;
+  return {
+    before: text.slice(0, start).trim(),
+    prompt: text.slice(start + '===PROMPT_START==='.length, end).trim(),
+    after: text.slice(end + '===PROMPT_END==='.length).trim(),
+  };
+}
+
+// 진단 프롬프트 복사 카드
+function PromptCard({ prompt, darkMode }: { prompt: string; darkMode: boolean }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(prompt);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      const el = document.createElement('textarea');
+      el.value = prompt;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+  return (
+    <div className={`mt-2 rounded-xl border-2 ${darkMode ? 'border-[#E5BA73]/40 bg-[#1a1a2e]' : 'border-[#142755]/30 bg-blue-50'} overflow-hidden`}>
+      <div className={`px-3 py-2 flex items-center justify-between ${darkMode ? 'bg-[#E5BA73]/10' : 'bg-[#142755]/5'}`}>
+        <span className={`text-xs font-bold ${darkMode ? 'text-[#E5BA73]' : 'text-[#142755]'}`}>📋 진단 프롬프트</span>
+        <button
+          onClick={handleCopy}
+          className={`text-xs px-3 py-1 rounded-lg font-semibold transition-all ${
+            copied
+              ? 'bg-green-500 text-white'
+              : darkMode
+                ? 'bg-[#E5BA73] text-gray-900 hover:bg-[#d4a85e]'
+                : 'bg-[#142755] text-white hover:bg-[#1f3a7a]'
+          }`}
+        >
+          {copied ? '✓ 복사됨' : '복사하기'}
+        </button>
+      </div>
+      <div className={`px-3 py-3 text-xs leading-relaxed whitespace-pre-wrap font-mono ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+        {prompt}
+      </div>
+      <div className={`px-3 py-2 text-[10px] ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+        전략 진단 메뉴 → 위 내용 붙여넣기 → 분석 실행
+      </div>
+    </div>
+  );
+}
+
+// 간단한 마크다운 렌더러 (**bold**, 줄바꿈)
+function RenderText({ text, darkMode = false }: { text: string; darkMode?: boolean }) {
+  const parsed = extractPrompt(text);
+  if (parsed) {
+    return (
+      <>
+        {parsed.before && <RenderText text={parsed.before} darkMode={darkMode} />}
+        <PromptCard prompt={parsed.prompt} darkMode={darkMode} />
+        {parsed.after && <RenderText text={parsed.after} darkMode={darkMode} />}
+      </>
+    );
+  }
   const lines = text.split('\n');
   return (
     <>
@@ -441,7 +509,7 @@ export function AIChatbot({ darkMode = false }: AIChatbotProps) {
                                     : 'bg-white text-gray-800 rounded-tl-sm shadow-sm border border-gray-100'
                               }`}
                             >
-                              <RenderText text={msg.text} />
+                              <RenderText text={msg.text} darkMode={darkMode} />
                             </div>
                             {msg.time && (
                               <span className={`text-[10px] px-1 ${darkMode ? 'text-gray-600' : 'text-gray-400'}`}>{msg.time}</span>

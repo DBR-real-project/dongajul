@@ -135,15 +135,20 @@ async function saveToDb(inputText, aiData, userId) {
     await connection.execute(
       `
       INSERT INTO analysis_results
-        (diagnosis_id, risk_score, analysis_mode, success_keywords, failure_keywords, created_at)
+        (diagnosis_id, risk_score, query_umap_x, query_umap_y, query_cluster_id,
+         analysis_mode, success_keywords, failure_keywords, report_json, created_at)
       VALUES
-        (?, ?, 'auto', ?, ?, NOW())
+        (?, ?, ?, ?, ?, 'auto', ?, ?, ?, NOW())
       `,
       [
         diagnosisId,
         aiData.risk_score || 0,
+        aiData.query_umap_x ?? null,
+        aiData.query_umap_y ?? null,
+        aiData.query_cluster_id ?? null,
         successKeywords,
         failureKeywords,
+        aiData.report ? JSON.stringify(aiData.report) : null,
       ]
     );
 
@@ -206,6 +211,58 @@ async function saveToDb(inputText, aiData, userId) {
   }
 }
 
+// POST /api/diagnose/prompt-helper — AI 프롬프트 작성 도우미
+exports.promptHelper = async (req, res) => {
+  const { industry, strategyType, hint } = req.body;
+  if (!industry || !strategyType) {
+    return res.status(400).json({ error: '산업군과 전략 유형이 필요합니다.' });
+  }
+
+  const hintSection = hint?.trim()
+    ? `\n사용자가 이미 작성한 내용:\n"${hint.trim()}"\n→ 이 내용을 반영하고 부족한 부분을 보완해서 작성하세요.`
+    : '';
+
+  const prompt = `당신은 전략 리스크 진단 AI의 입력 프롬프트 작성 전문가입니다.
+아래 조건을 바탕으로 AI 진단에 최적화된 전략 설명문을 작성하세요.
+
+조건:
+- 산업군: ${industry}
+- 전략 유형: ${strategyType}${hintSection}
+
+작성 기준:
+1. 타깃 고객이 구체적으로 드러나야 함
+2. 경쟁사 대비 핵심 차별점이 포함되어야 함
+3. 실행 방식 또는 수익 모델이 언급되어야 함
+4. 보유 자원(자금·인력·기술) 또는 제약 조건이 포함되면 좋음
+5. 150~250자 내외의 자연스러운 한국어 문장으로 작성
+
+반드시 전략 설명문만 출력하세요. 제목, 번호, 설명 없이 본문만.`;
+
+  try {
+    const response = await axios.post(
+      'https://api.openai.com/v1/chat/completions',
+      {
+        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 400,
+        temperature: 0.7,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 15000,
+      }
+    );
+    const text = response.data.choices[0]?.message?.content?.trim() || '';
+    return res.json({ text });
+  } catch (err) {
+    console.error('[promptHelper]', err.response?.data || err.message);
+    return res.status(500).json({ error: 'AI 프롬프트 생성 실패' });
+  }
+};
+
 // POST /api/diagnose/global — HBS 해외 사례 조회 (DB 저장 없음)
 exports.diagnoseGlobal = async (req, res) => {
   const { text, top_k = 5 } = req.body;
@@ -236,6 +293,37 @@ exports.diagnoseGlobal = async (req, res) => {
   }
 };
 
+// DELETE /api/diagnose/:id — 진단이력 삭제
+exports.deleteDiagnose = async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user?.user_id;
+
+  if (!id || isNaN(Number(id))) {
+    return res.status(400).json({ error: '유효하지 않은 진단 ID입니다.' });
+  }
+
+  try {
+    // 본인 소유 확인
+    const [rows] = await db.execute(
+      'SELECT diagnosis_id FROM diagnosis_requests WHERE diagnosis_id = ? AND user_id = ?',
+      [id, userId]
+    );
+    if (!rows.length) {
+      return res.status(404).json({ error: '진단 기록을 찾을 수 없습니다.' });
+    }
+
+    // 연관 데이터 삭제 (FK 참조 순서대로)
+    await db.execute('DELETE FROM similar_article_matches WHERE diagnosis_id = ?', [id]);
+    await db.execute('DELETE FROM analysis_results WHERE diagnosis_id = ?', [id]);
+    await db.execute('DELETE FROM diagnosis_requests WHERE diagnosis_id = ?', [id]);
+
+    return res.json({ success: true, message: '진단 이력이 삭제되었습니다.' });
+  } catch (err) {
+    console.error('[deleteDiagnose] 오류:', err.message);
+    return res.status(500).json({ error: '삭제 중 오류가 발생했습니다.' });
+  }
+};
+
 // GET /api/diagnose/:id — 저장된 진단 결과 조회
 exports.getDiagnoseById = async (req, res) => {
   const { id } = req.params;
@@ -245,10 +333,9 @@ exports.getDiagnoseById = async (req, res) => {
   }
 
   try {
-    // analysis_results 컬럼이 DB 환경마다 다를 수 있어 risk_score만 명시 조회
     const [diagRows] = await db.execute(
       `SELECT dr.diagnosis_id, dr.user_id, dr.input_text, dr.status, dr.created_at,
-              ar.risk_score
+              ar.risk_score, ar.query_umap_x, ar.query_umap_y, ar.query_cluster_id, ar.report_json
        FROM diagnosis_requests dr
        LEFT JOIN analysis_results ar ON dr.diagnosis_id = ar.diagnosis_id
        WHERE dr.diagnosis_id = ?`,
@@ -283,12 +370,21 @@ exports.getDiagnoseById = async (req, res) => {
 
     const riskScore = parseFloat(diag.risk_score) || 0;
 
+    let report = null;
+    if (diag.report_json) {
+      try { report = JSON.parse(diag.report_json); } catch {}
+    }
+
     return res.json({
       diagnosis_id: diag.diagnosis_id,
       input_text: diag.input_text,
       risk_score: riskScore,
       risk_level: riskScore >= 0.6 ? 'high' : riskScore >= 0.3 ? 'medium' : 'low',
-      improvement: null,
+      query_umap_x: diag.query_umap_x ?? null,
+      query_umap_y: diag.query_umap_y ?? null,
+      query_cluster_id: diag.query_cluster_id ?? null,
+      report,
+      improvement: report?.improvement ?? null,
       similar_articles: matches,
       created_at: diag.created_at,
     });

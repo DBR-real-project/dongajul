@@ -36,19 +36,19 @@ exports.getHistoryDetail = async (resultId) => {
     SELECT
       r.result_id,
       r.diagnosis_id,
-      r.risk_score,
-      CASE 
-        WHEN r.risk_score >= 0.7 THEN 'high'
-        WHEN r.risk_score >= 0.4 THEN 'medium'
+      COALESCE(r.risk_score, 0) AS risk_score,
+      CASE
+        WHEN COALESCE(r.risk_score, 0) >= 0.7 THEN 'high'
+        WHEN COALESCE(r.risk_score, 0) >= 0.4 THEN 'medium'
         ELSE 'low'
       END AS risk_level,
-      r.created_at,
+      COALESCE(r.created_at, d.created_at) AS created_at,
       d.user_id,
       d.input_text
-    FROM analysis_results r
-    INNER JOIN diagnosis_requests d
-      ON r.diagnosis_id = d.diagnosis_id
-    WHERE r.result_id = ?
+    FROM diagnosis_requests d
+    LEFT JOIN analysis_results r
+      ON d.diagnosis_id = r.diagnosis_id
+    WHERE d.diagnosis_id = ?
     LIMIT 1
   `;
 

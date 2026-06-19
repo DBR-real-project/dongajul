@@ -41,6 +41,7 @@ interface GptResult {
   key_differences: string[];
   recommendation: string;
   trend_insight?: string;
+  score_basis?: { A: string; B: string };
   scores?: {
     A: DimScores;
     B: DimScores;
@@ -164,7 +165,7 @@ export function CompareView({ items, onBack, darkMode = false }: CompareViewProp
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
       .then((data: GptResult) => { setGptResult(data); setGptLoading(false); })
       .catch(() => { setGptError('AI 분석을 불러올 수 없습니다.'); setGptLoading(false); });
-  }, []);
+  }, [items[0]?.url, items[1]?.url]);
 
   if (items.length !== 2) {
     return (
@@ -448,6 +449,21 @@ export function CompareView({ items, onBack, darkMode = false }: CompareViewProp
                       </li>
                     ))}
                   </ul>
+                </div>
+              )}
+
+              {/* 채점 근거 */}
+              {gptResult.score_basis && (
+                <div className={`p-4 rounded-xl ${darkMode ? 'bg-gray-700/40 border border-gray-600/30' : 'bg-gray-50 border border-gray-200'}`}>
+                  <p className={`text-xs font-semibold uppercase tracking-wide mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>채점 근거</p>
+                  <div className="space-y-2">
+                    <p className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-700'} leading-relaxed`}>
+                      <span className="font-semibold">사례 A:</span> {gptResult.score_basis.A}
+                    </p>
+                    <p className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-700'} leading-relaxed`}>
+                      <span className="font-semibold">사례 B:</span> {gptResult.score_basis.B}
+                    </p>
+                  </div>
                 </div>
               )}
 
