@@ -17,8 +17,8 @@ app.use(
   })
 );
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ── 라우터 등록 ───────────────────────────────────────────────────────
 // 인증: 이메일 로그인/회원가입 + 카카오/구글/네이버 OAuth
