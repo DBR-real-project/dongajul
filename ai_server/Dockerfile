@@ -7,7 +7,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# 의존성 먼저 설치 (레이어 캐시 활용)
+# torch CPU-only 먼저 설치 (GPU 없는 서버에서 CUDA 패키지 수백MB 방지)
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+
+# 나머지 의존성 설치 (레이어 캐시 활용)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
