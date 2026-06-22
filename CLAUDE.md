@@ -187,7 +187,7 @@ ai_server/
 
 ---
 
-## 현재 상태 (2026-06-19 세션19 — 시맨틱맵 하이라이트/히스토리 전체 수정)
+## 현재 상태 (2026-06-22 세션21 — AI 리포트 컨설팅 UI + PDF 저장 + 시맨틱맵 가시성 개선)
 
 **HBS 크롤링 완료 (세션10)**: 2,116건 수집 → HBS_articles_ko.csv (title_ko/summary_ko/content_ko_summary 한국어 번역 전체 완료, 실패 0건)
 **NLP 파이프라인 전체 완료**: ① 전처리 → ② 라벨링 → ③ 임베딩+FAISS → ④ 리스크 모델 → ⑤ UMAP+K-means
@@ -221,6 +221,41 @@ ai_server/
 **세션14 완료**: 기사 비교 6차원 GPT 스코어링 + 플로팅 비교 버튼 + AI 챗 ChatGPT 스타일 전면 개편
 
 **세션15 완료**: 진단이력 불러오기 버그 수정 (INNER→LEFT JOIN + 에러 UI), 전체 코드 버그 검수 8개 수정, NCP Docker 배포 설정 구축 (frontend Dockerfile/nginx.conf + docker-compose 전면 개편 + deploy.sh)
+
+**세션21 완료**: AI 리포트 컨설팅 문서 UI 재설계 + PDF 저장 + 시맨틱맵 가시성 전면 개선 (항목 65~67 참고)
+
+---
+
+### 세션21 완료 (2026-06-22) — AI 리포트 컨설팅 UI + PDF + 시맨틱맵 가시성
+
+**65. AI 리포트 컨설팅 문서 UI 재설계 (`frontend/src/app/components/DiagnosisResult.tsx`)**
+- 기존: 카드가 나열된 앱 느낌 UI
+- 신규: 넘버링 섹션(01/02/03) 기반 컨설팅 리포트 문서 스타일
+  - 리포트 헤더: 동아줄 브랜딩 + 날짜 + [PDF 저장] 버튼 (인디고)
+  - Executive Summary: 종합 평가 + 최종 판정 통합 (네이비 배경 박스)
+  - `01` 전략 구조 분석: 파란 좌측 보더 박스
+  - `02` 주요 리스크 요인: HIGH/MED 배지 + 심층 분석 텍스트
+  - `03` 전략 개선 제언: 번호 서클 버튼 리스트
+  - 전략 프레임워크 관점: 앰버 하이라이트 박스
+  - 리포트 푸터: 데이터 출처 + 면책 문구
+
+**66. PDF 저장 기능 (`frontend/src/app/components/DiagnosisResult.tsx`)**
+- jsPDF + html2canvas 설치 (동적 import, 초기 번들 영향 없음)
+- A4 다중 페이지 지원: 리포트 div → canvas 캡처 → JPEG → PDF
+- 파일명: `동아줄_전략리스크진단리포트_YYYY-MM-DD.pdf`
+
+**67. reporter.py temperature 0.3 → 0.5**
+- 리스크 요인 다양성 개선 (기존 유사 패턴 반복 문제)
+
+**68. 시맨틱맵 가시성 전면 개선 (`frontend/src/app/components/SemanticMap.tsx`)**
+- 클러스터 레이블: 상위3 + 활성 + 줌1.6+ → **전체 12개 상시 표시**
+- 레이블 이름 truncation 12→15자, 글자 크기 10→11px(활성), 필 높이 30→32-36px
+- 레이블 배경 불투명도 증가 + 외곽 glow 레이어 추가
+- 클러스터 hull fill: 0.04~0.15 → 0.07~0.22 (더 선명한 경계)
+- hull stroke: 0.42~0.55 → 0.58~1.0 (경계선 진하게)
+- 중립 점: 반지름 1.8→2.3, 투명도 0.13→0.22
+- 성공 점: 반지름 2.6→3.2 (기본), 불투명도 0.42→0.55
+- 실패율 서브텍스트 폰트 크기 9→10px, 위험 등급 font-weight 700
 
 ---
 
@@ -342,6 +377,51 @@ ai_server/
 **53. api.ts tryRefresh() refresh_token 갱신 저장**
 - 서버가 새 refresh_token 반환 시 `localStorage.setItem('refresh_token', data.refresh_token)` 저장
 - Refresh Token Rotation 완전 지원
+
+---
+
+### 세션20 완료 (2026-06-22) — 소셜로그인 버그 수정 + 시맨틱맵 클러스터 라벨 + NCP 배포
+
+**60. 소셜로그인 URL 파라미터 소실 버그 근본 수정 (`App.tsx`, `authController.js`, `LoginScreen.tsx`)**
+- **버그 원인**: 세션18 History API 도입 시 `popstate` useEffect(L102)가 소셜콜백 useEffect(L125)보다 먼저 실행되어 `replaceState('/')` 호출 → `?token=XXXX` URL 파라미터 제거 → 로그인 무조건 실패
+- **수정**: popstate useEffect에 URL 파라미터 체크 추가 — `?token=` 또는 `?error=` 있으면 replaceState 스킵
+- `authController.js`: 소셜로그인 catch 블록 `res.status(500)` → `res.redirect(FRONTEND_URL?error=xxx_login_failed)` 통일
+- `LoginScreen.tsx`: `socialLoginError` prop 수신 + 에러 표시 UI (lazy initializer로 URL 읽기)
+- 카카오/네이버/구글 3개 모두 적용 (구글은 IP 기반 redirect URI 제한으로 배포 환경 미지원)
+
+**61. 시맨틱맵 클러스터 라벨 수정 (`SemanticMap.tsx`)**
+- `getClusterLabel()`: `top_keywords` 우선 사용 → 기업·사람 같은 범용 단어가 여러 클러스터에 중복 표시
+- `cluster_name` 직접 사용으로 변경 → 재무/투자/위기관리, 경영전략/조직관리 등 의미 있는 이름 표시
+
+**62. umap_coords_v3 / cluster_info_v3 팀원 공유 (.gitignore + git push)**
+- `.gitignore`에 `!데이터처리/output/umap_coords_v3.parquet` / `!cluster_info_v3.parquet` 예외 추가
+- git add → commit → push (develop 브랜치, 커밋 `909eb8ce`)
+- 조원이 `git pull` 후 ai_server 재시작하면 v3 클러스터 동일하게 적용됨
+
+**63. NCP 배포 완료 (211.188.50.81)**
+- 서버 .env 확인: `FRONTEND_URL`, `KAKAO/NAVER_REDIRECT_URI` 모두 NCP IP로 설정 완료
+- `git stash → git pull → docker compose build --no-cache → docker compose up -d` 완료
+- 3개 컨테이너 정상: frontend(HTTP 200), backend, ai_server(healthy)
+- 카카오 소셜로그인 redirect: 302 정상 응답 확인
+
+**64. NCP 서버 인스턴스 정지 (크레딧 절약)**
+- NCP 콘솔 → dongajul 서버 → 정지
+- G3 타입 정지 시 디스크 요금만 청구 (월 약 9,000원 수준) → 10만 크레딧 충분
+
+---
+
+### NCP 서버 재시작 방법 (중요)
+
+1. **NCP 콘솔** (console.ncloud.com/vpc-compute/server) → dongajul 서버 체크 → **시작** 버튼
+2. 서버 상태가 "운영"으로 바뀌면 SSH 접속:
+   ```
+   ssh root@211.188.50.81  (비밀번호: H6-U3EdMrAg)
+   ```
+3. Docker 컨테이너 시작:
+   ```bash
+   cd /root/dongajul && docker compose start
+   ```
+4. AI 서버 로드 약 60초 후 `http://211.188.50.81` 접속 확인
 
 ---
 
@@ -687,12 +767,18 @@ ai_server/
 - ~~StrategyWorkspace 백엔드 연동~~ → **세션13 완료** (strategies 테이블 생성) ✅
 - CompareView DB 연동 — **보류** (실제 메트릭 없음, 하드코딩 차트 데모)
 
-### NCP 배포 체크리스트 (서버 받은 후 수행)
-1. `backend/.env` 에 실제 시크릿 값 채우기 (`.env.example` 참고)
-2. OAuth 콜백 URL 수정: 카카오·구글·네이버 개발자 콘솔 → 리다이렉트 URI를 NCP 공인IP로 변경
-3. `backend/.env` 의 `FRONTEND_URL`, `KAKAO/GOOGLE/NAVER_REDIRECT_URI` → `http://NCP_공인IP/api/auth/...` 로 변경
-4. NCP 서버에서 `bash deploy.sh` 실행 (Docker + Docker Compose 설치 필요)
-5. 방화벽: 포트 80 인바운드 허용 (8000·3001은 내부 expose만, 외부 열 필요 없음)
+### NCP 배포 — 완료 ✅ (세션20, 2026-06-22)
+- 서버 IP: **211.188.50.81**, SSH: `root / H6-U3EdMrAg`
+- backend/.env FRONTEND_URL + 소셜 redirect URI 모두 NCP IP로 설정 완료
+- 카카오/네이버 개발자 콘솔 redirect URI 등록 완료
+- 구글 로그인: IP 기반 redirect URI 미지원 → 배포 환경에서 비활성 (도메인 확보 시 가능)
+- **현재 서버 인스턴스: 정지 상태** (크레딧 절약, 정지 중 디스크 요금만 월 ~9,000원)
+
+### NCP 서버 재시작 방법
+1. console.ncloud.com → Server → dongajul 체크 → **시작**
+2. 상태 "운영" 확인 후 SSH: `ssh root@211.188.50.81`
+3. `cd /root/dongajul && docker compose start`
+4. 약 60초 후 `http://211.188.50.81` 접속
 
 ### 신규 기획 (세션6 논의, 구현 검토 중)
 - ~~**트렌드 컨텍스트**~~ → **세션13 완료** ✅
