@@ -263,7 +263,9 @@ def diagnose(req: DiagnoseRequest):
             ),
         )
 
-    scores, ids = _faiss_index.search(q_emb, req.top_k)
+    # 실패 사례 보장을 위해 넓은 풀에서 검색 (실패 비율 ~5%이므로 100건 이상 필요)
+    pool_k = min(max(req.top_k * 20, 100), _faiss_index.ntotal)
+    scores, ids = _faiss_index.search(q_emb, pool_k)
 
     # 모델 기반 P(failure)
     _model = _risk_model["model"]
@@ -271,17 +273,40 @@ def diagnose(req: DiagnoseRequest):
     fail_col = classes.index(0)
     model_score = float(_model.predict_proba(q_emb)[0, fail_col])
 
+    # 라벨별 분리 수집
+    pool_success: list[dict] = []
+    pool_failure: list[dict] = []
+    pool_other: list[dict] = []
+
+    for sim, idx in zip(scores[0], ids[0]):
+        if int(idx) < 0 or int(idx) >= len(_meta):
+            continue
+        row = _meta.iloc[int(idx)]
+        label = str(row.get("label_name", "") or "")
+        entry = {"sim": float(sim), "idx": int(idx), "label": label, "row": row}
+        if label == "failure":
+            pool_failure.append(entry)
+        elif label == "success":
+            pool_success.append(entry)
+        else:
+            pool_other.append(entry)
+
+    # 실패 최소 3건 보장 후 나머지를 성공으로 채움
+    min_failure = min(3, len(pool_failure))
+    selected = pool_failure[:min_failure] + pool_success[:max(req.top_k - min_failure, 0)]
+    # 유사도 내림차순 재정렬 후 top_k 확정
+    selected.sort(key=lambda e: e["sim"], reverse=True)
+    selected = selected[:req.top_k]
+
     similar: list[SimilarArticle] = []
     total_weight = 0.0
     fail_weight = 0.0
     max_sim = 0.0
 
-    for rank, (sim, idx) in enumerate(zip(scores[0], ids[0]), start=1):
-        if int(idx) < 0 or int(idx) >= len(_meta):
-            continue
-
-        row = _meta.iloc[int(idx)]
-        label = str(row.get("label_name", "") or "")
+    for rank, entry in enumerate(selected, start=1):
+        sim_f = entry["sim"]
+        row = entry["row"]
+        label = entry["label"]
 
         similar.append(
             SimilarArticle(
@@ -289,7 +314,7 @@ def diagnose(req: DiagnoseRequest):
                 title=str(row.get("title", "") or ""),
                 url=str(row.get("url", "") or ""),
                 label=label,
-                similarity=round(float(sim), 4),
+                similarity=round(sim_f, 4),
                 summary=str(row.get("summary", "") or "") or None,
                 category=str(row.get("category", "") or "") or None,
                 published_date=str(row.get("published_date", "") or "") or None,
@@ -297,9 +322,8 @@ def diagnose(req: DiagnoseRequest):
             )
         )
 
-        # 스코어링용 가중치 누적 (confidence 있으면 활용, 없으면 1.0)
+        # 스코어링용 가중치 누적
         conf = float(row.get("confidence", 1.0) or 1.0)
-        sim_f = float(sim)
         w = sim_f * conf
         total_weight += w
         if label == "failure":

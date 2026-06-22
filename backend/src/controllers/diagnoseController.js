@@ -6,7 +6,7 @@ const AI_TIMEOUT = 180000;
 
 // POST /api/diagnose
 exports.diagnose = async (req, res) => {
-  const { text, top_k = 3 } = req.body;
+  const { text, top_k = 6 } = req.body;
   const user_id = req.user?.user_id ?? null;
 
   if (!text || !String(text).trim()) {
