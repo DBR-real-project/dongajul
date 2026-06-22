@@ -7,14 +7,15 @@ interface LoginScreenProps {
   onSocialLogin: (provider: string) => void;
   onSignupClick: () => void;
   onForgotPassword?: () => void;
+  socialLoginError?: string;
 }
 
-export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPassword }: LoginScreenProps) {
+export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPassword, socialLoginError }: LoginScreenProps) {
   const articleCount = useArticleCount();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [keepLoggedIn, setKeepLoggedIn] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(socialLoginError || '');
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetStatus, setResetStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');

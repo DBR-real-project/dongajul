@@ -142,10 +142,8 @@ exports.kakaoCallback = async (req, res) => {
     res.redirect(`${process.env.FRONTEND_URL}?token=${token}&refresh_token=${kakaoRefreshToken}`);
 
   } catch (err) {
-    // 에러가 났을 때 터미널에서 정확한 원인을 보기 위한 로그
-    console.log('🚨 [카카오 로그인 에러 상세 원인] 🚨');
-    console.error(err.response?.data || err.message);
-    res.status(500).send('카카오 로그인 실패: 터미널 로그를 확인하세요.');
+    console.error('[kakao callback error]', err.response?.data || err.message);
+    res.redirect(`${process.env.FRONTEND_URL}?error=kakao_login_failed`);
   }
 };
 
@@ -216,8 +214,8 @@ exports.googleCallback = async (req, res) => {
 
     res.redirect(`${process.env.FRONTEND_URL}?token=${token}&refresh_token=${googleRefreshToken}`);
   } catch (err) {
-    console.error(err.response?.data || err.message);
-    res.status(500).send('구글 로그인 실패');
+    console.error('[google callback error]', err.response?.data || err.message);
+    res.redirect(`${process.env.FRONTEND_URL}?error=google_login_failed`);
   }
 };
 
@@ -288,8 +286,8 @@ exports.naverCallback = async (req, res) => {
 
     res.redirect(`${process.env.FRONTEND_URL}?token=${token}&refresh_token=${naverRefreshToken}`);
   } catch (err) {
-    console.error(err.response?.data || err.message);
-    res.status(500).send('네이버 로그인 실패');
+    console.error('[naver callback error]', err.response?.data || err.message);
+    res.redirect(`${process.env.FRONTEND_URL}?error=naver_login_failed`);
   }
 };
 

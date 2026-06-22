@@ -45,6 +45,8 @@ build/
 # ── 운영 파일 예외 (팀원 공유 필요, 각 파일 100MB 이내) ─────────────────────
 !데이터처리/output/umap_coords.parquet
 !데이터처리/output/cluster_info.parquet
+!데이터처리/output/umap_coords_v3.parquet
+!데이터처리/output/cluster_info_v3.parquet
 !데이터처리/output/articles_meta.parquet
 !데이터처리/output/risk_model.pkl
 !데이터처리/output/faiss.index

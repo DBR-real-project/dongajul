@@ -51,10 +51,6 @@ const LABEL_KO: Record<string, string> = { success: '성공', failure: '실패',
 const CHART_H = 720;
 
 const getClusterLabel = (cluster: ClusterInfo) => {
-  if (cluster.top_keywords) {
-    const kw = cluster.top_keywords.split(',').map(v => v.trim()).filter(Boolean).slice(0, 2).join('·');
-    if (kw) return kw;
-  }
   return cluster.cluster_name || `Cluster ${cluster.cluster_id}`;
 };
 
