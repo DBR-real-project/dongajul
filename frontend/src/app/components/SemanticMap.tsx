@@ -92,11 +92,14 @@ function D3Map({
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
-  const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown>>(null!);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  // overlay div에 zoom 적용: SVG가 overlay 아래에 있어서 drag 이벤트를 SVG가 못 받는 문제 해결
+  const zoomRef = useRef<d3.ZoomBehavior<HTMLDivElement, unknown>>(null!);
   const transformRef = useRef(d3.zoomIdentity);
   const quadtreeRef = useRef<d3.Quadtree<MapPoint>>(null!);
   const renderCanvasRef = useRef<() => void>(() => {});
   const renderSVGRef = useRef<() => void>(() => {});
+  const dragging = useRef(false);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; point: MapPoint } | null>(null);
   const [mapW, setMapW] = useState(900);
 
@@ -363,27 +366,29 @@ function D3Map({
     renderSVG();
   }, [renderCanvas, renderSVG]);
 
-  // Setup zoom (once when scales available)
+  // Setup zoom on overlay div (SVG 아래 레이어라 drag 이벤트가 SVG에 안 닿는 문제 해결)
   useEffect(() => {
-    const svg = svgRef.current;
-    if (!svg || !scales) return;
+    const overlay = overlayRef.current;
+    if (!overlay || !scales) return;
 
-    const zoom = d3.zoom<SVGSVGElement, unknown>()
+    const zoom = d3.zoom<HTMLDivElement, unknown>()
       .scaleExtent([0.3, 22])
+      .on('start', () => { dragging.current = false; })
       .on('zoom', (event) => {
+        if (event.sourceEvent?.type === 'mousemove') dragging.current = true;
         transformRef.current = event.transform;
         renderCanvasRef.current();
-        renderSVGRef.current(); // screen-space: full SVG redraw on each zoom tick
+        renderSVGRef.current();
       });
 
     zoomRef.current = zoom;
-    d3.select(svg).call(zoom);
-    d3.select(svg).on('dblclick.zoom', () => {
-      d3.select(svg).transition().duration(350).call(zoom.transform, d3.zoomIdentity);
+    d3.select(overlay).call(zoom);
+    d3.select(overlay).on('dblclick.zoom', () => {
+      d3.select(overlay).transition().duration(350).call(zoom.transform, d3.zoomIdentity);
     });
 
     return () => {
-      d3.select(svg).on('.zoom', null);
+      d3.select(overlay).on('.zoom', null);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scales]);
@@ -438,21 +443,23 @@ function D3Map({
         className="absolute inset-0 pointer-events-none"
         style={{ width: '100%', height: CHART_H }}
       />
-      {/* SVG: cluster hulls + labels */}
+      {/* SVG: cluster hulls + labels (pointer-events-none — zoom/pan은 overlay에서 처리) */}
       <svg
         ref={svgRef}
         width={mapW}
         height={CHART_H}
-        className="absolute inset-0"
+        className="absolute inset-0 pointer-events-none"
         style={{ width: '100%', height: CHART_H }}
       />
-      {/* Transparent event overlay */}
+      {/* Overlay: zoom/pan + tooltip + click 이벤트 모두 여기서 처리 */}
       <div
+        ref={overlayRef}
         className="absolute inset-0"
         style={{ cursor: tooltip ? 'pointer' : 'crosshair' }}
         onMouseMove={handleMouseMove}
         onMouseLeave={() => setTooltip(null)}
         onClick={() => {
+          if (dragging.current) { dragging.current = false; return; }
           if (tooltip?.point?.url) window.open(tooltip.point.url, '_blank', 'noopener,noreferrer');
         }}
       />
@@ -502,9 +509,9 @@ function D3Map({
       {/* Zoom controls */}
       <div className="absolute bottom-4 right-4 flex flex-col gap-1.5 z-10">
         {[
-          { label: '+', fn: () => { if (zoomRef.current && svgRef.current) d3.select(svgRef.current).transition().duration(220).call(zoomRef.current.scaleBy, 1.6); } },
-          { label: '−', fn: () => { if (zoomRef.current && svgRef.current) d3.select(svgRef.current).transition().duration(220).call(zoomRef.current.scaleBy, 0.625); } },
-          { label: '↺', fn: () => { if (zoomRef.current && svgRef.current) d3.select(svgRef.current).transition().duration(380).call(zoomRef.current.transform, d3.zoomIdentity); } },
+          { label: '+', fn: () => { if (zoomRef.current && overlayRef.current) d3.select(overlayRef.current).transition().duration(220).call(zoomRef.current.scaleBy, 1.6); } },
+          { label: '−', fn: () => { if (zoomRef.current && overlayRef.current) d3.select(overlayRef.current).transition().duration(220).call(zoomRef.current.scaleBy, 0.625); } },
+          { label: '↺', fn: () => { if (zoomRef.current && overlayRef.current) d3.select(overlayRef.current).transition().duration(380).call(zoomRef.current.transform, d3.zoomIdentity); } },
         ].map(({ label, fn }) => (
           <button
             key={label}
