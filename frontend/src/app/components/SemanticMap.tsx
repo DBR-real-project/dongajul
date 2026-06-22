@@ -147,24 +147,24 @@ function D3Map({
     const px = (ux: number) => t.applyX(scales.x(ux));
     const py = (uy: number) => t.applyY(scales.y(uy));
 
-    // neutral (draw first, smallest)
-    ctx.fillStyle = darkMode ? 'rgba(100,116,139,0.16)' : 'rgba(100,116,139,0.13)';
+    // neutral (draw first, slightly more visible)
+    ctx.fillStyle = darkMode ? 'rgba(100,116,139,0.26)' : 'rgba(100,116,139,0.22)';
     visiblePoints.filter(p => p.label === 'neutral').forEach(p => {
       const sx = px(p.umap_x), sy = py(p.umap_y);
       if (sx < -5 || sx > W + 5 || sy < -5 || sy > H + 5) return;
       ctx.beginPath();
-      ctx.arc(sx, sy, 1.8, 0, Math.PI * 2);
+      ctx.arc(sx, sy, 2.3, 0, Math.PI * 2);
       ctx.fill();
     });
 
     // success
     const successActive = filter === 'success';
-    ctx.fillStyle = `rgba(16,185,129,${successActive ? 0.88 : 0.42})`;
+    ctx.fillStyle = `rgba(16,185,129,${successActive ? 0.92 : 0.55})`;
     visiblePoints.filter(p => p.label === 'success').forEach(p => {
       const sx = px(p.umap_x), sy = py(p.umap_y);
       if (sx < -5 || sx > W + 5 || sy < -5 || sy > H + 5) return;
       ctx.beginPath();
-      ctx.arc(sx, sy, successActive ? 3.8 : 2.6, 0, Math.PI * 2);
+      ctx.arc(sx, sy, successActive ? 4.2 : 3.2, 0, Math.PI * 2);
       ctx.fill();
     });
 
@@ -222,14 +222,6 @@ function D3Map({
       ? clusters.filter(c => c.cluster_id === selectedClusterId)
       : clusters;
 
-    // Top-3 highest failure rate cluster IDs (always show their labels)
-    const topRiskIds = new Set(
-      [...clusters]
-        .sort((a, b) => getFailureRate(b) - getFailureRate(a))
-        .slice(0, 3)
-        .map(c => c.cluster_id)
-    );
-
     clustersToRender.forEach(c => {
       const clusterPts = points.filter(p => p.cluster_id === c.cluster_id);
       if (clusterPts.length < 3) return;
@@ -259,20 +251,20 @@ function D3Map({
       // Skip rendering if hull centroid is well off-screen
       if (cx < -120 || cx > W + 120 || cy < -120 || cy > H + 120) return;
 
-      // Colors
+      // Colors — increased opacity for better cluster visibility
       const hullFill = failRate >= 25
-        ? `rgba(239,68,68,${isActive ? 0.15 : 0.06})`
+        ? `rgba(239,68,68,${isActive ? 0.22 : 0.10})`
         : failRate >= 12
-          ? `rgba(245,158,11,${isActive ? 0.14 : 0.055})`
+          ? `rgba(245,158,11,${isActive ? 0.20 : 0.09})`
           : darkMode
-            ? `rgba(99,102,241,${isActive ? 0.16 : 0.055})`
-            : `rgba(99,102,241,${isActive ? 0.12 : 0.04})`;
+            ? `rgba(99,102,241,${isActive ? 0.22 : 0.09})`
+            : `rgba(99,102,241,${isActive ? 0.16 : 0.07})`;
 
       const hullStroke = failRate >= 25
-        ? `rgba(239,68,68,${isActive ? 0.95 : 0.55})`
+        ? `rgba(239,68,68,${isActive ? 1.0 : 0.72})`
         : failRate >= 12
-          ? `rgba(245,158,11,${isActive ? 0.9 : 0.5})`
-          : `rgba(99,102,241,${isActive ? 0.8 : 0.42})`;
+          ? `rgba(245,158,11,${isActive ? 0.95 : 0.65})`
+          : `rgba(99,102,241,${isActive ? 0.88 : 0.58})`;
 
       const textColor = failRate >= 25 ? '#ef4444' : failRate >= 12 ? '#f59e0b'
         : darkMode ? '#a5b4fc' : '#4338ca';
@@ -288,41 +280,51 @@ function D3Map({
         .style('cursor', 'pointer')
         .on('click', () => onClusterClick(c.cluster_id));
 
-      // Label: show only for active / top-risk / zoomed in enough
-      const showLabel = isActive || topRiskIds.has(c.cluster_id) || t.k >= 1.6;
-      if (!showLabel) return;
-
-      const labelText = `#${c.cluster_id} ${getClusterLabel(c).slice(0, 12)}`;
+      // Label: always show all cluster labels (was: only top-3 + active + zoomed)
+      const clusterName = getClusterLabel(c).slice(0, 15);
+      const labelText = `#${c.cluster_id} ${clusterName}`;
       const subText = failRate > 0 ? `실패율 ${failRate}%` : `${c.article_count}건`;
-      const pillW = Math.max(84, labelText.length * 6.8 + 20);
-      const pillH = 30;
+      const mainFontSize = isActive ? '11' : '10';
+      const pillW = Math.max(90, labelText.length * 7.0 + 24);
+      const pillH = isActive ? 36 : 32;
 
       const labelG = g.append('g')
         .attr('transform', `translate(${cx},${cy})`)
         .style('cursor', 'pointer')
         .on('click', () => onClusterClick(c.cluster_id));
 
+      // Shadow/glow for better readability
+      labelG.append('rect')
+        .attr('x', -pillW / 2 - 1).attr('y', -pillH / 2 - 1)
+        .attr('width', pillW + 2).attr('height', pillH + 2)
+        .attr('rx', 10)
+        .attr('fill', 'none')
+        .attr('stroke', hullStroke)
+        .attr('stroke-width', isActive ? 0 : 3)
+        .attr('opacity', 0.25);
+
       labelG.append('rect')
         .attr('x', -pillW / 2).attr('y', -pillH / 2)
         .attr('width', pillW).attr('height', pillH)
         .attr('rx', 9)
-        .attr('fill', darkMode ? 'rgba(8,12,28,0.92)' : 'rgba(255,255,255,0.95)')
+        .attr('fill', darkMode ? 'rgba(6,9,24,0.95)' : 'rgba(255,255,255,0.97)')
         .attr('stroke', hullStroke)
-        .attr('stroke-width', isActive ? 2 : 1);
+        .attr('stroke-width', isActive ? 2.5 : 1.5);
 
       labelG.append('text')
         .attr('text-anchor', 'middle')
-        .attr('y', -4)
-        .attr('font-size', '10')
+        .attr('y', -3)
+        .attr('font-size', mainFontSize)
         .attr('font-weight', '800')
         .attr('fill', textColor)
         .text(labelText);
 
       labelG.append('text')
         .attr('text-anchor', 'middle')
-        .attr('y', 10)
-        .attr('font-size', '9')
-        .attr('fill', failRate >= 25 ? '#fca5a5' : failRate >= 12 ? '#fcd34d'
+        .attr('y', 12)
+        .attr('font-size', '10')
+        .attr('font-weight', failRate >= 25 ? '700' : '500')
+        .attr('fill', failRate >= 25 ? '#f87171' : failRate >= 12 ? '#fbbf24'
           : darkMode ? '#818cf8' : '#6366f1')
         .text(subText);
     });
