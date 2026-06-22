@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   ArrowLeft, Shield, AlertTriangle, ExternalLink,
   TrendingDown, TrendingUp, Activity, Tag, Lightbulb,
-  Clock, BarChart2, ChevronRight, Check, Globe, Loader2
+  Clock, BarChart2, ChevronRight, Check, Globe, Loader2, Download
 } from 'lucide-react';
 import { apiFetch } from '../utils/api';
 import { useArticleCount } from '../utils/articleCount';
@@ -186,6 +186,9 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
   const [globalLoading, setGlobalLoading] = useState(false);
   const [globalFetched, setGlobalFetched] = useState(false);
 
+  const reportRef = useRef<HTMLDivElement>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
+
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 3000);
@@ -207,6 +210,44 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
       showToast('해외 사례를 불러올 수 없습니다.');
     } finally {
       setGlobalLoading(false);
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!reportRef.current || pdfLoading) return;
+    setPdfLoading(true);
+    try {
+      const { default: html2canvas } = await import('html2canvas');
+      const { default: jsPDF } = await import('jspdf');
+      const el = reportRef.current;
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+      });
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const imgH = (canvas.height * pageW) / canvas.width;
+      let heightLeft = imgH;
+      let position = 0;
+      pdf.addImage(imgData, 'JPEG', 0, position, pageW, imgH);
+      heightLeft -= pageH;
+      while (heightLeft > 0) {
+        position -= pageH;
+        pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, position, pageW, imgH);
+        heightLeft -= pageH;
+      }
+      const dateStr = new Date().toISOString().slice(0, 10);
+      pdf.save(`동아줄_전략리스크진단리포트_${dateStr}.pdf`);
+      showToast('PDF 저장 완료!');
+    } catch {
+      showToast('PDF 생성에 실패했습니다.');
+    } finally {
+      setPdfLoading(false);
     }
   };
 
@@ -651,96 +692,193 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
             )}
           </div>
 
-          {/* GPT AI 진단 리포트 */}
+          {/* AI 전략 컨설팅 리포트 */}
           {data.report && (
-            <div className={`p-6 rounded-2xl space-y-5 ${darkMode
-              ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30'
-              : 'bg-white shadow-sm'
+            <div
+              ref={reportRef}
+              id="diagnosis-report"
+              className={`rounded-2xl overflow-hidden ${darkMode
+                ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30'
+                : 'bg-white shadow-sm'
+              }`}
+            >
+              {/* 리포트 헤더 */}
+              <div className={`px-6 py-5 border-b flex items-center justify-between gap-4 ${
+                darkMode ? 'border-gray-700/50' : 'border-gray-100'
               }`}>
-              <div className="flex items-center gap-2 mb-1">
-                <div className={`p-2 rounded-lg ${darkMode ? 'bg-yellow-500/10' : 'bg-yellow-50'}`}>
-                  <Lightbulb className={`w-4 h-4 ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`} />
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={`p-2.5 rounded-xl flex-shrink-0 ${darkMode ? 'bg-indigo-500/15' : 'bg-indigo-600'}`}>
+                    <Lightbulb className={`w-5 h-5 ${darkMode ? 'text-indigo-400' : 'text-white'}`} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className={`text-xs font-bold uppercase tracking-widest mb-0.5 ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>
+                      동아줄 AI 전략 진단 리포트
+                    </p>
+                    <h3 className={`text-lg font-black leading-tight ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                      AI 전략 컨설팅 분석
+                    </h3>
+                    {data.created_at && (
+                      <p className={`text-xs mt-0.5 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                        {new Date(data.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
+                        {' · '} DBR · HBR {articleCount}건 기반
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <h3 className={`text-base font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  AI 전략 진단 리포트
-                </h3>
+                <button
+                  onClick={handleDownloadPDF}
+                  disabled={pdfLoading}
+                  className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-50 ${
+                    darkMode
+                      ? 'bg-indigo-500/15 text-indigo-300 hover:bg-indigo-500/25 border border-indigo-500/30'
+                      : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                  }`}
+                >
+                  {pdfLoading
+                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                    : <Download className="w-4 h-4" />
+                  }
+                  {pdfLoading ? '생성 중...' : 'PDF 저장'}
+                </button>
               </div>
 
-              {/* 종합 평가 */}
-              {data.report.summary ? (
-                <div className={`p-4 rounded-xl ${darkMode ? 'bg-gray-900/40' : 'bg-gray-50'}`}>
-                  <p className={`text-xs font-semibold uppercase tracking-widest mb-2 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>종합 평가</p>
-                  <p className={`text-sm leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{data.report.summary}</p>
-                </div>
-              ) : (
-                <div className={`p-4 rounded-xl border ${darkMode ? 'bg-yellow-900/20 border-yellow-500/30' : 'bg-yellow-50 border-yellow-200'}`}>
-                  <p className={`text-sm ${darkMode ? 'text-yellow-400' : 'text-yellow-700'}`}>
-                    ⚠️ AI 리포트를 생성할 수 없습니다. GPT API 사용량 한도를 초과했습니다. 유사 사례와 리스크 점수를 참고해주세요.
-                  </p>
-                </div>
-              )}
-
-              {/* 전략 구조 분석 */}
-              {(data.report as any).strategy_analysis && (
-                <div className={`p-4 rounded-xl border-l-4 ${darkMode ? 'bg-gray-900/30 border-blue-500/50' : 'bg-blue-50 border-blue-400'}`}>
-                  <p className={`text-xs font-semibold uppercase tracking-widest mb-2 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>전략 구조 분석</p>
-                  <p className={`text-sm leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{(data.report as any).strategy_analysis}</p>
-                </div>
-              )}
-
-              {/* 리스크 요인 + 심층 분석 */}
-              {data.report.risk_factors.length > 0 && (
-                <div>
-                  <p className={`text-xs font-semibold uppercase tracking-widest mb-3 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>주요 리스크 요인</p>
-                  <ul className="space-y-3">
-                    {data.report.risk_factors.map((factor, i) => (
-                      <li key={i} className={`rounded-xl p-3 ${darkMode ? 'bg-red-950/20' : 'bg-red-50'}`}>
-                        <div className={`flex items-start gap-2.5 text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-                          <AlertTriangle className={`w-4 h-4 mt-0.5 flex-shrink-0 ${darkMode ? 'text-red-400' : 'text-red-500'}`} />
-                          {factor}
-                        </div>
-                        {(data.report as any).risk_details?.[i] && (
-                          <p className={`mt-1.5 ml-6 text-xs leading-relaxed ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                            {(data.report as any).risk_details[i]}
-                          </p>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* 개선 제언 */}
-              {data.report.improvement.length > 0 && (
-                <div>
-                  <p className={`text-xs font-semibold uppercase tracking-widest mb-3 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>개선 제언</p>
-                  <ul className="space-y-2">
-                    {data.report.improvement.map((item, i) => (
-                      <li key={i} className={`flex items-start gap-2.5 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                        <ChevronRight className={`w-4 h-4 mt-0.5 flex-shrink-0 ${darkMode ? 'text-blue-400' : 'text-blue-500'}`} />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* 프레임워크 인사이트 */}
-              {(data.report as any).framework_insight && (
-                <div className={`p-4 rounded-xl border ${darkMode ? 'bg-yellow-900/10 border-yellow-500/20' : 'bg-yellow-50 border-yellow-200'}`}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Lightbulb className={`w-3.5 h-3.5 ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`} />
-                    <p className={`text-xs font-semibold uppercase tracking-widest ${darkMode ? 'text-yellow-400' : 'text-yellow-700'}`}>전략 프레임워크 관점</p>
+              <div className="p-6 space-y-6">
+                {/* Executive Summary */}
+                {data.report.summary ? (
+                  <div className={`rounded-xl p-5 ${darkMode ? 'bg-[#0B2F61]/50 border border-blue-500/20' : 'bg-[#0B2F61]'}`}>
+                    <p className={`text-xs font-bold uppercase tracking-widest mb-2.5 ${darkMode ? 'text-blue-300' : 'text-blue-200'}`}>
+                      Executive Summary
+                    </p>
+                    <p className="text-sm leading-relaxed font-medium text-white">
+                      {data.report.summary}
+                    </p>
+                    <div className={`mt-4 pt-3.5 border-t flex items-start gap-3 ${darkMode ? 'border-blue-500/25' : 'border-white/20'}`}>
+                      <span className={`text-xs font-bold uppercase tracking-widest flex-shrink-0 mt-0.5 ${darkMode ? 'text-blue-400' : 'text-blue-200'}`}>
+                        최종 판정
+                      </span>
+                      <span className="text-sm font-bold leading-relaxed text-white">
+                        {data.report.verdict}
+                      </span>
+                    </div>
                   </div>
-                  <p className={`text-sm leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{(data.report as any).framework_insight}</p>
-                </div>
-              )}
+                ) : (
+                  <div className={`p-4 rounded-xl border ${darkMode ? 'bg-yellow-900/20 border-yellow-500/30' : 'bg-yellow-50 border-yellow-200'}`}>
+                    <p className={`text-sm ${darkMode ? 'text-yellow-400' : 'text-yellow-700'}`}>
+                      ⚠️ AI 리포트를 생성할 수 없습니다. GPT API 사용량 한도를 초과했습니다. 유사 사례와 리스크 점수를 참고해주세요.
+                    </p>
+                  </div>
+                )}
 
-              {/* 최종 판정 */}
-              <div className={`px-4 py-3 rounded-xl border ${darkMode ? 'bg-[#0B2F61]/40 border-blue-500/20' : 'bg-[#0B2F61] text-white'
-                }`}>
-                <p className={`text-xs font-semibold mb-1 ${darkMode ? 'text-blue-400' : 'text-blue-200'}`}>최종 판정</p>
-                <p className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-white'}`}>{data.report.verdict}</p>
+                {/* 01 전략 구조 분석 */}
+                {(data.report as any).strategy_analysis && (
+                  <>
+                    <div className={`h-px ${darkMode ? 'bg-gray-700/50' : 'bg-gray-100'}`} />
+                    <div>
+                      <div className="flex items-center gap-3 mb-3.5">
+                        <span className={`text-3xl font-black leading-none select-none ${darkMode ? 'text-gray-700' : 'text-gray-200'}`}>01</span>
+                        <h4 className={`text-base font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>전략 구조 분석</h4>
+                      </div>
+                      <div className={`border-l-4 pl-4 py-2 pr-4 rounded-r-xl ${
+                        darkMode ? 'border-blue-500/50 bg-blue-500/5' : 'border-blue-500 bg-blue-50'
+                      }`}>
+                        <p className={`text-sm leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                          {(data.report as any).strategy_analysis}
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* 02 주요 리스크 요인 */}
+                {data.report.risk_factors.length > 0 && (
+                  <>
+                    <div className={`h-px ${darkMode ? 'bg-gray-700/50' : 'bg-gray-100'}`} />
+                    <div>
+                      <div className="flex items-center gap-3 mb-4">
+                        <span className={`text-3xl font-black leading-none select-none ${darkMode ? 'text-gray-700' : 'text-gray-200'}`}>02</span>
+                        <h4 className={`text-base font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>주요 리스크 요인</h4>
+                      </div>
+                      <ul className="space-y-4">
+                        {data.report.risk_factors.map((factor, i) => {
+                          const isHigh = i === 0;
+                          const badgeClass = isHigh
+                            ? darkMode ? 'bg-red-500/20 text-red-300' : 'bg-red-100 text-red-700'
+                            : darkMode ? 'bg-orange-500/15 text-orange-300' : 'bg-orange-100 text-orange-700';
+                          return (
+                            <li key={i} className="flex gap-3">
+                              <div className="flex-shrink-0 mt-0.5">
+                                <span className={`px-2 py-0.5 text-xs font-black rounded-md ${badgeClass}`}>
+                                  {isHigh ? 'HIGH' : 'MED'}
+                                </span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className={`text-sm font-semibold leading-snug mb-1.5 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                                  {factor}
+                                </p>
+                                {(data.report as any).risk_details?.[i] && (
+                                  <p className={`text-xs leading-relaxed ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                    {(data.report as any).risk_details[i]}
+                                  </p>
+                                )}
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  </>
+                )}
+
+                {/* 03 전략 개선 제언 */}
+                {data.report.improvement.length > 0 && (
+                  <>
+                    <div className={`h-px ${darkMode ? 'bg-gray-700/50' : 'bg-gray-100'}`} />
+                    <div>
+                      <div className="flex items-center gap-3 mb-4">
+                        <span className={`text-3xl font-black leading-none select-none ${darkMode ? 'text-gray-700' : 'text-gray-200'}`}>03</span>
+                        <h4 className={`text-base font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>전략 개선 제언</h4>
+                      </div>
+                      <ul className="space-y-3">
+                        {data.report.improvement.map((item, i) => (
+                          <li key={i} className="flex gap-3 items-start">
+                            <span className={`flex-shrink-0 w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center mt-0.5 ${
+                              darkMode ? 'bg-indigo-500/20 text-indigo-300' : 'bg-indigo-600 text-white'
+                            }`}>
+                              {i + 1}
+                            </span>
+                            <p className={`text-sm leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                              {item}
+                            </p>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </>
+                )}
+
+                {/* 전략 프레임워크 관점 */}
+                {(data.report as any).framework_insight && (
+                  <>
+                    <div className={`h-px ${darkMode ? 'bg-gray-700/50' : 'bg-gray-100'}`} />
+                    <div className={`rounded-xl p-4 border ${darkMode ? 'bg-yellow-900/10 border-yellow-500/20' : 'bg-amber-50 border-amber-200'}`}>
+                      <div className="flex items-center gap-2 mb-2.5">
+                        <Lightbulb className={`w-4 h-4 ${darkMode ? 'text-yellow-400' : 'text-amber-600'}`} />
+                        <p className={`text-xs font-bold uppercase tracking-widest ${darkMode ? 'text-yellow-400' : 'text-amber-700'}`}>
+                          전략 프레임워크 관점
+                        </p>
+                      </div>
+                      <p className={`text-sm leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        {(data.report as any).framework_insight}
+                      </p>
+                    </div>
+                  </>
+                )}
+
+                {/* 리포트 푸터 */}
+                <div className={`flex items-center justify-between pt-2 border-t text-xs ${darkMode ? 'border-gray-700/50 text-gray-600' : 'border-gray-100 text-gray-400'}`}>
+                  <span>⚡ Powered by 동아줄 AI · DBR·HBR {articleCount}건 기반</span>
+                  <span>참고용 자료 · 전문가 자문 병행 권고</span>
+                </div>
               </div>
             </div>
           )}

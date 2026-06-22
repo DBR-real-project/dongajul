@@ -191,7 +191,7 @@ def _get_chain() -> Any:
 
         llm = ChatOpenAI(
             model=model,
-            temperature=0.3,
+            temperature=0.5,
             timeout=30,
             max_retries=2,
         )
