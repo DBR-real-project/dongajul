@@ -1,4 +1,4 @@
-# 📐 동아줄 (팀명: [팀명 입력])
+# 📐 동아줄
 
 > AI가 함께하는 전략 리스크 진단 서비스 — 경영 사례 한 줄로 즉시 AI 리스크 분석
 
@@ -149,7 +149,7 @@
 
 ## 📋 유스케이스
 
-> [유스케이스 다이어그램 이미지 삽입]
+<img width="643" height="705" alt="image" src="https://github.com/user-attachments/assets/9ba78c96-49b7-40d0-89f8-aa6c2ec2500f" />
 
 <br>
 
@@ -210,12 +210,12 @@
     <td align="center">Front-end</td>
   </tr>
   <tr>
-    <td align="center"><a href="#">github</a></td>
-    <td align="center"><a href="#">github</a></td>
+    <td align="center"><a href="https://github.com/jyp921212">github</a></td>
+    <td align="center"><a href="https://github.com/DongYeon-cloud">github</a></td>
     <td align="center"><a href="https://github.com/jaehan9602211-eng" target="_blank">github</a></td>
-    <td align="center"><a href="#">github</a></td>
-    <td align="center"><a href="#">github</a></td>
-    <td align="center"><a href="#">github</a></td>
+    <td align="center"><a href="https://github.com/jh75ho">github</a></td>
+    <td align="center"><a href="https://github.com/Geun8b">github</a></td>
+    <td align="center"><a href="https://github.com/chriii3">github</a></td>
   </tr>
 </table>
 
