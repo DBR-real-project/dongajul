@@ -182,11 +182,17 @@
 
 | 홈 대시보드 | 전략 진단 | AI 리포트 |
 |:---:|:---:|:---:|
-| [이미지] | [이미지] | [이미지] |
+| <img width="962" height="903" alt="홈" src="https://github.com/user-attachments/assets/a296028c-98bf-47ea-9ecb-4a1670c5043a" />
+ | <img width="958" height="904" alt="전략진" src="https://github.com/user-attachments/assets/03f72b7e-fdb0-48eb-9f04-959ea0375405" />
+ | <img width="956" height="902" alt="보고서" src="https://github.com/user-attachments/assets/0409c9e5-13cc-4d8c-9a1a-ce2ca03e6af6" />
+ |
 
 | 시맨틱 인사이트 맵 | 인사이트 대시보드 | 기사 비교 분석 |
 |:---:|:---:|:---:|
-| [이미지] | [이미지] | [이미지] |
+| <img width="960" height="902" alt="ㅅㅁㅌㅁ" src="https://github.com/user-attachments/assets/05550105-a114-474c-b06a-92461da4e398" />
+ | <img width="955" height="899" alt="ㅇㅅㅇㅌ" src="https://github.com/user-attachments/assets/d68ed382-ffa9-4e43-847f-60a8b614efee" />
+ | <img width="953" height="905" alt="ㅂㄱㅂㅅ" src="https://github.com/user-attachments/assets/791a35ef-34f5-41f9-bd60-88f088061ecf" />
+ |
 
 <br>
 
