@@ -174,7 +174,7 @@
 
 ## 📊 ER 다이어그램
 
-> [ERD 이미지 삽입]
+<img width="5355" height="4240" alt="실전프로젝트_ERD_동아줄_선명2" src="https://github.com/user-attachments/assets/466efaf5-d218-434c-b4a8-41081bc91310" />
 
 <br>
 
@@ -194,12 +194,12 @@
 
 <table>
   <tr>
-    <td align="center">[박진엽] [팀장]</td>
-    <td align="center">[강동연]</td>
-    <td align="center">[김재한]</td>
-    <td align="center">[김지호]</td>
-    <td align="center">[문병근]</td>
-    <td align="center">[서현철]</td>
+    <td align="center">[팀장][박진엽]</td>
+    <td align="center">[팀원][강동연]</td>
+    <td align="center">[팀원][김재한]</td>
+    <td align="center">[팀원][김지호]</td>
+    <td align="center">[팀원][문병근]</td>
+    <td align="center">[팀원][서현철]</td>
   </tr>
   <tr>
     <td align="center">Modeling</td>
