@@ -1,3 +1,4 @@
+const axios = require('axios');
 const db = require('../config/db');
 
 // GET /api/articles/stats — 기사 통계
@@ -105,8 +106,13 @@ exports.getArticles = async (req, res) => {
   }
 
   if (source) {
-    conditions.push('a.source = ?');
-    params.push(source);
+    if (source === 'HBR') {
+      conditions.push("(a.source = ? OR a.source = ?)");
+      params.push('HBR', 'HBR Korea');
+    } else {
+      conditions.push('a.source = ?');
+      params.push(source);
+    }
   }
 
   if (category) {
@@ -231,5 +237,82 @@ exports.getArticleById = async (req, res) => {
       success: false,
       message: '기사 상세 조회 중 서버 오류가 발생했습니다.',
     });
+  }
+};
+
+// POST /api/articles/:id/score — GPT 6차원 채점
+exports.scoreArticle = async (req, res) => {
+  const articleId = Number(req.params.id);
+  if (!Number.isInteger(articleId) || articleId <= 0) {
+    return res.status(400).json({ success: false, message: '올바르지 않은 기사 ID입니다.' });
+  }
+
+  try {
+    const [[article]] = await db.execute(
+      `SELECT a.title, a.summary, a.content, a.source, a.category, a.published_at,
+              al.label, al.confidence
+       FROM articles a
+       LEFT JOIN article_labels al ON a.article_id = al.article_id
+       WHERE a.article_id = ? LIMIT 1`,
+      [articleId]
+    );
+
+    if (!article) return res.status(404).json({ success: false, message: '기사를 찾을 수 없습니다.' });
+
+    const labelKo = (lbl) =>
+      lbl === 'success' ? '성공 사례' : lbl === 'failure' ? '실패 사례' : '결과 미상';
+
+    const body = (article.content || article.summary || '').slice(0, 2000);
+
+    const systemPrompt = `당신은 DBR·HBR·HBS 전략 사례 전문 분석가입니다.
+실제 기사 본문 내용을 근거로 6개 차원을 0~100 정수로 채점합니다.
+채점 기준:
+- 시장타이밍: 진입 시점의 시장 상황, 선점 여부, 타이밍 실수 여부
+- 실행력: 전략 실행 속도·완성도, 피벗 능력, 실제 성과
+- 고객이해도: 타깃 고객 정의 정확도, 니즈 파악, 고객 반응
+- 경쟁대응력: 경쟁사 대비 차별화, 포지셔닝 강도
+- 자원충분성: 자금·인력·기술 자원 보유 수준, 조달 능력
+- 트렌드부합도: 2024~2025 시장 트렌드와의 정합성
+성공 사례라도 실행이 부족하면 실행력은 낮게 채점하세요. 증거가 없는 항목은 50 기준으로 조정하세요.`;
+
+    const userPrompt = `아래 전략 사례를 분석하세요.
+
+제목: ${article.title}
+최종결과: ${labelKo(article.label)}
+출처: ${article.source || '미상'} | 발행: ${article.published_at || '미상'} | 카테고리: ${article.category || '-'}
+본문:
+${body || '(내용 없음)'}
+
+위 내용을 근거로 6개 차원을 채점하고, 아래 JSON만 출력하세요:
+{"시장타이밍":0,"실행력":0,"고객이해도":0,"경쟁대응력":0,"자원충분성":0,"트렌드부합도":0}`;
+
+    const response = await axios.post(
+      'https://api.openai.com/v1/chat/completions',
+      {
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.15,
+        response_format: { type: 'json_object' },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 25000,
+      }
+    );
+
+    const scores = JSON.parse(response.data.choices[0].message.content);
+    return res.json({ success: true, scores });
+  } catch (err) {
+    console.error('[scoreArticle]', err.response?.data || err.message);
+    const status = err.response?.status;
+    if (status === 429) return res.status(503).json({ success: false, error: 'API 한도 초과' });
+    if (status === 401) return res.status(503).json({ success: false, error: 'API 인증 오류' });
+    return res.status(500).json({ success: false, error: 'GPT 채점 실패' });
   }
 };

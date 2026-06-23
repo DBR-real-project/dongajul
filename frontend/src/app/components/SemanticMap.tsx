@@ -6,6 +6,7 @@ import {
   Sparkles, BarChart3, X,
 } from 'lucide-react';
 import { apiFetch } from '../utils/api';
+import { SimilarArticle } from './DiagnosisResult';
 
 interface MapPoint {
   article_id: number;
@@ -43,9 +44,11 @@ interface SemanticMapProps {
   queryPoint?: QueryPoint | null;
   highlightArticleId?: number | null;
   highlightClusterId?: number | null;
+  initialClusterId?: number | null;
+  similarArticles?: SimilarArticle[] | null;
 }
 
-type FilterType = 'all' | 'success' | 'failure' | 'risk';
+type FilterType = 'all' | 'success' | 'failure';
 
 const LABEL_KO: Record<string, string> = { success: '성공', failure: '실패', neutral: '중립' };
 const CHART_H = 720;
@@ -101,6 +104,7 @@ function D3Map({
   const renderSVGRef = useRef<() => void>(() => {});
   const dragging = useRef(false);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; point: MapPoint } | null>(null);
+  const [multiPopup, setMultiPopup] = useState<{ x: number; y: number; points: MapPoint[] } | null>(null);
   const [mapW, setMapW] = useState(900);
 
   // Resize observer → update canvas/svg width
@@ -132,7 +136,7 @@ function D3Map({
   const visiblePoints = useMemo(() => {
     let pts = selectedClusterId != null ? points.filter(p => p.cluster_id === selectedClusterId) : points;
     if (filter === 'success') return pts.filter(p => p.label === 'success');
-    if (filter === 'failure' || filter === 'risk') return pts.filter(p => p.label === 'failure');
+    if (filter === 'failure') return pts.filter(p => p.label === 'failure');
     return pts;
   }, [points, filter, selectedClusterId]);
 
@@ -172,7 +176,7 @@ function D3Map({
     });
 
     // failure (with glow)
-    const failActive = filter === 'failure' || filter === 'risk';
+    const failActive = filter === 'failure';
     visiblePoints.filter(p => p.label === 'failure').forEach(p => {
       const sx = px(p.umap_x), sy = py(p.umap_y);
       if (sx < -12 || sx > W + 12 || sy < -12 || sy > H + 12) return;
@@ -372,7 +376,7 @@ function D3Map({
     if (!overlay || !scales) return;
 
     const zoom = d3.zoom<HTMLDivElement, unknown>()
-      .scaleExtent([0.3, 22])
+      .scaleExtent([0.3, 120])
       .on('start', () => { dragging.current = false; })
       .on('zoom', (event) => {
         if (event.sourceEvent?.type === 'mousemove') dragging.current = true;
@@ -458,9 +462,27 @@ function D3Map({
         style={{ cursor: tooltip ? 'pointer' : 'crosshair' }}
         onMouseMove={handleMouseMove}
         onMouseLeave={() => setTooltip(null)}
-        onClick={() => {
+        onClick={(e) => {
           if (dragging.current) { dragging.current = false; return; }
-          if (tooltip?.point?.url) window.open(tooltip.point.url, '_blank', 'noopener,noreferrer');
+          if (multiPopup) { setMultiPopup(null); return; }
+          const wrap = wrapRef.current;
+          if (!wrap || !scales) return;
+          const rect = wrap.getBoundingClientRect();
+          const mx = e.clientX - rect.left;
+          const my = e.clientY - rect.top;
+          const t = transformRef.current;
+          const RADIUS_PX = 20;
+          const nearby = visiblePoints.filter(p => {
+            const sx = t.applyX(scales.x(p.umap_x));
+            const sy = t.applyY(scales.y(p.umap_y));
+            return Math.hypot(sx - mx, sy - my) <= RADIUS_PX;
+          });
+          if (nearby.length === 0) return;
+          if (nearby.length === 1) {
+            if (nearby[0].url) window.open(nearby[0].url, '_blank', 'noopener,noreferrer');
+            return;
+          }
+          setMultiPopup({ x: mx, y: my, points: nearby });
         }}
       />
 
@@ -503,6 +525,55 @@ function D3Map({
               클릭 → 원문으로 이동 ↗
             </div>
           )}
+        </div>
+      )}
+
+      {/* Multi-article popup */}
+      {multiPopup && (
+        <div
+          className={`absolute z-50 rounded-xl border shadow-2xl text-xs overflow-hidden ${
+            darkMode
+              ? 'bg-[#0a0e1a]/97 border-gray-700/70 text-gray-100 backdrop-blur-md'
+              : 'bg-white/97 border-gray-200 text-gray-900 backdrop-blur-sm'
+          }`}
+          style={{
+            left: Math.min(multiPopup.x + 12, mapW - 290),
+            top: Math.max(multiPopup.y - 20, 8),
+            width: 275,
+          }}
+        >
+          <div className={`flex items-center justify-between px-3 py-2 border-b font-semibold ${
+            darkMode ? 'border-gray-700/60 text-gray-300' : 'border-gray-100 text-gray-700'
+          }`}>
+            <span>이 위치의 기사 {multiPopup.points.length}개</span>
+            <button
+              onClick={(e) => { e.stopPropagation(); setMultiPopup(null); }}
+              className={`w-5 h-5 flex items-center justify-center rounded hover:bg-gray-500/20 ${darkMode ? 'text-gray-400' : 'text-gray-400'}`}
+            >✕</button>
+          </div>
+          <div className="max-h-56 overflow-y-auto">
+            {multiPopup.points.map((p, i) => (
+              <button
+                key={i}
+                onClick={(e) => { e.stopPropagation(); if (p.url) window.open(p.url, '_blank', 'noopener,noreferrer'); setMultiPopup(null); }}
+                className={`w-full text-left px-3 py-2.5 flex items-start gap-2 border-b last:border-0 transition-colors ${
+                  darkMode
+                    ? 'border-gray-700/40 hover:bg-gray-700/40'
+                    : 'border-gray-50 hover:bg-gray-50'
+                }`}
+              >
+                <span className={`mt-0.5 w-2 h-2 rounded-full flex-shrink-0 ${
+                  p.label === 'success' ? 'bg-emerald-500' : p.label === 'failure' ? 'bg-red-500' : 'bg-slate-400'
+                }`} />
+                <div className="min-w-0">
+                  <div className="font-medium leading-snug line-clamp-2">{p.title}</div>
+                  <div className={`mt-0.5 text-[11px] ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                    {LABEL_KO[p.label] ?? p.label} · {p.source}
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
@@ -550,13 +621,16 @@ function D3Map({
 }
 
 // ─── Main SemanticMap Component ───────────────────────────────────────────────
-export function SemanticMap({ darkMode = false, onBack, queryPoint, highlightArticleId, highlightClusterId }: SemanticMapProps) {
+export function SemanticMap({ darkMode = false, onBack, queryPoint, highlightArticleId, highlightClusterId, initialClusterId, similarArticles }: SemanticMapProps) {
   const [points, setPoints] = useState<MapPoint[]>([]);
   const [clusters, setClusters] = useState<ClusterInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterType>('all');
-  const [selectedClusterId, setSelectedClusterId] = useState<number | null>(null);
+  const [selectedClusterId, setSelectedClusterId] = useState<number | null>(initialClusterId ?? null);
   const [searchText, setSearchText] = useState('');
+  const [showPosiMap, setShowPosiMap] = useState(false);
+
+  useEffect(() => { setShowPosiMap(false); }, [similarArticles]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -665,6 +739,163 @@ export function SemanticMap({ darkMode = false, onBack, queryPoint, highlightArt
   const chartBg = darkMode
     ? 'bg-[radial-gradient(ellipse_at_top_left,rgba(79,70,229,0.2),transparent_40%),radial-gradient(ellipse_at_bottom_right,rgba(239,68,68,0.12),transparent_38%),#020617]'
     : 'bg-[radial-gradient(ellipse_at_top_left,rgba(79,70,229,0.1),transparent_40%),radial-gradient(ellipse_at_bottom_right,rgba(239,68,68,0.07),transparent_38%),#f8fafc]';
+
+  // ─── 전략 포지셔닝 맵 전체 페이지 ───────────────────────────────────────────
+  if (showPosiMap && effectiveQueryPoint && similarArticles && similarArticles.length > 0) {
+    const arts = similarArticles.slice(0, 5);
+    const CX = 300, CY = 260;
+    const MAX_R = 195, MIN_R = 45;
+    const sims = arts.map(a => a.similarity);
+    const best = Math.max(...sims);
+    const worst = Math.min(...sims);
+    const spread = Math.max(best - worst, 0.08);
+    const getR = (sim: number) => MIN_R + ((best - sim) / spread) * (MAX_R - MIN_R);
+    const ANGLES = arts.map((_, i) => ((-90 + i * (360 / arts.length)) * Math.PI) / 180);
+    const positions = arts.map((a, i) => {
+      const r = getR(a.similarity);
+      return { x: CX + r * Math.cos(ANGLES[i]), y: CY + r * Math.sin(ANGLES[i]) };
+    });
+    const RINGS = [70, 130, 195];
+    const RING_LABELS = ['근접', '중간', '원거리'];
+
+    return (
+      <div className={`h-full overflow-y-auto ${darkMode ? 'bg-[#020617]' : 'bg-[#F8FAFC]'} pb-10`}>
+        {/* 헤더 */}
+        <div className={`sticky top-0 z-10 border-b px-6 py-4 flex items-center gap-3 ${
+          darkMode ? 'bg-[#020617]/90 border-gray-800 backdrop-blur' : 'bg-white/90 border-gray-200 backdrop-blur'
+        }`}>
+          <button
+            onClick={() => setShowPosiMap(false)}
+            className={`flex items-center gap-1.5 text-sm font-bold px-3 py-1.5 rounded-xl transition-all ${
+              darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            뒤로
+          </button>
+          <div className="flex items-center gap-2">
+            <Radar className="w-4 h-4 text-indigo-500" />
+            <h2 className={`text-base font-black ${darkMode ? 'text-white' : 'text-gray-950'}`}>전략 포지셔닝 맵</h2>
+          </div>
+          <span className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+            중심에 가까울수록 내 전략과 의미적으로 유사한 사례
+          </span>
+        </div>
+
+        <div className="max-w-4xl mx-auto px-6 py-8 flex flex-col items-center gap-8">
+          {/* SVG 차트 */}
+          <div className={`w-full rounded-3xl border overflow-hidden ${darkMode ? 'bg-gray-900/60 border-gray-800' : 'bg-white border-gray-200 shadow-sm'}`}>
+            <svg viewBox="0 0 600 520" className="w-full" style={{ maxHeight: 520 }}>
+              {/* 배경 그라디언트 */}
+              <defs>
+                <radialGradient id="bgGrad" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor={darkMode ? 'rgba(79,70,229,0.08)' : 'rgba(79,70,229,0.05)'} />
+                  <stop offset="100%" stopColor="transparent" />
+                </radialGradient>
+              </defs>
+              <rect width="600" height="520" fill="url(#bgGrad)" />
+
+              {/* 참조 링 */}
+              {RINGS.map((r, i) => (
+                <g key={r}>
+                  <circle cx={CX} cy={CY} r={r}
+                    fill="none"
+                    stroke={darkMode ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)'}
+                    strokeWidth="1.5" strokeDasharray="5 5"
+                  />
+                  <text x={CX + r + 5} y={CY - 4}
+                    fontSize="11" fill={darkMode ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)'}
+                  >{RING_LABELS[i]}</text>
+                </g>
+              ))}
+
+              {/* 중심 → 기사 연결선 */}
+              {positions.map((pos, i) => (
+                <line key={i} x1={CX} y1={CY} x2={pos.x} y2={pos.y}
+                  stroke={arts[i].label === 'success' ? '#10b981' : arts[i].label === 'failure' ? '#ef4444' : '#94a3b8'}
+                  strokeWidth="1.5" strokeOpacity="0.25" strokeDasharray="4 4"
+                />
+              ))}
+
+              {/* 내 전략 (중심) */}
+              <circle cx={CX} cy={CY} r={28} fill="#f59e0b" fillOpacity="0.15" />
+              <circle cx={CX} cy={CY} r={18} fill="#f59e0b" />
+              <text x={CX} y={CY} textAnchor="middle" dominantBaseline="middle" fontSize="11" fontWeight="900" fill="#000">나</text>
+              <text x={CX} y={CY + 34} textAnchor="middle" fontSize="11" fontWeight="700" fill={darkMode ? '#9ca3af' : '#6b7280'}>내 전략</text>
+
+              {/* 기사 노드 */}
+              {positions.map((pos, i) => {
+                const a = arts[i];
+                const stroke = a.label === 'success' ? '#10b981' : a.label === 'failure' ? '#ef4444' : '#94a3b8';
+                const fillOpacity = darkMode ? '0.22' : '0.13';
+                const fillColor = a.label === 'success' ? `rgba(16,185,129,${fillOpacity})` : a.label === 'failure' ? `rgba(239,68,68,${fillOpacity})` : `rgba(148,163,184,${fillOpacity})`;
+                const simPct = Math.round(a.similarity * 100);
+                const pctColor = simPct >= 80 ? '#10b981' : simPct >= 65 ? '#f59e0b' : '#94a3b8';
+                // 제목 표시 위치: 노드 바깥쪽 방향
+                const dx = pos.x - CX, dy = pos.y - CY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const nx = dx / dist, ny = dy / dist;
+                const tx = pos.x + nx * 34, ty = pos.y + ny * 22;
+                const titleShort = a.title.length > 14 ? a.title.slice(0, 13) + '…' : a.title;
+                return (
+                  <g key={i}>
+                    <circle cx={pos.x} cy={pos.y} r={24} fill={fillColor} stroke={stroke} strokeWidth="2.5" />
+                    <text x={pos.x} y={pos.y} textAnchor="middle" dominantBaseline="middle" fontSize="13" fontWeight="900" fill={stroke}>{i + 1}</text>
+                    <text x={tx} y={ty} textAnchor="middle" fontSize="10" fontWeight="700"
+                      fill={darkMode ? '#cbd5e1' : '#475569'}>{titleShort}</text>
+                    <text x={pos.x} y={pos.y + 34} textAnchor="middle" fontSize="10" fontWeight="800" fill={pctColor}>{simPct}%</text>
+                  </g>
+                );
+              })}
+            </svg>
+          </div>
+
+          {/* 기사 카드 그리드 */}
+          <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {arts.map((a, i) => {
+              const stroke = a.label === 'success' ? 'border-emerald-500' : a.label === 'failure' ? 'border-red-500' : 'border-slate-400';
+              const textColor = a.label === 'success' ? 'text-emerald-500' : a.label === 'failure' ? 'text-red-500' : 'text-slate-400';
+              const badgeBg = a.label === 'success'
+                ? (darkMode ? 'bg-emerald-500/15 text-emerald-400' : 'bg-emerald-100 text-emerald-700')
+                : a.label === 'failure'
+                  ? (darkMode ? 'bg-red-500/15 text-red-400' : 'bg-red-100 text-red-700')
+                  : (darkMode ? 'bg-slate-700 text-slate-400' : 'bg-slate-100 text-slate-600');
+              const simPct = Math.round(a.similarity * 100);
+              return (
+                <a key={i} href={a.url || '#'} target="_blank" rel="noopener noreferrer"
+                  className={`group flex items-start gap-3 p-4 rounded-2xl border transition-all ${
+                    darkMode
+                      ? 'border-gray-800 bg-gray-900/50 hover:border-gray-700 hover:bg-gray-900'
+                      : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
+                  }`}
+                >
+                  <span className={`shrink-0 w-8 h-8 rounded-full border-2 ${stroke} ${textColor} flex items-center justify-center text-sm font-black`}>
+                    {i + 1}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className={`text-sm font-bold leading-snug mb-2 group-hover:underline ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>
+                      {a.title}
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`text-[11px] font-black px-2 py-0.5 rounded-full ${badgeBg}`}>
+                        {a.label === 'success' ? '성공' : a.label === 'failure' ? '실패' : '중립'}
+                      </span>
+                      {a.source && <span className={`text-[11px] ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>{a.source}</span>}
+                      {a.published_date && <span className={`text-[11px] ${darkMode ? 'text-gray-600' : 'text-gray-400'}`}>{a.published_date.slice(0, 7)}</span>}
+                    </div>
+                  </div>
+                  <div className="shrink-0 flex flex-col items-end gap-1">
+                    <span className={`text-base font-black tabular-nums ${textColor}`}>{simPct}%</span>
+                    <ExternalLink className={`w-3.5 h-3.5 opacity-0 group-hover:opacity-50 transition-opacity ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                  </div>
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`h-full overflow-y-auto ${darkMode ? 'bg-[#020617]' : 'bg-[#F8FAFC]'} pb-10`}>
@@ -798,7 +1029,6 @@ export function SemanticMap({ darkMode = false, onBack, queryPoint, highlightArt
                   { key: 'all', label: '전체 지형' },
                   { key: 'success', label: '성공만' },
                   { key: 'failure', label: '실패만' },
-                  { key: 'risk', label: '리스크 모드' },
                 ] as { key: FilterType; label: string }[]).map(item => (
                   <button
                     key={item.key}
@@ -981,6 +1211,76 @@ export function SemanticMap({ darkMode = false, onBack, queryPoint, highlightArt
               </div>
             </div>
 
+            {/* 유사 사례 TOP 5 — 진단 결과에서 진입 시에만 표시 */}
+            {effectiveQueryPoint && similarArticles && similarArticles.length > 0 && (
+              <div className={`rounded-3xl border p-5 ${panelBg}`}>
+                <div className="flex items-center gap-2 mb-4">
+                  <Target className="w-4 h-4 text-amber-500" />
+                  <h3 className={`text-sm font-black ${darkMode ? 'text-white' : 'text-gray-950'}`}>
+                    유사 사례 TOP {similarArticles.length}
+                  </h3>
+                  <span className={`text-[11px] ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>내 전략 기준</span>
+                  <button
+                    onClick={() => setShowPosiMap(true)}
+                    className={`ml-auto flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-lg transition-all ${
+                      darkMode ? 'bg-indigo-500/15 text-indigo-300 hover:bg-indigo-500/30' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
+                    }`}
+                  >
+                    <Radar className="w-3 h-3" />
+                    포지셔닝 맵
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {similarArticles.map((a, i) => (
+                    <a
+                      key={i}
+                      href={a.url || '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`flex items-start gap-2.5 rounded-2xl border p-3 transition-all group ${
+                        darkMode
+                          ? 'border-gray-800 bg-gray-950/35 hover:bg-gray-900 hover:border-gray-700'
+                          : 'border-gray-100 bg-gray-50 hover:bg-white hover:shadow-sm'
+                      }`}
+                    >
+                      <span className={`shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black mt-0.5 ${
+                        darkMode ? 'bg-gray-800 text-gray-400' : 'bg-gray-200 text-gray-500'
+                      }`}>{i + 1}</span>
+                      <div className="min-w-0 flex-1">
+                        <div className={`text-xs font-bold leading-snug line-clamp-2 mb-1.5 ${
+                          darkMode ? 'text-gray-200 group-hover:text-amber-300' : 'text-gray-800 group-hover:text-amber-700'
+                        } transition-colors`}>
+                          {a.title}
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
+                            a.label === 'success'
+                              ? darkMode ? 'bg-emerald-500/15 text-emerald-400' : 'bg-emerald-100 text-emerald-700'
+                              : a.label === 'failure'
+                                ? darkMode ? 'bg-red-500/15 text-red-400' : 'bg-red-100 text-red-700'
+                                : darkMode ? 'bg-slate-700 text-slate-400' : 'bg-slate-100 text-slate-600'
+                          }`}>
+                            {a.label === 'success' ? '성공' : a.label === 'failure' ? '실패' : '중립'}
+                          </span>
+                          {a.source && (
+                            <span className={`text-[10px] ${darkMode ? 'text-gray-600' : 'text-gray-400'}`}>{a.source}</span>
+                          )}
+                          <span className={`ml-auto text-[11px] font-black tabular-nums ${
+                            a.similarity >= 0.75 ? 'text-emerald-500' : a.similarity >= 0.55 ? 'text-amber-500' : 'text-slate-400'
+                          }`}>
+                            {Math.round(a.similarity * 100)}%
+                          </span>
+                        </div>
+                      </div>
+                      <ExternalLink className={`shrink-0 w-3 h-3 mt-1 opacity-0 group-hover:opacity-50 transition-opacity ${
+                        darkMode ? 'text-gray-400' : 'text-gray-500'
+                      }`} />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className={`rounded-3xl border p-5 ${panelBg}`}>
               <div className="flex items-center gap-2 mb-4">
                 <Info className={`w-4 h-4 ${darkMode ? 'text-indigo-300' : 'text-indigo-600'}`} />
@@ -988,7 +1288,7 @@ export function SemanticMap({ darkMode = false, onBack, queryPoint, highlightArt
               </div>
               <div className={`space-y-3 text-xs leading-5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                 <p><b className={darkMode ? 'text-gray-200' : 'text-gray-800'}>경계선(Hull)</b>은 전략 클러스터입니다. 붉은 경계 = 실패율 높음.</p>
-                <p><b className="text-red-500">붉은 점</b>은 실패 사례이며 글로우(빛)로 강조됩니다.</p>
+                <p><b className="text-red-500">붉은 점</b>은 실패 사례이며 글로우(빛)로 강조됩니다. <b className="text-red-400">밀집된 붉은 덩어리</b>는 여러 실패 사례가 겹쳐 생긴 고위험 밀집 구역입니다.</p>
                 <p><b className="text-emerald-500">초록 점</b>은 성공 사례, 회색 점은 중립 사례입니다.</p>
                 <p>점이나 경계선을 클릭하면 해당 클러스터만 집중 분석합니다.</p>
                 <p className={darkMode ? 'text-gray-600' : 'text-gray-400'}>우측 하단 버튼으로 줌 조작, 더블클릭으로 초기화.</p>
@@ -1059,6 +1359,7 @@ export function SemanticMap({ darkMode = false, onBack, queryPoint, highlightArt
           </div>
         )}
       </div>
+
     </div>
   );
 }

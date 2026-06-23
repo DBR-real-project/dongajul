@@ -50,7 +50,7 @@ interface DiagnosisResultProps {
   diagnosisId?: number;
   resultData?: DiagnosisData;
   onBack: () => void;
-  onSemanticMap?: (coords?: { umap_x: number; umap_y: number; cluster_name?: string }) => void;
+  onSemanticMap?: (coords?: { umap_x: number; umap_y: number; cluster_name?: string; cluster_id?: number }, similarArticles?: SimilarArticle[]) => void;
   darkMode?: boolean;
 }
 
@@ -999,8 +999,9 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
               <button
                 onClick={() => onSemanticMap(
                   data?.query_umap_x != null
-                    ? { umap_x: data.query_umap_x!, umap_y: data.query_umap_y!, cluster_name: data.cluster_name }
-                    : undefined
+                    ? { umap_x: data.query_umap_x!, umap_y: data.query_umap_y!, cluster_name: data.cluster_name, cluster_id: data.query_cluster_id }
+                    : undefined,
+                  data?.similar_articles ?? []
                 )}
                 className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all border ${darkMode
                   ? 'border-indigo-500/40 text-indigo-300 hover:bg-indigo-500/10'

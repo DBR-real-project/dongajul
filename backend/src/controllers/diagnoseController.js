@@ -167,7 +167,11 @@ async function saveToDb(inputText, aiData, userId) {
         aiData.query_cluster_id ?? null,
         successKeywords,
         failureKeywords,
-        aiData.report ? JSON.stringify(aiData.report) : null,
+        aiData.report
+          ? JSON.stringify({ ...aiData.report, _similar_articles: aiData.similar_articles || [] })
+          : aiData.similar_articles?.length
+          ? JSON.stringify({ _similar_articles: aiData.similar_articles })
+          : null,
       ]
     );
 
@@ -392,6 +396,28 @@ exports.getDiagnoseById = async (req, res) => {
     let report = null;
     if (diag.report_json) {
       try { report = JSON.parse(diag.report_json); } catch {}
+    }
+
+    // URL 매칭 실패로 similar_article_matches가 비어있을 때 report_json 내 백업 사용
+    if (matches.length === 0 && report?._similar_articles?.length > 0) {
+      matches = report._similar_articles;
+    }
+    if (report) delete report._similar_articles;
+
+    // 두 경로 모두 비어있으면 ai_server를 다시 호출해 유사 사례 복원
+    if (matches.length === 0 && diag.input_text) {
+      try {
+        const aiRes = await axios.post(
+          `${AI_SERVER_URL}/diagnose`,
+          { text: diag.input_text, top_k: 5 },
+          { timeout: 30000 }
+        );
+        if (aiRes.data?.similar_articles?.length > 0) {
+          matches = aiRes.data.similar_articles;
+        }
+      } catch (_e) {
+        // ai_server 미응답 시 빈 배열 유지
+      }
     }
 
     return res.json({

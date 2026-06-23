@@ -95,6 +95,8 @@ export default function App() {
   } | null>(null);
   const [semanticHighlightArticleId, setSemanticHighlightArticleId] = useState<number | null>(null);
   const [semanticHighlightClusterId, setSemanticHighlightClusterId] = useState<number | null>(null);
+  const [semanticFocusClusterId, setSemanticFocusClusterId] = useState<number | null>(null);
+  const [semanticSimilarArticles, setSemanticSimilarArticles] = useState<import('./components/DiagnosisResult').SimilarArticle[] | null>(null);
   const [darkMode, setDarkMode] = useState<boolean>(() =>
     JSON.parse(localStorage.getItem('darkMode') || 'false')
   );
@@ -281,6 +283,12 @@ export default function App() {
   };
 
   const handleViewChange = (view: string) => {
+    if (view === 'semantic-map') {
+      // 직접 탭 클릭 → 전체 클러스터 표시, 진단 컨텍스트 클리어
+      setSemanticFocusClusterId(null);
+      setSemanticQueryPoint(null);
+      setSemanticSimilarArticles(null);
+    }
     navigateTo(view as ViewType);
   };
 
@@ -331,6 +339,8 @@ export default function App() {
     // → article_vectors에서 JOIN된 umap_x/y 좌표를 직접 queryPoint로 사용
     setSemanticHighlightArticleId(null);
     setSemanticHighlightClusterId(null);
+    setSemanticFocusClusterId(article.cluster_id ?? null);
+    setSemanticSimilarArticles(null);
     if (article.umap_x != null && article.umap_y != null) {
       setSemanticQueryPoint({
         umap_x: article.umap_x,
@@ -347,10 +357,12 @@ export default function App() {
     navigateTo('semantic-map', 'analysis');
   };
 
-  const handleDiagnosisSemanticMap = (coords?: { umap_x: number; umap_y: number; cluster_name?: string }) => {
-    // 진단 결과 → 시맨틱맵: DiagnosisResult 로컬 데이터에서 좌표 전달받음
+  const handleDiagnosisSemanticMap = (coords?: { umap_x: number; umap_y: number; cluster_name?: string; cluster_id?: number }, articles?: import('./components/DiagnosisResult').SimilarArticle[]) => {
+    // 진단 결과 → 시맨틱맵: DiagnosisResult 로컬 데이터에서 좌표 + 유사 사례 전달받음
     setSemanticHighlightArticleId(null);
     setSemanticHighlightClusterId(null);
+    setSemanticFocusClusterId(coords?.cluster_id ?? null);
+    setSemanticSimilarArticles(articles ?? null);
     if (coords) {
       setSemanticQueryPoint(coords);
     }
@@ -476,6 +488,8 @@ export default function App() {
               queryPoint={semanticQueryPoint}
               highlightArticleId={semanticHighlightArticleId}
               highlightClusterId={semanticHighlightClusterId}
+              initialClusterId={semanticFocusClusterId}
+              similarArticles={semanticSimilarArticles}
             />
           ) : currentView === 'help' ? (
             <HelpGuide darkMode={darkMode} onNavigate={(v) => navigateTo(v as ViewType)} />

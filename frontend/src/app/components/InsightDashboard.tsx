@@ -57,7 +57,7 @@ interface InsightDashboardProps {
 export function InsightDashboard({ darkMode = false, onArticleClick, onShowSemanticMap, onCompareSelected }: InsightDashboardProps) {
   const [articles, setArticles] = useState<Article[]>([]);
   const [clusters, setClusters] = useState<Cluster[]>([]);
-  const [selectedCompareIds, setSelectedCompareIds] = useState<number[]>([]);
+  const [selectedCompareArticles, setSelectedCompareArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'success' | 'failure'>('all');
   const [sourceFilter, setSourceFilter] = useState<'all' | 'DBR' | 'HBR' | 'HBS'>('all');
@@ -161,22 +161,19 @@ export function InsightDashboard({ darkMode = false, onArticleClick, onShowSeman
 
   const filtered = articles;
 
-  const toggleCompareSelection = (id: number) => {
-    setSelectedCompareIds((prev) => {
-      if (prev.includes(id)) {
-        return prev.filter((item) => item !== id);
+  const toggleCompareSelection = (article: Article) => {
+    setSelectedCompareArticles((prev) => {
+      if (prev.some((a) => a.article_id === article.article_id)) {
+        return prev.filter((a) => a.article_id !== article.article_id);
       }
-      if (prev.length >= 2) {
-        return prev;
-      }
-      return [...prev, id];
+      if (prev.length >= 2) return prev;
+      return [...prev, article];
     });
   };
 
   const handleCompareSubmit = () => {
-    if (!onCompareSelected || selectedCompareIds.length !== 2) return;
-    const selectedArticles = articles.filter((article) => selectedCompareIds.includes(article.article_id));
-    onCompareSelected(selectedArticles);
+    if (!onCompareSelected || selectedCompareArticles.length !== 2) return;
+    onCompareSelected(selectedCompareArticles);
   };
 
   const hasMapData = (article: Article) =>
@@ -441,12 +438,12 @@ export function InsightDashboard({ darkMode = false, onArticleClick, onShowSeman
           </div>
 
           <div className="flex items-center gap-2">
-            {selectedCompareIds.length > 0 && (
+            {selectedCompareArticles.length > 0 && (
               <span className={`text-xs font-bold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                {selectedCompareIds.length}개 선택됨
+                {selectedCompareArticles.length}개 선택됨
               </span>
             )}
-            {selectedCompareIds.length === 2 && (
+            {selectedCompareArticles.length === 2 && (
               <button
                 onClick={handleCompareSubmit}
                 className="px-4 py-2.5 bg-gradient-to-r from-[#142755] to-[#444655] text-white text-xs font-semibold rounded-xl hover:shadow-lg transition-all"
@@ -627,17 +624,17 @@ export function InsightDashboard({ darkMode = false, onArticleClick, onShowSeman
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        toggleCompareSelection(article.article_id);
+                        toggleCompareSelection(article);
                       }}
                       className={`px-3 py-2 text-xs font-semibold rounded-xl transition-all ${
-                        selectedCompareIds.includes(article.article_id)
+                        selectedCompareArticles.some((a) => a.article_id === article.article_id)
                           ? 'bg-[#142755] text-white'
                           : darkMode
                             ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                             : 'bg-gray-100 text-[#142755] hover:bg-gray-200'
                       }`}
                     >
-                      {selectedCompareIds.includes(article.article_id) ? '선택됨' : '비교 선택'}
+                      {selectedCompareArticles.some((a) => a.article_id === article.article_id) ? '선택됨' : '비교 선택'}
                     </button>
                   </div>
                 </div>
@@ -648,12 +645,12 @@ export function InsightDashboard({ darkMode = false, onArticleClick, onShowSeman
       </div>
 
       {/* 플로팅 비교 버튼 — 스크롤해도 항상 보임 */}
-      {selectedCompareIds.length > 0 && (
+      {selectedCompareArticles.length > 0 && (
         <div
           className="fixed bottom-[82px] right-6 z-40 flex flex-col items-end gap-2"
           style={{ pointerEvents: 'auto' }}
         >
-          {selectedCompareIds.length === 2 ? (
+          {selectedCompareArticles.length === 2 ? (
             <button
               onClick={handleCompareSubmit}
               className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-[#0B2F61] to-[#1E3E7A] text-white text-sm font-bold rounded-2xl shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200"
@@ -670,7 +667,7 @@ export function InsightDashboard({ darkMode = false, onArticleClick, onShowSeman
             </div>
           )}
           <button
-            onClick={() => setSelectedCompareIds([])}
+            onClick={() => setSelectedCompareArticles([])}
             className={`px-3 py-1.5 text-xs rounded-xl shadow-md transition-all ${
               darkMode ? 'bg-gray-800 text-gray-400 hover:bg-gray-700' : 'bg-white text-gray-500 hover:bg-gray-100'
             }`}

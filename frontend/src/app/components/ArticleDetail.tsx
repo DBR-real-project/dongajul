@@ -12,10 +12,14 @@ interface ArticleDetailProps {
 const BRAND_NAVY = '#0B2F61';
 const BRAND_GOLD = '#C8994B';
 
+const DIM_KEYS = ['시장타이밍', '실행력', '고객이해도', '경쟁대응력', '자원충분성', '트렌드부합도'] as const;
+
 export function ArticleDetail({ articleId, onBack, darkMode = false }: ArticleDetailProps) {
   const [article, setArticle] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [metrics, setMetrics] = useState<{ name: string; score: number }[]>([]);
+  const [scoreLoading, setScoreLoading] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -28,8 +32,7 @@ export function ArticleDetail({ articleId, onBack, darkMode = false }: ArticleDe
         if (!mounted) return;
         if (data.success && data.data) {
           const d = data.data;
-          const confidence = typeof d.confidence === 'number' ? d.confidence : 0.7;
-          const base = Math.round(confidence * 100);
+          const confidence = (typeof d.confidence === 'number' && d.confidence > 0) ? d.confidence : 0.7;
 
           setArticle({
             title: d.title || '제목 없음',
@@ -41,14 +44,22 @@ export function ArticleDetail({ articleId, onBack, darkMode = false }: ArticleDe
             url: d.url,
             cluster: d.cluster_name,
             confidence,
-            metrics: [
-              { name: '전략성', score: base },
-              { name: '혁신성', score: Math.round(base * 0.88) },
-              { name: '실행력', score: Math.round(base * 0.84) },
-              { name: '시장성', score: Math.round(base * 0.92) },
-              { name: '지속성', score: Math.round(base * 0.78) },
-            ],
           });
+
+          // GPT 6차원 채점 요청
+          setScoreLoading(true);
+          apiFetch(`/api/articles/${articleId}/score`, { method: 'POST' })
+            .then(r => r.json())
+            .then(scoreData => {
+              if (!mounted) return;
+              if (scoreData.success && scoreData.scores) {
+                setMetrics(DIM_KEYS.map(k => ({ name: k, score: scoreData.scores[k] ?? 50 })));
+              } else {
+                setFallbackMetrics(confidence);
+              }
+            })
+            .catch(() => { if (mounted) setFallbackMetrics(confidence); })
+            .finally(() => { if (mounted) setScoreLoading(false); });
         } else {
           setError(true);
         }
@@ -58,6 +69,18 @@ export function ArticleDetail({ articleId, onBack, darkMode = false }: ArticleDe
 
     return () => { mounted = false; };
   }, [articleId]);
+
+  const setFallbackMetrics = (confidence: number) => {
+    const base = Math.round(confidence * 100);
+    setMetrics([
+      { name: '시장타이밍', score: Math.round(base * 0.92) },
+      { name: '실행력',     score: Math.round(base * 0.84) },
+      { name: '고객이해도', score: Math.round(base * 0.88) },
+      { name: '경쟁대응력', score: base },
+      { name: '자원충분성', score: Math.round(base * 0.78) },
+      { name: '트렌드부합도', score: Math.round(base * 0.85) },
+    ]);
+  };
 
   if (loading) {
     return (
@@ -155,13 +178,13 @@ export function ArticleDetail({ articleId, onBack, darkMode = false }: ArticleDe
           </div>
         </div>
 
-        {/* 핵심 요약 */}
+        {/* 기사 요약 */}
         <div className={`relative p-6 rounded-2xl border-l-4 ${isSuccess ? 'border-emerald-500' : article.label === 'failure' ? 'border-red-500' : 'border-gray-400'} ${
           darkMode ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30' : 'bg-white shadow-sm'
         }`}>
           <div className={`inline-flex items-center gap-1.5 mb-2 text-sm font-semibold ${isSuccess ? 'text-emerald-600' : 'text-red-500'}`}>
             <Lightbulb className="w-4 h-4" />
-            <span>핵심 요약</span>
+            <span>기사 요약</span>
           </div>
           <p className={`text-sm sm:text-base ${darkMode ? 'text-gray-200' : 'text-gray-700'} leading-relaxed font-medium`}>
             {article.summary}
@@ -174,38 +197,56 @@ export function ArticleDetail({ articleId, onBack, darkMode = false }: ArticleDe
           {/* 바 차트 */}
           <div className={`${darkMode ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30' : 'bg-white'} p-6 rounded-2xl shadow-sm border ${darkMode ? 'border-gray-700/50' : 'border-gray-100'}`}>
             <div className="flex items-center justify-between mb-6">
-              <h3 className={`text-base font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>전략 역량 분석</h3>
+              <div>
+                <h3 className={`text-base font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>전략 역량 분석</h3>
+                {scoreLoading && <p className="text-xs text-gray-400 mt-0.5">AI 채점 중...</p>}
+              </div>
               <BarChart3 className={`w-4 h-4 ${darkMode ? 'text-gray-400' : 'text-gray-400'}`} />
             </div>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={article.metrics} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#E2E8F0'} vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: darkMode ? '#9CA3AF' : '#64748B' }} axisLine={false} tickLine={false} />
-                <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: darkMode ? '#9CA3AF' : '#64748B' }} axisLine={false} tickLine={false} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: darkMode ? '#1F2937' : '#fff', border: `1px solid ${darkMode ? '#374151' : '#E2E8F0'}`, borderRadius: '12px' }}
-                  itemStyle={{ color: darkMode ? '#fff' : '#000' }}
-                />
-                <Bar dataKey="score" fill={primaryColor} radius={[6, 6, 0, 0]} barSize={28} />
-              </BarChart>
-            </ResponsiveContainer>
+            {scoreLoading || metrics.length === 0 ? (
+              <div className="flex items-center justify-center h-[240px]">
+                <div className="w-6 h-6 border-2 border-[#0B2F61] border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={metrics} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#E2E8F0'} vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: darkMode ? '#9CA3AF' : '#64748B' }} axisLine={false} tickLine={false} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: darkMode ? '#9CA3AF' : '#64748B' }} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: darkMode ? '#1F2937' : '#fff', border: `1px solid ${darkMode ? '#374151' : '#E2E8F0'}`, borderRadius: '12px' }}
+                    itemStyle={{ color: darkMode ? '#fff' : '#000' }}
+                  />
+                  <Bar dataKey="score" fill={primaryColor} radius={[6, 6, 0, 0]} barSize={28} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
 
           {/* 레이더 차트 */}
           <div className={`${darkMode ? 'bg-gradient-to-br from-gray-800/60 to-gray-800/30' : 'bg-white'} p-6 rounded-2xl shadow-sm border ${darkMode ? 'border-gray-700/50' : 'border-gray-100'}`}>
             <div className="flex items-center justify-between mb-6">
-              <h3 className={`text-base font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>밸런스 종합 평가</h3>
+              <div>
+                <h3 className={`text-base font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>6차원 전략 평가</h3>
+                {scoreLoading && <p className="text-xs text-gray-400 mt-0.5">GPT 분석 중...</p>}
+              </div>
               <Target className={`w-4 h-4 ${darkMode ? 'text-gray-400' : 'text-gray-400'}`} />
             </div>
-            <ResponsiveContainer width="100%" height={240}>
-              <RadarChart data={article.metrics} margin={{ top: 15, right: 30, left: 30, bottom: 15 }}>
-                <PolarGrid stroke={darkMode ? '#374151' : '#E2E8F0'} />
-                <PolarAngleAxis dataKey="name" tick={{ fontSize: 11, fill: darkMode ? '#9CA3AF' : '#64748B' }} />
-                <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
-                <Radar name="역량 스코어" dataKey="score" stroke={primaryColor} fill={primaryColor} fillOpacity={0.15} dot={{ fill: primaryColor, r: 3 }} />
-                <Tooltip />
-              </RadarChart>
-            </ResponsiveContainer>
+            {scoreLoading || metrics.length === 0 ? (
+              <div className="flex items-center justify-center h-[240px]">
+                <div className="w-6 h-6 border-2 border-[#0B2F61] border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={240}>
+                <RadarChart data={metrics} margin={{ top: 15, right: 30, left: 30, bottom: 15 }}>
+                  <PolarGrid stroke={darkMode ? '#374151' : '#E2E8F0'} />
+                  <PolarAngleAxis dataKey="name" tick={{ fontSize: 10, fill: darkMode ? '#9CA3AF' : '#64748B' }} />
+                  <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
+                  <Radar name="역량 스코어" dataKey="score" stroke={primaryColor} fill={primaryColor} fillOpacity={0.15} dot={{ fill: primaryColor, r: 3 }} />
+                  <Tooltip />
+                </RadarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 

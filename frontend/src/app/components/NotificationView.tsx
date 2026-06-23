@@ -77,7 +77,11 @@ export function NotificationView({ onBack, onNavigate, darkMode = false }: Notif
             action: '자세히 보기',
             actionColor: config.iconColor,
             detailContent: noti.message,
-            targetView: 'Dashboard'
+            targetView: noti.notification_type === '진단' ? 'history'
+              : noti.notification_type === '보안' ? 'risk'
+              : noti.notification_type === '전략' ? 'risk'
+              : noti.notification_type === '업그레이드' ? 'checkout'
+              : 'dashboard'
           };
         });
 
@@ -251,7 +255,10 @@ export function NotificationView({ onBack, onNavigate, darkMode = false }: Notif
                   onClick={() => handlePageNavigation(selectedNotification.targetView, selectedNotification.targetParams)}
                   className={`px-4 py-2 text-xs font-bold text-white rounded-xl transition-all shadow-md ${selectedNotification.border === 'red' ? 'bg-red-600 hover:bg-red-500' : selectedNotification.border === 'green' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-[#0B2F61] hover:bg-[#C8994B]'}`}
                 >
-                  관련 분석 프레임으로 이동
+                  {selectedNotification.title === '진단' ? '진단 이력 보기'
+                    : selectedNotification.title === '보안' ? '전략 진단하기'
+                    : selectedNotification.title === '업그레이드' ? '구독 플랜 보기'
+                    : '바로 이동'}
                 </button>
               </div>
             </div>

@@ -388,7 +388,7 @@ export function CompareView({ items, onBack, darkMode = false }: CompareViewProp
                   { label: '출처', render: (item: CompareItem) => <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{item.source || '-'}</span> },
                   { label: '카테고리', render: (item: CompareItem) => <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{item.strategy || '-'}</span> },
                   { label: '발행일', render: (item: CompareItem) => <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{formatDate(item.published_at)}</span> },
-                  { label: '핵심 내용', render: (item: CompareItem) => <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'} line-clamp-3`}>{item.strategySum || '-'}</span> },
+                  { label: '기사 요약', render: (item: CompareItem) => <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'} line-clamp-3`}>{item.strategySum || '-'}</span> },
                 ].map(row => (
                   <tr key={row.label} className={`${darkMode ? 'hover:bg-gray-900/30' : 'hover:bg-gray-50/50'} transition-colors`}>
                     <td className={`px-6 py-4 text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-900'} whitespace-nowrap`}>{row.label}</td>

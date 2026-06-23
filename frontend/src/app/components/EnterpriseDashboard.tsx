@@ -21,16 +21,16 @@ export function EnterpriseDashboard({ darkMode = false, onStartDiagnosis, onView
   ];
 
   const features = [
-    { icon: Shield, title: '리스크 정밀 진단', desc: `${totalArticles ?? '...'}건의 DBR·HBR 성공·실패 사례와 코사인 유사도 기반으로 전략 리스크를 정량 점수화합니다.`, color: 'indigo' },
-    { icon: AlertTriangle, title: '실패 패턴 대조 분석', desc: '단순 성공 사례 나열이 아닌, 과거 실패 경로와의 대조를 통해 회피 전략을 즉각 제안합니다.', color: 'red' },
-    { icon: BarChart2, title: '시맨틱 인사이트 맵', desc: 'UMAP 기반 2D 벡터 공간에 전략 위치를 시각화해 성공 군집과의 거리를 한눈에 파악합니다.', color: 'green' },
+    { icon: Shield, title: '리스크 정밀 진단', desc: `DBR·HBR·HBS ${totalArticles ?? '15,451'}건의 성공·실패 사례를 벡터 유사도로 탐색해 전략 리스크를 0~100 점수로 정량화합니다.`, color: 'indigo' },
+    { icon: AlertTriangle, title: '실패 패턴 대조 분석', desc: '단순 성공 사례 나열이 아닌, 과거 실패 경로와의 대조를 통해 어떤 요인이 리스크를 높이는지 분석합니다.', color: 'red' },
+    { icon: BarChart2, title: '시맨틱 인사이트 맵', desc: 'UMAP 기반 2D 벡터 공간에 전략 위치를 시각화해 유사 성공·실패 사례 군집과의 거리를 한눈에 파악합니다.', color: 'green' },
   ];
 
   const steps = [
     { num: '01', title: '전략 입력', desc: '분석할 비즈니스 전략을 자유롭게 입력합니다.' },
-    { num: '02', title: 'AI 분석', desc: 'SBERT 임베딩 + FAISS 벡터 검색으로 유사 사례를 탐색합니다.' },
-    { num: '03', title: '리스크 산출', desc: 'MLP 분류기가 실패 확률과 리스크 등급을 즉시 산출합니다.' },
-    { num: '04', title: '결과 확인', desc: '유사 성공·실패 사례와 함께 회피 전략을 확인합니다.' },
+    { num: '02', title: 'AI 유사 탐색', desc: 'SBERT 임베딩 + FAISS로 15,451건 중 유사 사례를 실시간 탐색합니다.' },
+    { num: '03', title: '리스크 산출', desc: 'MLP 모델이 유사 사례의 성공·실패 분포를 바탕으로 리스크 점수를 산출합니다.' },
+    { num: '04', title: '리포트 확인', desc: '유사 사례 TOP 5와 GPT 기반 AI 리포트(리스크 요인·개선 제언)를 함께 제공합니다.' },
   ];
 
   const colorMap: Record<string, string> = {
@@ -108,7 +108,7 @@ export function EnterpriseDashboard({ darkMode = false, onStartDiagnosis, onView
       <section className={`px-8 py-12 ${darkMode ? 'bg-gray-900/40' : 'bg-white'}`}>
         <div className="max-w-5xl mx-auto">
           <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} text-center mb-2`}>진단 프로세스</h2>
-          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'} text-center mb-10`}>단 3초 만에 전문 컨설턴트 수준의 전략 리스크 진단</p>
+          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'} text-center mb-10`}>DBR·HBR·HBS 15,451건 경영 사례 DB 기반, AI가 전략 리스크를 자동 분석합니다</p>
           <div className="grid grid-cols-4 gap-4">
             {steps.map(({ num, title, desc }) => (
               <div key={num} className={`${darkMode ? 'bg-gray-800/60 border-gray-700' : 'bg-[#F8FAFC] border-gray-200'} p-5 rounded-2xl border`}>

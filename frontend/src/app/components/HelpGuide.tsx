@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   BookOpen, Shield, Map, BarChart2, FileText, MessageSquare,
   ChevronDown, ChevronRight, Lightbulb, AlertTriangle, CheckCircle,
-  Search, TrendingUp, Star, Clock, Target, Zap
+  Search, TrendingUp, Star, Clock, Target, Zap, GitCompare
 } from 'lucide-react';
 
 interface HelpGuideProps {
@@ -18,7 +18,7 @@ interface FaqItem {
 const FAQS: FaqItem[] = [
   {
     q: '전략 진단은 어떤 원리로 작동하나요?',
-    a: 'DBR·HBR 15,451건의 경영 사례를 SBERT(다국어 문장 임베딩) 모델로 벡터화한 뒤, 입력한 전략 텍스트와 가장 유사한 과거 사례들을 FAISS 벡터 검색으로 찾아냅니다. 이후 유사 사례의 성공/실패 비율과 MLP 리스크 모델을 결합해 0~100% 리스크 스코어를 산출합니다.',
+    a: 'DBR·HBR·HBS 15,451건의 경영 사례를 SBERT 모델로 벡터화한 뒤, 입력한 전략 텍스트와 가장 유사한 과거 사례들을 FAISS 벡터 검색으로 찾아냅니다. 이후 NAVER 뉴스 실패 패턴 RAG 스코어(75%)와 MLP 모델 기반 ML 스코어(25%)를 앙상블해 0~100% 리스크 스코어를 산출합니다.',
   },
   {
     q: '리스크 스코어가 높으면 무조건 위험한 전략인가요?',
@@ -63,8 +63,8 @@ const STEPS = [
     num: '02',
     icon: Zap,
     title: 'AI 리스크 분석',
-    desc: '15,451건의 DBR·HBR 사례와 벡터 유사도를 비교해 리스크 스코어를 산출합니다.',
-    tips: ['분석 시간: 평균 20~40초', 'FAISS + SBERT 기반 유사 사례 검색', 'MLP 모델 리스크 스코어'],
+    desc: 'DBR·HBR·HBS 15,451건 사례와 벡터 유사도를 비교하고 NAVER 실패 패턴 RAG 분석까지 결합해 리스크 스코어를 산출합니다.',
+    tips: ['분석 시간: 평균 20~40초', 'FAISS + SBERT 기반 유사 사례 검색', 'RAG 75% + MLP 25% 앙상블'],
     color: 'amber',
   },
   {
@@ -79,8 +79,8 @@ const STEPS = [
     num: '04',
     icon: Map,
     title: '시맨틱 맵 탐색',
-    desc: '내 전략 위치를 2D 시맨틱 공간에서 확인하고 유사 사례 분포를 시각화합니다.',
-    tips: ['⭐ 황금 마커 = 내 전략 위치', '빨간 점 = 실패 사례', '초록 점 = 성공 사례'],
+    desc: '내 전략이 과거 사례들 사이 어디쯤 위치하는지 지도처럼 보여줍니다. 빨간 덩어리 근처일수록 실패 사례와 비슷한 전략이라는 뜻입니다.',
+    tips: ['⭐ 황금 마커 = 내 전략 위치', '빨간 점 밀집 구역 = 위험 지대', '초록 점 밀집 구역 = 안전 지대'],
     color: 'emerald',
   },
 ];
@@ -90,7 +90,7 @@ const FEATURES = [
     icon: Shield,
     title: '전략 진단',
     path: 'risk',
-    desc: '비즈니스 전략을 입력하면 DBR·HBR 15,451건 사례 데이터와 벡터 유사도를 비교해 리스크 스코어(0~100%)를 산출합니다.',
+    desc: '비즈니스 전략을 입력하면 DBR·HBR·HBS 15,451건 사례와 NAVER 실패 패턴을 AI가 분석해 리스크 스코어(0~100%)를 산출합니다.',
     color: 'indigo',
   },
   {
@@ -104,7 +104,7 @@ const FEATURES = [
     icon: Map,
     title: '시맨틱 인사이트 맵',
     path: 'semantic-map',
-    desc: 'UMAP 2D 벡터 공간에 15,000+개 사례를 시각화합니다. 내 전략 위치와 성공/실패 사례 분포를 한눈에 파악할 수 있습니다.',
+    desc: '비슷한 전략끼리 가까이 모이는 "전략 지도"입니다. 내 전략의 위치를 찍어보면, 주변에 성공 사례가 많은지 실패 사례가 많은지 한눈에 볼 수 있습니다.',
     color: 'emerald',
   },
   {
@@ -122,10 +122,17 @@ const FEATURES = [
     color: 'amber',
   },
   {
+    icon: GitCompare,
+    title: '사례 비교 분석',
+    path: 'analysis',
+    desc: '인사이트 대시보드에서 기사 2개를 선택한 뒤 "비교 분석 보기"를 누르면, AI가 시장타이밍·실행력·고객이해도·경쟁대응력·자원충분성·트렌드부합도 6개 차원을 점수화해 두 사례를 나란히 비교합니다.',
+    color: 'violet',
+  },
+  {
     icon: MessageSquare,
     title: 'AI 전략 챗봇',
     path: 'risk',
-    desc: 'DBR·HBR·HBS 13,000건 사례를 학습한 전략 컨설턴트 챗봇입니다. 사례 검색, 리스크 분석, 프레임워크 질문 등을 대화형으로 이용할 수 있습니다.',
+    desc: '전략 리스크·경영 사례 전문 GPT 기반 AI 챗봇입니다. 사례 검색, 리스크 요인 질문, 프레임워크 설명 등을 대화형으로 이용할 수 있습니다.',
     color: 'pink',
   },
 ];
@@ -152,6 +159,7 @@ export function HelpGuide({ darkMode = false, onNavigate }: HelpGuideProps) {
     amber: 'text-amber-500 bg-amber-50',
     purple: 'text-purple-500 bg-purple-50',
     pink: 'text-pink-500 bg-pink-50',
+    violet: 'text-violet-500 bg-violet-50',
   };
   const colorMapDark: Record<string, string> = {
     indigo: 'text-indigo-400 bg-indigo-900/30',
@@ -160,6 +168,7 @@ export function HelpGuide({ darkMode = false, onNavigate }: HelpGuideProps) {
     amber: 'text-amber-400 bg-amber-900/30',
     purple: 'text-purple-400 bg-purple-900/30',
     pink: 'text-pink-400 bg-pink-900/30',
+    violet: 'text-violet-400 bg-violet-900/30',
   };
   const getColor = (c: string) => darkMode ? colorMapDark[c] : colorMap[c];
 
@@ -225,11 +234,11 @@ export function HelpGuide({ darkMode = false, onNavigate }: HelpGuideProps) {
               </div>
               <h2 className="text-xl font-black mb-2">AI 기반 전략 리스크 사전 진단 서비스</h2>
               <p className="text-sm text-blue-200 leading-relaxed">
-                DBR·HBR 15년치 경영 사례 데이터베이스를 AI로 분석해, 당신의 전략과 유사한 과거 성공·실패 패턴을 찾아냅니다.
+                DBR·HBR·HBS 경영 사례 데이터베이스를 AI로 분석해, 당신의 전략과 유사한 과거 성공·실패 패턴을 찾아냅니다.
                 처방이 아닌 <strong className="text-white">데이터 기반 패턴 경보</strong>로 전략의 취약점을 사전에 파악하세요.
               </p>
               <div className="mt-4 grid grid-cols-3 gap-3">
-                {[['15,451', '분석 아티클'], ['97.7%', '진단 정확도'], ['87%', '리스크 감지율']].map(([v, l]) => (
+                {[['15,451', '분석 아티클'], ['AUC 0.977', '모델 판별력'], ['87%', '리스크 감지율']].map(([v, l]) => (
                   <div key={l} className="bg-white/10 rounded-xl p-3 text-center">
                     <p className="text-lg font-black text-[#C8994B]">{v}</p>
                     <p className="text-xs text-blue-200 mt-0.5">{l}</p>
@@ -323,6 +332,63 @@ export function HelpGuide({ darkMode = false, onNavigate }: HelpGuideProps) {
           <div className="space-y-4">
             <p className={`text-xs ${sub}`}>동아줄에서 제공하는 주요 기능을 소개합니다.</p>
             <div className="grid grid-cols-1 gap-4">
+              {/* 시맨틱 맵 개념 설명 박스 */}
+              <div className={`rounded-2xl p-5 border-2 border-dashed ${darkMode ? 'border-emerald-700/50 bg-emerald-900/10' : 'border-emerald-200 bg-emerald-50/60'}`}>
+                <div className="flex items-center gap-2 mb-3">
+                  <Map className={`w-4 h-4 ${darkMode ? 'text-emerald-400' : 'text-emerald-600'}`} />
+                  <span className={`text-xs font-black uppercase tracking-widest ${darkMode ? 'text-emerald-400' : 'text-emerald-700'}`}>시맨틱 맵이란?</span>
+                </div>
+                <p className={`text-xs leading-relaxed mb-3 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  한마디로 <strong>"비슷한 전략끼리 가까이 모이는 전략 지도"</strong>입니다.<br />
+                  15,000건 이상의 경영 사례를 AI가 내용의 유사도를 기준으로 2D 공간에 배치한 것입니다. 실제 지리 위치가 아니라 <strong>전략의 성격이 비슷할수록 가까이</strong> 위치합니다.
+                </p>
+                <div className="grid grid-cols-3 gap-2 text-center text-[11px]">
+                  {[
+                    { emoji: '⭐', label: '내 전략 위치', desc: '진단 후 내 전략이 어디 찍히는지 확인' },
+                    { emoji: '🔴', label: '빨간 밀집 구역', desc: '실패 사례가 몰린 위험 지대' },
+                    { emoji: '🟢', label: '초록 밀집 구역', desc: '성공 사례가 몰린 안전 지대' },
+                  ].map(item => (
+                    <div key={item.label} className={`rounded-xl p-2.5 ${darkMode ? 'bg-gray-800/60' : 'bg-white'}`}>
+                      <div className="text-base mb-1">{item.emoji}</div>
+                      <div className={`font-bold mb-0.5 ${darkMode ? 'text-white' : 'text-gray-800'}`}>{item.label}</div>
+                      <div className={darkMode ? 'text-gray-400' : 'text-gray-500'}>{item.desc}</div>
+                    </div>
+                  ))}
+                </div>
+                <p className={`mt-3 text-[11px] ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                  💡 전략 진단 후 결과 화면에서 "시맨틱 맵에서 보기"를 누르면 내 전략 위치가 자동으로 표시됩니다.
+                </p>
+              </div>
+
+              {/* 기사 비교 기능 설명 박스 */}
+              <div className={`rounded-2xl p-5 border-2 border-dashed ${darkMode ? 'border-violet-700/50 bg-violet-900/10' : 'border-violet-200 bg-violet-50/60'}`}>
+                <div className="flex items-center gap-2 mb-3">
+                  <GitCompare className={`w-4 h-4 ${darkMode ? 'text-violet-400' : 'text-violet-600'}`} />
+                  <span className={`text-xs font-black uppercase tracking-widest ${darkMode ? 'text-violet-400' : 'text-violet-700'}`}>사례 비교 분석 사용법</span>
+                </div>
+                <p className={`text-xs leading-relaxed mb-4 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  인사이트 대시보드의 기사 목록에서 <strong>2개의 기사를 선택</strong>하면 우측 하단에 "비교 분석 보기" 버튼이 나타납니다. AI가 두 사례를 6개 차원으로 점수화해 나란히 비교해줍니다.
+                </p>
+                <div className="space-y-2">
+                  {[
+                    { step: '01', text: '인사이트 대시보드 → 기사 카드 클릭으로 1개 선택' },
+                    { step: '02', text: '다른 기사 카드 하나 더 선택 (총 2개)' },
+                    { step: '03', text: '우측 하단 플로팅 버튼 "비교 분석 보기" 클릭' },
+                    { step: '04', text: 'AI가 6개 차원 점수 + 바 차트·레이더 차트로 비교 결과 표시' },
+                  ].map(({ step, text }) => (
+                    <div key={step} className="flex items-start gap-3">
+                      <span className={`text-[11px] font-black w-6 h-5 flex items-center justify-center rounded flex-shrink-0 mt-0.5 ${darkMode ? 'bg-violet-900/60 text-violet-300' : 'bg-violet-100 text-violet-700'}`}>{step}</span>
+                      <p className={`text-xs leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>{text}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className={`mt-3 grid grid-cols-3 gap-1.5 text-[11px] text-center ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {['시장타이밍', '실행력', '고객이해도', '경쟁대응력', '자원충분성', '트렌드부합도'].map(d => (
+                    <span key={d} className={`px-2 py-1 rounded-lg ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>{d}</span>
+                  ))}
+                </div>
+              </div>
+
               {FEATURES.map((feat) => {
                 const Icon = feat.icon;
                 return (
