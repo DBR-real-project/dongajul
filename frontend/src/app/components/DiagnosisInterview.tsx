@@ -138,6 +138,7 @@ export function DiagnosisInterview({ onResultClick, darkMode = false }: Diagnosi
       }
       const data: DiagnosisData = await res.json();
       data.input_text = strategyText;
+      window.dispatchEvent(new CustomEvent('notif-update'));
       onResultClick(data);
     } catch (e: any) {
       setError(e.message || '분석 중 오류가 발생했습니다.');

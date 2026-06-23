@@ -17,6 +17,7 @@ import { SemanticMap } from './components/SemanticMap';
 import { SubscriptionPage } from './components/SubscriptionPage';
 import { CheckoutPage } from './components/CheckoutPage';
 import { AIChatbot } from './components/AIChatbot';
+import { HelpGuide } from './components/HelpGuide';
 import { BASE_URL } from './utils/api';
 
 export type ViewType =
@@ -32,6 +33,7 @@ export type ViewType =
   | 'profile'
   | 'result'
   | 'semantic-map'
+  | 'help'
   | 'subscription'
   | 'checkout';
 
@@ -49,6 +51,7 @@ const VIEW_PATHS: Record<ViewType, string> = {
   notifications: '/notifications',
   profile:      '/profile',
   settings:     '/settings',
+  help:         '/help',
   subscription: '/subscription',
   checkout:     '/checkout',
 };
@@ -474,6 +477,8 @@ export default function App() {
               highlightArticleId={semanticHighlightArticleId}
               highlightClusterId={semanticHighlightClusterId}
             />
+          ) : currentView === 'help' ? (
+            <HelpGuide darkMode={darkMode} onNavigate={(v) => navigateTo(v as ViewType)} />
           ) : currentView === 'article' && selectedArticle !== null ? (
             <ArticleDetail
               articleId={selectedArticle}

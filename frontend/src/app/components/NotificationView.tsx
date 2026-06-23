@@ -61,6 +61,10 @@ export function NotificationView({ onBack, onNavigate, darkMode = false }: Notif
             config = { Icon: AlertTriangle, bg: 'bg-red-50 dark:bg-red-900/20', iconColor: 'text-red-500', border: 'red' };
           } else if (noti.notification_type === '업그레이드') {
             config = { Icon: TrendingUp, bg: 'bg-green-50 dark:bg-green-900/20', iconColor: 'text-green-500', border: 'green' };
+          } else if (noti.notification_type === '전략') {
+            config = { Icon: TrendingUp, bg: 'bg-indigo-50 dark:bg-indigo-900/20', iconColor: 'text-indigo-500', border: 'blue' };
+          } else if (noti.notification_type === '진단') {
+            config = { Icon: CheckCircle, bg: 'bg-blue-50 dark:bg-blue-900/20', iconColor: 'text-blue-500', border: 'blue' };
           }
 
           return {

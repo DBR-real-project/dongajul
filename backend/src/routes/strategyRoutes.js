@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 const { verifyToken } = require('../middlewares/auth');
+const { createNotification } = require('../services/notificationService');
 
 // GET /api/strategies — 내 전략 목록
 router.get('/', verifyToken, async (req, res) => {
@@ -62,6 +63,8 @@ router.post('/', verifyToken, async (req, res) => {
         metrics?.engagement ?? 5.0,
       ]
     );
+
+    createNotification(userId, '전략', `"${name.trim()}" 전략이 워크스페이스에 저장되었습니다.`);
 
     res.status(201).json({
       strategy: {

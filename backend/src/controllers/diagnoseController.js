@@ -1,5 +1,6 @@
 const axios = require('axios');
 const db = require('../config/db');
+const { createNotification } = require('../services/notificationService');
 
 const AI_SERVER_URL = process.env.AI_SERVER_URL || 'http://127.0.0.1:8000';
 const AI_TIMEOUT = 180000;
@@ -50,6 +51,24 @@ exports.diagnose = async (req, res) => {
 
     // 중요: DB 저장을 기다려야 diagnosis_id를 프론트에 내려줄 수 있음
     const diagnosisId = await saveToDb(String(text).trim(), data, user_id || null);
+
+    // 알림 생성 (비동기, 응답 지연 없음)
+    if (user_id) {
+      const inputSummary = String(text).trim().slice(0, 28);
+      const scorePercent = Math.round((data.risk_score || 0) * 100);
+      createNotification(
+        user_id,
+        '진단',
+        `"${inputSummary}..." 전략 진단 완료 — 리스크 스코어 ${scorePercent}%`
+      );
+      if ((data.risk_score || 0) >= 0.6) {
+        createNotification(
+          user_id,
+          '보안',
+          `⚠️ 고위험 전략 감지: 리스크 스코어 ${scorePercent}%로 즉각적인 전략 점검이 필요합니다.`
+        );
+      }
+    }
 
     return res.json({
       diagnosis_id: diagnosisId,

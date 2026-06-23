@@ -217,34 +217,38 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
     if (!reportRef.current || pdfLoading) return;
     setPdfLoading(true);
     try {
-      const { default: html2canvas } = await import('html2canvas');
-      const { default: jsPDF } = await import('jspdf');
+      const { toJpeg } = await import('html-to-image');
+      const { jsPDF } = await import('jspdf');
       const el = reportRef.current;
-      const canvas = await html2canvas(el, {
-        scale: 2,
-        useCORS: true,
+      // html-to-image는 CSS 변수·그라디언트·한글 폰트 모두 정상 렌더링
+      const dataUrl = await toJpeg(el, {
+        quality: 0.92,
+        pixelRatio: 2,
         backgroundColor: '#ffffff',
-        logging: false,
+        skipAutoScale: false,
       });
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const img = new Image();
+      img.src = dataUrl;
+      await new Promise<void>((resolve) => { img.onload = () => resolve(); });
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
-      const imgH = (canvas.height * pageW) / canvas.width;
+      const imgH = (img.height * pageW) / img.width;
       let heightLeft = imgH;
       let position = 0;
-      pdf.addImage(imgData, 'JPEG', 0, position, pageW, imgH);
+      pdf.addImage(dataUrl, 'JPEG', 0, position, pageW, imgH);
       heightLeft -= pageH;
       while (heightLeft > 0) {
         position -= pageH;
         pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', 0, position, pageW, imgH);
+        pdf.addImage(dataUrl, 'JPEG', 0, position, pageW, imgH);
         heightLeft -= pageH;
       }
       const dateStr = new Date().toISOString().slice(0, 10);
       pdf.save(`동아줄_전략리스크진단리포트_${dateStr}.pdf`);
       showToast('PDF 저장 완료!');
-    } catch {
+    } catch (err) {
+      console.error('[PDF] 생성 오류:', err);
       showToast('PDF 생성에 실패했습니다.');
     } finally {
       setPdfLoading(false);
