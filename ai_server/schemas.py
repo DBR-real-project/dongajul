@@ -34,6 +34,7 @@ class DiagnoseResponse(BaseModel):
 class DiagnosisReport(BaseModel):
     summary: str
     strategy_analysis: Optional[str] = None
+    market_context: Optional[str] = None
     risk_factors: list[str]
     risk_details: Optional[list[str]] = None
     improvement: list[str]

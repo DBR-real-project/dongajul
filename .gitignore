@@ -47,6 +47,7 @@ build/
 !데이터처리/output/cluster_info.parquet
 !데이터처리/output/umap_coords_v3.parquet
 !데이터처리/output/cluster_info_v3.parquet
+!데이터처리/output/trend_summaries.json
 !데이터처리/output/articles_meta.parquet
 !데이터처리/output/risk_model.pkl
 !데이터처리/output/faiss.index

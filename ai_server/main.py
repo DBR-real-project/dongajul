@@ -31,6 +31,7 @@ from .reporter import generate_report
 from .risk_rag import init_risk_rag, score_risk_rag
 from .schemas import DiagnoseRequest, DiagnoseResponse, GlobalCasesResponse, ReportResponse, SimilarArticle
 from .trend_context import get_trend_context, init_trend_context
+from .web_trend import search_business_trends
 
 
 try:
@@ -340,14 +341,14 @@ def diagnose(req: DiagnoseRequest):
         try:
             from collections import Counter
             top_idx = [int(i) for i in ids[0].tolist() if int(i) >= 0]
-            cluster_ids = _umap["cluster_id"].iloc[top_idx].tolist()
+            # faiss_with_hbs 인덱스(15,451건)는 umap(13,335건)보다 크므로 반드시 bounds 체크
+            umap_valid_idx = [i for i in top_idx if i < len(_umap)]
+            cluster_ids = _umap["cluster_id"].iloc[umap_valid_idx].tolist()
             if cluster_ids:
                 query_cluster_id = int(Counter(cluster_ids).most_common(1)[0][0])
-            if top_idx and "umap_x" in _umap.columns:
-                valid_idx = [i for i in top_idx if i < len(_umap)]
-                if valid_idx:
-                    query_umap_x = float(_umap["umap_x"].iloc[valid_idx].mean())
-                    query_umap_y = float(_umap["umap_y"].iloc[valid_idx].mean())
+            if umap_valid_idx and "umap_x" in _umap.columns:
+                query_umap_x = float(_umap["umap_x"].iloc[umap_valid_idx].mean())
+                query_umap_y = float(_umap["umap_y"].iloc[umap_valid_idx].mean())
         except Exception as e:
             print(f"[/diagnose] 쿼리 클러스터/UMAP 계산 실패: {e}")
 
@@ -356,12 +357,13 @@ def diagnose(req: DiagnoseRequest):
     case_score = fail_weight / total_weight if total_weight > 0 else 0.0
 
     # ② 클러스터 기반 기준 리스크 (클러스터 평균 실패율)
-    cluster_risk = _cluster_risk_map.get(query_cluster_id, 0.10) if query_cluster_id is not None else 0.10
+    # 클러스터 미식별(코퍼스 외 전략) 시 0.35로 보수적 기본값 적용 (기존 0.10은 너무 낙관적)
+    cluster_risk = _cluster_risk_map.get(query_cluster_id, 0.35) if query_cluster_id is not None else 0.35
 
-    # ③ 유사도 신뢰도 보정 (max_sim < 0.65이면 0.5 방향으로 수축)
+    # ③ 유사도 신뢰도 보정 (max_sim < 0.65이면 0.60 방향으로 수축 — 불확실할수록 위험으로 기울기)
     reliability = min(max_sim / 0.65, 1.0)
     base_score = 0.35 * model_score + 0.45 * case_score + 0.20 * cluster_risk
-    risk_score = round(base_score * reliability + 0.5 * (1 - reliability), 4)
+    risk_score = round(base_score * reliability + 0.60 * (1 - reliability), 4)
 
     return DiagnoseResponse(
         risk_score=round(risk_score, 4),
@@ -456,9 +458,9 @@ def report(req: DiagnoseRequest):
                 print(f"[/report] 프레임워크 검색 실패: {fw_err}")
 
         # 트렌드 컨텍스트 주입 (쿼리 클러스터 이름 기반)
+        cluster_name = None
         trend_ctx = ""
         try:
-            cluster_name = None
             if diag.query_cluster_id is not None and _clusters is not None:
                 c_rows = _clusters[_clusters["cluster_id"] == diag.query_cluster_id]
                 if not c_rows.empty:
@@ -468,6 +470,21 @@ def report(req: DiagnoseRequest):
                 print(f"[/report] 트렌드 컨텍스트 주입됨: {trend_ctx[:60]}...")
         except Exception as tr_err:
             print(f"[/report] 트렌드 컨텍스트 실패: {tr_err}")
+
+        # 실시간 웹 검색 (DuckDuckGo) — 최신 시장 동향
+        web_trend_ctx = ""
+        try:
+            web_trend_ctx = search_business_trends(
+                strategy_text=req.text,
+                cluster_name=cluster_name,
+                top_k=4,
+            )
+            if web_trend_ctx:
+                print(f"[/report] 웹 검색 컨텍스트 주입됨: {web_trend_ctx[:60]}...")
+            else:
+                print("[/report] 웹 검색 결과 없음 (DuckDuckGo 연결 실패 또는 결과 없음)")
+        except Exception as wb_err:
+            print(f"[/report] 웹 검색 실패: {wb_err}")
 
         # ── RAG 리스크 점수 (NAVER 실패 FAISS + 비즈니스 저서 원칙 + GPT) ──
         q_emb_rag = q_emb_shared[0] if q_emb_shared is not None else _sbert.encode(
@@ -494,6 +511,7 @@ def report(req: DiagnoseRequest):
             similar_articles=articles_dict,
             framework_context=framework_context,
             trend_context=trend_ctx,
+            web_trend_context=web_trend_ctx,
         )
         print(f"[/report] GPT 리포트 완료: {time.time() - start:.2f}초")
 

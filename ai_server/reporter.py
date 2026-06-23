@@ -29,6 +29,7 @@ JSON 외의 설명, 마크다운, 코드블록은 절대 포함하지 마세요.
 {{
   "summary": "전략 핵심 구조 요약 + 데이터베이스 내 유사 사례 비교 리스크 평가 (2~3문장)",
   "strategy_analysis": "전략 구조 진단: 타깃 고객 명확성·수익모델 유무·차별화 요소·실행 복잡도 (2~3문장)",
+  "market_context": "현재 관련 시장 동향과 이 전략이 처한 외부 환경 분석 (2~3문장, 제공된 시장 동향 데이터를 근거로 작성. 데이터 없으면 null)",
   "risk_factors": ["과거 유사 전략에서 반복 관찰된 실패 패턴1 (한 줄 요약)", "실패 패턴2", "실패 패턴3"],
   "risk_details": ["패턴1 상세: 어떤 상황에서 어떻게 실패했으며 유사 사례 결과는 (2~3문장)", "패턴2 상세", "패턴3 상세"],
   "improvement": ["유사 성공 사례들이 공통으로 실행한 조치1 (무엇을 했고 어떤 지표로 검증했는지)", "조치2", "조치3"],
@@ -37,6 +38,7 @@ JSON 외의 설명, 마크다운, 코드블록은 절대 포함하지 마세요.
 }}
 
 작성 원칙:
+- market_context는 제공된 [시장 동향] 데이터를 직접 근거로 사용하세요. 데이터가 없으면 null.
 - risk_factors는 "과거 유사 전략에서 ~~패턴이 반복 관찰됨" 형태로 작성하세요.
 - risk_details는 실패가 어떤 조건에서, 어떤 결과로 이어졌는지 유사 사례 내용과 연결하세요.
 - improvement는 "유사 성공 사례에서는 ~~을 먼저 실행했습니다" 형태를 권장하세요.
@@ -144,6 +146,8 @@ HUMAN_PROMPT = """[분석 대상 전략]
 
 {trend_section}
 
+{web_trend_section}
+
 {framework_section}
 
 아래 절차로 패턴을 분석한 뒤, 최종 결과는 반드시 JSON만 출력하세요.
@@ -155,11 +159,13 @@ HUMAN_PROMPT = """[분석 대상 전략]
 4. 현재 전략이 실패 패턴과 닮은 부분, 성공 조건과 다른 부분을 비교하세요.
 5. risk_factors는 "과거 데이터에서 반복 관찰된 실패 패턴" 형태로 3개 작성하세요.
 6. improvement는 "유사 성공 사례에서 공통으로 실행한 조치"를 근거로 3개 작성하세요.
-7. 프레임워크 컨텍스트가 있으면 해당 프레임워크 관점의 핵심 인사이트를 작성하세요.
+7. 시장 동향 데이터가 있으면 이를 근거로 market_context를 2~3문장으로 작성하세요.
+8. 프레임워크 컨텍스트가 있으면 해당 프레임워크 관점의 핵심 인사이트를 작성하세요.
 
 출력 규칙:
 - summary: 2~3문장. 전략 요약 + 데이터 기반 리스크 평가.
 - strategy_analysis: 2~3문장. 전략 구조 진단.
+- market_context: 2~3문장. 시장 동향 데이터 기반 외부 환경 분석. 데이터 없으면 null.
 - risk_factors: 정확히 3개, 과거 유사 사례에서 반복된 패턴 중심 한 줄 요약.
 - risk_details: 정확히 3개, risk_factors 1:1 대응 심층 분석 2~3문장.
 - improvement: 정확히 3개, 유사 성공 사례 조치 중심으로 작성.
@@ -235,6 +241,7 @@ def generate_report(
     similar_articles: list[dict],
     framework_context: str = "",
     trend_context: str = "",
+    web_trend_context: str = "",
 ) -> dict:
     chain = _get_chain()
 
@@ -244,7 +251,11 @@ def generate_report(
 
     trend_section = ""
     if trend_context and trend_context.strip():
-        trend_section = f"[최근 시장 트렌드 키워드 (2024~2025)]\n{trend_context}"
+        trend_section = f"[시장 트렌드 분석 (NAVER 2024~2025 데이터 기반)]\n{trend_context}"
+
+    web_trend_section = ""
+    if web_trend_context and web_trend_context.strip():
+        web_trend_section = f"[최신 시장 조사 (실시간 웹 검색)]\n{web_trend_context}"
 
     try:
         result = chain.invoke({
@@ -254,6 +265,7 @@ def generate_report(
             "k": min(len(similar_articles), 5),
             "similar_cases": _format_similar_cases(similar_articles),
             "trend_section": trend_section,
+            "web_trend_section": web_trend_section,
             "framework_section": fw_section,
         })
     except Exception as e:
@@ -265,6 +277,7 @@ def generate_report(
 
     result.setdefault("summary", "")
     result.setdefault("strategy_analysis", None)
+    result.setdefault("market_context", None)
     result.setdefault("risk_factors", [])
     result.setdefault("risk_details", None)
     result.setdefault("improvement", [])
@@ -287,7 +300,7 @@ def generate_report(
     result["risk_factors"] = result["risk_factors"][:3]
     result["improvement"] = result["improvement"][:3]
 
-    for key in ("strategy_analysis", "framework_insight"):
+    for key in ("strategy_analysis", "market_context", "framework_insight"):
         if result[key] in ("null", "NULL", ""):
             result[key] = None
 

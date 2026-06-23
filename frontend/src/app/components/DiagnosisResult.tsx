@@ -25,6 +25,7 @@ export interface DiagnosisReport {
   improvement: string[];
   verdict: string;
   strategy_analysis?: string;
+  market_context?: string;
   risk_details?: string[];
   framework_insight?: string;
 }
@@ -787,6 +788,31 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
                       }`}>
                         <p className={`text-sm leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                           {(data.report as any).strategy_analysis}
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* 시장 동향 분석 (market_context) */}
+                {(data.report as any).market_context && (
+                  <>
+                    <div className={`h-px ${darkMode ? 'bg-gray-700/50' : 'bg-gray-100'}`} />
+                    <div>
+                      <div className="flex items-center gap-3 mb-3.5">
+                        <div className={`p-1.5 rounded-lg ${darkMode ? 'bg-teal-500/15' : 'bg-teal-50'}`}>
+                          <TrendingUp className={`w-4 h-4 ${darkMode ? 'text-teal-400' : 'text-teal-600'}`} />
+                        </div>
+                        <h4 className={`text-base font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>시장 동향 분석</h4>
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                          darkMode ? 'bg-teal-500/15 text-teal-400' : 'bg-teal-50 text-teal-600'
+                        }`}>실시간 데이터</span>
+                      </div>
+                      <div className={`border-l-4 pl-4 py-2 pr-4 rounded-r-xl ${
+                        darkMode ? 'border-teal-500/50 bg-teal-500/5' : 'border-teal-500 bg-teal-50'
+                      }`}>
+                        <p className={`text-sm leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                          {(data.report as any).market_context}
                         </p>
                       </div>
                     </div>

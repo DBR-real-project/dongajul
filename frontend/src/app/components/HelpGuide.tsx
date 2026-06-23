@@ -359,11 +359,20 @@ export function HelpGuide({ darkMode = false, onNavigate }: HelpGuideProps) {
             <div className={`rounded-2xl border p-5 ${card}`}>
               <h3 className={`text-sm font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>리스크 스코어란?</h3>
               <p className={`text-xs leading-relaxed ${sub}`}>
-                입력한 전략과 유사한 과거 DBR·HBR 사례들의 성공/실패 비율을 기반으로 산출한 수치입니다.
+                입력한 전략과 유사한 과거 DBR·HBR·HBS 15,451건 사례 + NAVER 뉴스 실패 패턴을 AI가 종합 분석해 산출한 수치입니다.
                 0%에 가까울수록 유사 사례에서 성공 패턴이 우세하고, 100%에 가까울수록 실패 패턴이 우세합니다.
               </p>
-              <div className={`mt-4 p-4 rounded-xl text-xs leading-relaxed ${darkMode ? 'bg-gray-800/50 text-gray-300' : 'bg-blue-50 text-blue-800'}`}>
-                <strong>계산 방식:</strong> 모델 스코어(35%) + 유사 사례 실패율(45%, 유사도 가중) + 클러스터 리스크(20%) × 신뢰도 보정
+              <div className={`mt-4 p-4 rounded-xl text-xs leading-relaxed space-y-3 ${darkMode ? 'bg-gray-800/50 text-gray-300' : 'bg-blue-50 text-blue-800'}`}>
+                <div>
+                  <strong className="block mb-1.5">최종 점수 = RAG 스코어(75%) + ML 스코어(25%)</strong>
+                  <div className="space-y-1.5 pl-2">
+                    <p><strong>① RAG 스코어 (75%)</strong> — NAVER 실패 사례 벡터 검색 → GPT가 전략과의 위험도 종합 판단</p>
+                    <p><strong>② ML 스코어 (25%)</strong> — 모델 P(실패)(35%) + 유사 사례 실패율(45%, 유사도 가중) + 클러스터 리스크(20%), 이후 신뢰도 보정</p>
+                  </div>
+                </div>
+                <p className={`text-[11px] ${darkMode ? 'text-gray-400' : 'text-blue-600'}`}>
+                  유사 사례를 찾지 못하거나 코퍼스 외 전략일 경우 신뢰도 보정이 낮아져 보수적(높은) 점수로 수렴합니다.
+                </p>
               </div>
             </div>
 
