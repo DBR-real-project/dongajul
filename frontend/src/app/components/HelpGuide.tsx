@@ -332,7 +332,72 @@ export function HelpGuide({ darkMode = false, onNavigate }: HelpGuideProps) {
           <div className="space-y-4">
             <p className={`text-xs ${sub}`}>동아줄에서 제공하는 주요 기능을 소개합니다.</p>
             <div className="grid grid-cols-1 gap-4">
-              {/* 시맨틱 맵 개념 설명 박스 */}
+
+              {/* 1. 전략 진단 */}
+              <div className={`rounded-2xl p-5 border-2 border-dashed ${darkMode ? 'border-indigo-700/50 bg-indigo-900/10' : 'border-indigo-200 bg-indigo-50/60'}`}>
+                <div className="flex items-center gap-2 mb-3">
+                  <Shield className={`w-4 h-4 ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`} />
+                  <span className={`text-xs font-black uppercase tracking-widest ${darkMode ? 'text-indigo-400' : 'text-indigo-700'}`}>전략 진단 사용법</span>
+                </div>
+                <p className={`text-xs leading-relaxed mb-4 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  비즈니스 전략 텍스트를 입력하면 AI가 <strong>15,451건의 과거 경영 사례</strong>와 비교해 리스크 스코어(0~100%)를 산출합니다.
+                </p>
+                <div className="space-y-2 mb-4">
+                  {[
+                    { step: '01', text: '전략 진단 화면에서 산업군·전략 유형 선택' },
+                    { step: '02', text: '전략 텍스트 직접 입력 또는 AI 작성 도우미로 자동 생성' },
+                    { step: '03', text: '"진단 시작" 클릭 → FAISS 벡터 검색 + MLP 모델 분석 (약 20~40초)' },
+                    { step: '04', text: '리스크 스코어 + 유사 사례 + AI 컨설팅 리포트 결과 확인' },
+                  ].map(({ step, text }) => (
+                    <div key={step} className="flex items-start gap-3">
+                      <span className={`text-[11px] font-black w-6 h-5 flex items-center justify-center rounded flex-shrink-0 mt-0.5 ${darkMode ? 'bg-indigo-900/60 text-indigo-300' : 'bg-indigo-100 text-indigo-700'}`}>{step}</span>
+                      <p className={`text-xs leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>{text}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-[11px] text-center">
+                  {[
+                    { emoji: '💡', label: 'AI 작성 도우미', desc: '키워드로 전략 자동 생성' },
+                    { emoji: '📝', label: '권장 분량', desc: '150~300자' },
+                    { emoji: '🎯', label: '필수 포함', desc: '타깃·수익·차별화' },
+                  ].map(item => (
+                    <div key={item.label} className={`rounded-xl p-2.5 ${darkMode ? 'bg-gray-800/60' : 'bg-white'}`}>
+                      <div className="text-base mb-1">{item.emoji}</div>
+                      <div className={`font-bold mb-0.5 ${darkMode ? 'text-white' : 'text-gray-800'}`}>{item.label}</div>
+                      <div className={darkMode ? 'text-gray-400' : 'text-gray-500'}>{item.desc}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 2. AI 컨설팅 리포트 */}
+              <div className={`rounded-2xl p-5 border-2 border-dashed ${darkMode ? 'border-blue-700/50 bg-blue-900/10' : 'border-blue-200 bg-blue-50/60'}`}>
+                <div className="flex items-center gap-2 mb-3">
+                  <FileText className={`w-4 h-4 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                  <span className={`text-xs font-black uppercase tracking-widest ${darkMode ? 'text-blue-400' : 'text-blue-700'}`}>AI 컨설팅 리포트 구성</span>
+                </div>
+                <p className={`text-xs leading-relaxed mb-4 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  전략 진단 완료 후 자동 생성되는 <strong>GPT 기반 컨설팅 문서</strong>입니다. 처방이 아닌 데이터 패턴 경보 방식으로 유사 실패 사례의 공통점을 보고합니다.
+                </p>
+                <div className="grid grid-cols-2 gap-2 mb-3 text-[11px]">
+                  {[
+                    { tag: 'Executive Summary', desc: '종합 평가 + 최종 판정 (안전/주의/위험)' },
+                    { tag: '01 전략 구조 분석', desc: '타깃 고객·수익 모델·차별화·실행 난이도' },
+                    { tag: '02 리스크 요인', desc: 'HIGH/MED 등급 + 심층 분석 텍스트' },
+                    { tag: '03 개선 제언', desc: '실행 권고 목록 + 프레임워크 관점' },
+                  ].map(item => (
+                    <div key={item.tag} className={`rounded-xl p-2.5 ${darkMode ? 'bg-gray-800/60' : 'bg-white'}`}>
+                      <div className={`text-[10px] font-black mb-1 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>{item.tag}</div>
+                      <div className={`leading-relaxed ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{item.desc}</div>
+                    </div>
+                  ))}
+                </div>
+                <p className={`text-[11px] ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                  📄 리포트 상단 "PDF 저장" 버튼으로 A4 형식 다운로드 · ⚠️ 참고 자료, 전문가 자문 병행 권고
+                </p>
+              </div>
+
+              {/* 3. 시맨틱 인사이트 맵 */}
               <div className={`rounded-2xl p-5 border-2 border-dashed ${darkMode ? 'border-emerald-700/50 bg-emerald-900/10' : 'border-emerald-200 bg-emerald-50/60'}`}>
                 <div className="flex items-center gap-2 mb-3">
                   <Map className={`w-4 h-4 ${darkMode ? 'text-emerald-400' : 'text-emerald-600'}`} />
@@ -360,7 +425,35 @@ export function HelpGuide({ darkMode = false, onNavigate }: HelpGuideProps) {
                 </p>
               </div>
 
-              {/* 기사 비교 기능 설명 박스 */}
+              {/* 4. 인사이트 대시보드 */}
+              <div className={`rounded-2xl p-5 border-2 border-dashed ${darkMode ? 'border-purple-700/50 bg-purple-900/10' : 'border-purple-200 bg-purple-50/60'}`}>
+                <div className="flex items-center gap-2 mb-3">
+                  <BarChart2 className={`w-4 h-4 ${darkMode ? 'text-purple-400' : 'text-purple-600'}`} />
+                  <span className={`text-xs font-black uppercase tracking-widest ${darkMode ? 'text-purple-400' : 'text-purple-700'}`}>인사이트 대시보드 활용법</span>
+                </div>
+                <p className={`text-xs leading-relaxed mb-4 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  전체 <strong>15,451건 사례 데이터</strong>의 성공·실패 분포, 카테고리별 트렌드, 연도별 추이를 차트로 제공합니다. 기사 목록에서 원하는 사례를 직접 탐색할 수 있습니다.
+                </p>
+                <div className="grid grid-cols-2 gap-2 mb-3 text-[11px]">
+                  {[
+                    { emoji: '🍩', label: '성공·실패 비율', desc: '파이 차트로 전체 비율 한눈에' },
+                    { emoji: '📊', label: '카테고리 분포', desc: '산업별 성공·실패 분포 상위 8개' },
+                    { emoji: '📈', label: '연도별 트렌드', desc: '2015~2026 사례 추이 라인 차트' },
+                    { emoji: '🔝', label: 'Top5 카테고리', desc: '성공률·실패율 높은 분야 비교' },
+                  ].map(item => (
+                    <div key={item.label} className={`rounded-xl p-2.5 ${darkMode ? 'bg-gray-800/60' : 'bg-white'}`}>
+                      <div className="text-base mb-1">{item.emoji}</div>
+                      <div className={`font-bold mb-0.5 ${darkMode ? 'text-white' : 'text-gray-800'}`}>{item.label}</div>
+                      <div className={`leading-relaxed ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{item.desc}</div>
+                    </div>
+                  ))}
+                </div>
+                <p className={`text-[11px] ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                  💡 소스 필터(DBR/HBR/HBS)로 출처별 탐색 · 기사 카드 클릭 시 상세 내용 열람 · 기사 2개 선택 후 비교 분석 이용 가능
+                </p>
+              </div>
+
+              {/* 5. 사례 비교 분석 */}
               <div className={`rounded-2xl p-5 border-2 border-dashed ${darkMode ? 'border-violet-700/50 bg-violet-900/10' : 'border-violet-200 bg-violet-50/60'}`}>
                 <div className="flex items-center gap-2 mb-3">
                   <GitCompare className={`w-4 h-4 ${darkMode ? 'text-violet-400' : 'text-violet-600'}`} />
@@ -369,7 +462,7 @@ export function HelpGuide({ darkMode = false, onNavigate }: HelpGuideProps) {
                 <p className={`text-xs leading-relaxed mb-4 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                   인사이트 대시보드의 기사 목록에서 <strong>2개의 기사를 선택</strong>하면 우측 하단에 "비교 분석 보기" 버튼이 나타납니다. AI가 두 사례를 6개 차원으로 점수화해 나란히 비교해줍니다.
                 </p>
-                <div className="space-y-2">
+                <div className="space-y-2 mb-3">
                   {[
                     { step: '01', text: '인사이트 대시보드 → 기사 카드 클릭으로 1개 선택' },
                     { step: '02', text: '다른 기사 카드 하나 더 선택 (총 2개)' },
@@ -382,39 +475,72 @@ export function HelpGuide({ darkMode = false, onNavigate }: HelpGuideProps) {
                     </div>
                   ))}
                 </div>
-                <div className={`mt-3 grid grid-cols-3 gap-1.5 text-[11px] text-center ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                <div className={`grid grid-cols-3 gap-1.5 text-[11px] text-center ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                   {['시장타이밍', '실행력', '고객이해도', '경쟁대응력', '자원충분성', '트렌드부합도'].map(d => (
                     <span key={d} className={`px-2 py-1 rounded-lg ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>{d}</span>
                   ))}
                 </div>
               </div>
 
-              {FEATURES.map((feat) => {
-                const Icon = feat.icon;
-                return (
-                  <div key={feat.title} className={`rounded-2xl border p-5 ${card} group`}>
-                    <div className="flex items-start gap-4">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${getColor(feat.color)}`}>
-                        <Icon className="w-5 h-5" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2 mb-1.5">
-                          <h4 className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{feat.title}</h4>
-                          {onNavigate && (
-                            <button
-                              onClick={() => onNavigate(feat.path)}
-                              className={`text-xs font-semibold flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ${darkMode ? 'text-blue-400' : 'text-[#0B2F61]'}`}
-                            >
-                              이동 <ChevronRight className="w-3 h-3" />
-                            </button>
-                          )}
-                        </div>
-                        <p className={`text-xs leading-relaxed ${sub}`}>{feat.desc}</p>
-                      </div>
+              {/* 6. 진단 이력 */}
+              <div className={`rounded-2xl p-5 border-2 border-dashed ${darkMode ? 'border-amber-700/50 bg-amber-900/10' : 'border-amber-200 bg-amber-50/60'}`}>
+                <div className="flex items-center gap-2 mb-3">
+                  <Search className={`w-4 h-4 ${darkMode ? 'text-amber-400' : 'text-amber-600'}`} />
+                  <span className={`text-xs font-black uppercase tracking-widest ${darkMode ? 'text-amber-400' : 'text-amber-700'}`}>진단 이력 활용법</span>
+                </div>
+                <p className={`text-xs leading-relaxed mb-4 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  이전에 실행한 모든 전략 진단 기록이 <strong>자동 저장</strong>됩니다. 클릭 한 번으로 당시의 AI 리포트와 유사 사례를 다시 열람할 수 있습니다.
+                </p>
+                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                  {[
+                    { emoji: '📋', label: '자동 저장', desc: '진단 즉시 이력 기록, 별도 저장 불필요' },
+                    { emoji: '🔄', label: '완전 복원', desc: '리스크 스코어·유사 사례·AI 리포트 재열람' },
+                    { emoji: '🗺️', label: '시맨틱 맵 연동', desc: '"맵에서 보기"로 당시 전략 위치 표시' },
+                    { emoji: '🗑️', label: '이력 삭제', desc: '카드 우측 휴지통 아이콘으로 삭제' },
+                  ].map(item => (
+                    <div key={item.label} className={`rounded-xl p-2.5 ${darkMode ? 'bg-gray-800/60' : 'bg-white'}`}>
+                      <div className="text-base mb-1">{item.emoji}</div>
+                      <div className={`font-bold mb-0.5 ${darkMode ? 'text-white' : 'text-gray-800'}`}>{item.label}</div>
+                      <div className={`leading-relaxed ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{item.desc}</div>
                     </div>
-                  </div>
-                );
-              })}
+                  ))}
+                </div>
+              </div>
+
+              {/* 7. AI 전략 챗봇 */}
+              <div className={`rounded-2xl p-5 border-2 border-dashed ${darkMode ? 'border-pink-700/50 bg-pink-900/10' : 'border-pink-200 bg-pink-50/60'}`}>
+                <div className="flex items-center gap-2 mb-3">
+                  <MessageSquare className={`w-4 h-4 ${darkMode ? 'text-pink-400' : 'text-pink-600'}`} />
+                  <span className={`text-xs font-black uppercase tracking-widest ${darkMode ? 'text-pink-400' : 'text-pink-700'}`}>AI 전략 챗봇 사용법</span>
+                </div>
+                <p className={`text-xs leading-relaxed mb-4 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  <strong>DBR·HBR·HBS 15,451건</strong> 기반 전략 전문 GPT 챗봇입니다. 경영 프레임워크 설명, 사례 검색, 리스크 요인 질문 등을 대화형으로 이용할 수 있습니다.
+                </p>
+                <div className="space-y-2 mb-4">
+                  <p className={`text-[11px] font-bold ${darkMode ? 'text-pink-300' : 'text-pink-700'}`}>예시 질문</p>
+                  {[
+                    '"커피 구독 서비스를 시작하려는데 어떤 리스크가 있을까요?"',
+                    '"Porter 5 Forces 분석 방법과 실제 적용 사례를 알려주세요"',
+                    '"플랫폼 비즈니스 모델의 성공 사례를 찾아주세요"',
+                  ].map((q, i) => (
+                    <div key={i} className={`text-xs px-3 py-2 rounded-xl italic ${darkMode ? 'bg-gray-800/60 text-gray-300' : 'bg-white text-gray-600'}`}>{q}</div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-[11px] text-center">
+                  {[
+                    { emoji: '💬', label: '대화 연속성', desc: '세션별 이전 대화 기록 보존' },
+                    { emoji: '✏️', label: '세션 편집', desc: '제목 변경·삭제 가능' },
+                    { emoji: '📚', label: '전문 KB', desc: '12개 경영 프레임워크 내장' },
+                  ].map(item => (
+                    <div key={item.label} className={`rounded-xl p-2.5 ${darkMode ? 'bg-gray-800/60' : 'bg-white'}`}>
+                      <div className="text-base mb-1">{item.emoji}</div>
+                      <div className={`font-bold mb-0.5 ${darkMode ? 'text-white' : 'text-gray-800'}`}>{item.label}</div>
+                      <div className={darkMode ? 'text-gray-400' : 'text-gray-500'}>{item.desc}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
             </div>
           </div>
         )}
