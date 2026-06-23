@@ -1,0 +1,144 @@
+
+:root {
+  --font-size: 16px;
+
+  /* 🌟 [우리의 로고 기반 프리미엄 컬러 시스템 이식] */
+  --primary: #0B2F61;                 /* 주조색: 로고 왼쪽 날개 딥 네이비 */
+  --primary-foreground: #ffffff;
+  --dark-navy: #0B2F61;
+  --background: #F8FAFC;
+  --foreground: #0F172A;
+  --card: #FFFFFF;
+  --card-foreground: #0F172A;
+  --popover: #FFFFFF;
+  --popover-foreground: #0F172A;
+
+  --secondary: #C8994B;               /* 보조색: 로고 오른쪽 날개 웜 골드 */
+  --secondary-foreground: #ffffff;
+  --muted: #F1F5F9;
+  --muted-foreground: #64748B;
+  --accent: #F8FAFC;
+  --accent-foreground: #0B2F61;
+
+  --success: #16A34A;
+  --success-foreground: #ffffff;
+  --warning: #F59E0B;
+  --warning-foreground: #ffffff;
+  --destructive: #EA0029;             /* 강조색: 시그니처 레드 */
+  --destructive-foreground: #ffffff;
+
+  --border: #E2E8F0;
+  --input: #E2E8F0;
+  --input-background: #FFFFFF;
+  --switch-background: #CBD5E1;
+  --ring: #0B2F61;
+
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-normal: 400;
+
+  /* 📊 [차트 전역 컬러 스케일 최적화] */
+  --chart-1: #0B2F61;                 /* 차트 1번: 딥 네이비 (전략 A) */
+  --chart-2: #C8994B;                 /* 차트 2번: 웜 골드 (전략 B) */
+  --chart-3: #EA0029;                 /* 차트 3번: 시그니처 레드 */
+  --chart-4: #DC2626;
+  --chart-5: #8B5CF6;
+
+  --radius: 0.625rem;
+
+  /* 🗂️ [사이드바 상징색 매핑 완벽 동기화] */
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #0F172A;
+  --sidebar-primary: #0B2F61;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F8FAFC;
+  --sidebar-accent-foreground: #0B2F61;
+  --sidebar-border: #E2E8F0;
+  --sidebar-ring: #0B2F61;
+}
+
+.dark {
+  /* 🌙 다크모드 기존 oklch 고유 스케일 유지 */
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.145 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.396 0.141 25.723);
+  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --border: oklch(0.269 0 0);
+  --input: oklch(0.269 0 0);
+  --ring: oklch(0.439 0 0);
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(0.269 0 0);
+  --sidebar-ring: oklch(0.439 0 0);
+}
+
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    overflow: hidden;
+    width: 100%;
+    height: 100vh;
+    font-size: var(--font-size);
+  }
+
+  body {
+    overflow: hidden;
+    width: 100%;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out;
+  }
+
+  /* Hide scrollbar while keeping functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari and Opera */
+  }
+}

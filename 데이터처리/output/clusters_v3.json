@@ -1,0 +1,134 @@
+[
+  {
+    "cluster_id":1,
+    "cluster_name":"재무\/투자\/위기관리",
+    "top_keywords":"기업, 시장, 회사, 경제, 투자, 위기, 전략, 고객",
+    "article_count":1262,
+    "center_x":12.6616,
+    "center_y":4.4321,
+    "success_count":802,
+    "failure_count":435,
+    "hbr_ratio":22.9
+  },
+  {
+    "cluster_id":2,
+    "cluster_name":"경영전략\/조직관리",
+    "top_keywords":"기업, 사람, 고객, 전략, 조직, 경영, 혁신, 시장",
+    "article_count":1477,
+    "center_x":8.5607,
+    "center_y":6.472,
+    "success_count":1428,
+    "failure_count":29,
+    "hbr_ratio":6.2
+  },
+  {
+    "cluster_id":3,
+    "cluster_name":"HR\/리더십\/성과",
+    "top_keywords":"직원, 조직, 기업, 사람, 리더, 회사, 업무, 성과",
+    "article_count":1790,
+    "center_x":9.9936,
+    "center_y":3.9156,
+    "success_count":1694,
+    "failure_count":57,
+    "hbr_ratio":26.1
+  },
+  {
+    "cluster_id":4,
+    "cluster_name":"AI\/데이터\/디지털",
+    "top_keywords":"데이터, 기업, 기술, 인간, 생성, 고객, 사람, 조직",
+    "article_count":627,
+    "center_x":14.4264,
+    "center_y":8.3317,
+    "success_count":618,
+    "failure_count":8,
+    "hbr_ratio":38.3
+  },
+  {
+    "cluster_id":5,
+    "cluster_name":"일반경영\/DBR사례",
+    "top_keywords":"dbr, 기업, 경영, 고객, 생각, 전략, 조직, 제품",
+    "article_count":307,
+    "center_x":6.3086,
+    "center_y":8.1352,
+    "success_count":294,
+    "failure_count":6,
+    "hbr_ratio":1.0
+  },
+  {
+    "cluster_id":6,
+    "cluster_name":"브랜드\/제품전략",
+    "top_keywords":"기업, 브랜드, 제품, 고객, 사람, 시장, 소비자, 만들다",
+    "article_count":1433,
+    "center_x":10.9577,
+    "center_y":7.124,
+    "success_count":1366,
+    "failure_count":53,
+    "hbr_ratio":10.5
+  },
+  {
+    "cluster_id":7,
+    "cluster_name":"플랫폼\/서비스\/기술",
+    "top_keywords":"기업, 서비스, 기술, 고객, 시장, 데이터, 플랫폼, 사람",
+    "article_count":1125,
+    "center_x":12.2777,
+    "center_y":7.2963,
+    "success_count":1105,
+    "failure_count":18,
+    "hbr_ratio":14.1
+  },
+  {
+    "cluster_id":8,
+    "cluster_name":"글로벌\/해외사례",
+    "top_keywords":"author, says, companies, people, business, company, 기업, speaker",
+    "article_count":522,
+    "center_x":7.0756,
+    "center_y":3.8189,
+    "success_count":419,
+    "failure_count":93,
+    "hbr_ratio":1.0
+  },
+  {
+    "cluster_id":9,
+    "cluster_name":"협상\/의사결정",
+    "top_keywords":"사람, 생각, 기업, 협상, 시간, 고객, 조직, 직원",
+    "article_count":1193,
+    "center_x":9.1792,
+    "center_y":4.7441,
+    "success_count":913,
+    "failure_count":251,
+    "hbr_ratio":18.9
+  },
+  {
+    "cluster_id":10,
+    "cluster_name":"마케팅\/광고",
+    "top_keywords":"고객, 브랜드, 소비자, 기업, 제품, 마케팅, 사람, 광고",
+    "article_count":1252,
+    "center_x":10.8179,
+    "center_y":7.4247,
+    "success_count":1221,
+    "failure_count":19,
+    "hbr_ratio":13.7
+  },
+  {
+    "cluster_id":11,
+    "cluster_name":"혁신\/신사업",
+    "top_keywords":"기업, 혁신, 전략, 시장, 고객, 조직, 기술, 사업",
+    "article_count":1512,
+    "center_x":12.0849,
+    "center_y":5.2229,
+    "success_count":1488,
+    "failure_count":10,
+    "hbr_ratio":15.2
+  },
+  {
+    "cluster_id":12,
+    "cluster_name":"역사\/고전 리더십",
+    "top_keywords":"사람, 기업, 조선, 전쟁, 생각, 리더, 조직, 중국",
+    "article_count":835,
+    "center_x":8.8942,
+    "center_y":2.2887,
+    "success_count":510,
+    "failure_count":300,
+    "hbr_ratio":3.6
+  }
+]

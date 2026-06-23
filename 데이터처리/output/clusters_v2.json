@@ -1,0 +1,167 @@
+[
+  {
+    "cluster_id":0,
+    "cluster_name":"cluster_00",
+    "top_keywords":"사람, 선수, 기업, 전쟁, 조선, 조직, 리더",
+    "article_count":735,
+    "center_x":9.2181,
+    "center_y":1.0531,
+    "success_count":458,
+    "failure_count":263,
+    "hbr_ratio":3.3
+  },
+  {
+    "cluster_id":1,
+    "cluster_name":"cluster_01",
+    "top_keywords":"고객, 기업, 소비자, 브랜드, 제품, 마케팅, 사람",
+    "article_count":1132,
+    "center_x":10.2674,
+    "center_y":7.474,
+    "success_count":1077,
+    "failure_count":42,
+    "hbr_ratio":14.7
+  },
+  {
+    "cluster_id":2,
+    "cluster_name":"cluster_02",
+    "top_keywords":"사람, 기업, 생각, 조직, 연구, 만들다, 아이디어",
+    "article_count":819,
+    "center_x":9.2519,
+    "center_y":5.8616,
+    "success_count":737,
+    "failure_count":64,
+    "hbr_ratio":9.2
+  },
+  {
+    "cluster_id":3,
+    "cluster_name":"cluster_03",
+    "top_keywords":"직원, 조직, 기업, 리더, 사람, 회사, 성과",
+    "article_count":1347,
+    "center_x":10.3342,
+    "center_y":3.638,
+    "success_count":1250,
+    "failure_count":72,
+    "hbr_ratio":27.1
+  },
+  {
+    "cluster_id":4,
+    "cluster_name":"cluster_04",
+    "top_keywords":"기업, 사회, 회사, 투자, 위기, 전략, 가치",
+    "article_count":1151,
+    "center_x":12.8509,
+    "center_y":3.4314,
+    "success_count":822,
+    "failure_count":311,
+    "hbr_ratio":19.2
+  },
+  {
+    "cluster_id":5,
+    "cluster_name":"cluster_05",
+    "top_keywords":"기업, dbr, 고객, 경영, 전략, 사람, 생각",
+    "article_count":760,
+    "center_x":7.5162,
+    "center_y":8.2954,
+    "success_count":741,
+    "failure_count":7,
+    "hbr_ratio":2.5
+  },
+  {
+    "cluster_id":6,
+    "cluster_name":"cluster_06",
+    "top_keywords":"사람, 직원, 생각, 조직, 업무, 리더, 기업",
+    "article_count":1052,
+    "center_x":8.858,
+    "center_y":3.8537,
+    "success_count":874,
+    "failure_count":143,
+    "hbr_ratio":26.0
+  },
+  {
+    "cluster_id":7,
+    "cluster_name":"cluster_07",
+    "top_keywords":"기업, 혁신, 조직, 전략, 고객, 기술, 사업",
+    "article_count":1222,
+    "center_x":11.632,
+    "center_y":5.2641,
+    "success_count":1173,
+    "failure_count":35,
+    "hbr_ratio":16.0
+  },
+  {
+    "cluster_id":8,
+    "cluster_name":"cluster_08",
+    "top_keywords":"데이터, 기업, 기술, 고객, 인간, 사람, 조직",
+    "article_count":881,
+    "center_x":14.4925,
+    "center_y":8.4298,
+    "success_count":847,
+    "failure_count":33,
+    "hbr_ratio":33.5
+  },
+  {
+    "cluster_id":9,
+    "cluster_name":"cluster_09",
+    "top_keywords":"브랜드, 고객, 제품, 소비자, 기업, 시장, 매장",
+    "article_count":920,
+    "center_x":10.9272,
+    "center_y":8.9585,
+    "success_count":891,
+    "failure_count":24,
+    "hbr_ratio":7.4
+  },
+  {
+    "cluster_id":10,
+    "cluster_name":"cluster_10",
+    "top_keywords":"고객, 기업, 서비스, 제품, 시장, 기술, 가격",
+    "article_count":998,
+    "center_x":12.3674,
+    "center_y":7.5181,
+    "success_count":970,
+    "failure_count":26,
+    "hbr_ratio":13.2
+  },
+  {
+    "cluster_id":11,
+    "cluster_name":"cluster_11",
+    "top_keywords":"기업, 중국, 시장, 전략, 투자, 기술, 제품",
+    "article_count":975,
+    "center_x":13.5297,
+    "center_y":5.487,
+    "success_count":861,
+    "failure_count":99,
+    "hbr_ratio":14.9
+  },
+  {
+    "cluster_id":12,
+    "cluster_name":"cluster_12",
+    "top_keywords":"기업, 협상, 사람, 고객, 조직, 전략, 직원",
+    "article_count":629,
+    "center_x":6.7944,
+    "center_y":6.2743,
+    "success_count":567,
+    "failure_count":50,
+    "hbr_ratio":8.4
+  },
+  {
+    "cluster_id":13,
+    "cluster_name":"cluster_13",
+    "top_keywords":"여성, author, 사람, says, people, companies, business",
+    "article_count":613,
+    "center_x":6.5137,
+    "center_y":3.5039,
+    "success_count":497,
+    "failure_count":102,
+    "hbr_ratio":4.9
+  },
+  {
+    "cluster_id":14,
+    "cluster_name":"cluster_14",
+    "top_keywords":"유대인, 기업, 회사, 중국, 학생, 브랜드, mba",
+    "article_count":101,
+    "center_x":3.3865,
+    "center_y":7.5698,
+    "success_count":93,
+    "failure_count":8,
+    "hbr_ratio":1.0
+  }
+]

@@ -1,71 +1,56 @@
 version: '3.9'
 
-services:
+networks:
+  dongajul_net:
+    driver: bridge
 
-  # ── MySQL 8.0 ────────────────────────────────────────────────────────────
-  db:
-    image: mysql:8.0
-    container_name: dongajul_db
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
-      MYSQL_DATABASE:      ${MYSQL_DATABASE:-dongajul}
-      MYSQL_USER:          ${MYSQL_USER:-dongajul}
-      MYSQL_PASSWORD:      ${MYSQL_PASSWORD:-dongajul1234}
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+services:
 
   # ── AI Server (FastAPI + SBERT + FAISS) ──────────────────────────────────
   ai_server:
     build:
-      context: ./ai_server        # ai_server/ 폴더를 빌드 컨텍스트로
+      context: ./ai_server
     container_name: dongajul_ai
     restart: unless-stopped
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     volumes:
-      # 대용량 모델 파일은 볼륨으로 마운트 (이미지에 포함 X)
       - ./데이터처리/output:/app/데이터처리/output:ro
-    env_file: .env
-    depends_on:
-      db:
-        condition: service_healthy
+    env_file: backend/.env
+    networks:
+      - dongajul_net
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
   # ── Main Backend (Node.js / Express) ─────────────────────────────────────
-  # 담당: 김동현 / 김문수
-  # backend/ 폴더와 Dockerfile 준비되면 아래 주석 해제
-  # backend:
-  #   build: ./backend
-  #   container_name: dongajul_backend
-  #   restart: unless-stopped
-  #   ports:
-  #     - "3001:3001"
-  #   env_file: .env
-  #   depends_on:
-  #     db:
-  #       condition: service_healthy
-  #     ai_server:
-  #       condition: service_started
+  backend:
+    build: ./backend
+    container_name: dongajul_backend
+    restart: unless-stopped
+    expose:
+      - "3001"
+    env_file: backend/.env
+    environment:
+      - AI_SERVER_URL=http://ai_server:8000
+    depends_on:
+      ai_server:
+        condition: service_healthy
+    networks:
+      - dongajul_net
 
-  # ── Frontend (React + Vite) ───────────────────────────────────────────────
-  # 담당: 최규원 / 이경철
-  # Dockerfile 준비되면 아래 주석 해제
-  # frontend:
-  #   build:
-  #     context: "./DBR 기사 시각화 서비스"
-  #   container_name: dongajul_frontend
-  #   restart: unless-stopped
-  #   ports:
-  #     - "3000:3000"
-  #   depends_on:
-  #     - backend
-
-volumes:
-  mysql_data:
+  # ── Frontend (React + Vite → nginx) ──────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+    container_name: dongajul_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - dongajul_net
