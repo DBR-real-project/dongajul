@@ -13,7 +13,7 @@
 
 ## 📅 프로젝트 기간
 
-2026.XX.XX ~ 2026.06.30 (X주)
+2026.04.30 ~ 2026.06.30
 
 <br>
 
@@ -194,21 +194,24 @@
 
 <table>
   <tr>
+    <td align="center">[강동연]</td>
     <td align="center">[김재한]</td>
-    <td align="center">[팀원2]</td>
-    <td align="center">[팀원3]</td>
-    <td align="center">[팀원4]</td>
-    <td align="center">[팀원5]</td>
+    <td align="center">[김지호]</td>
+    <td align="center">[문병근]</td>
+    <td align="center">[박진엽]</td>
+    <td align="center">[서현철]</td>
   </tr>
   <tr>
-    <td align="center">PM · Frontend</td>
-    <td align="center">[역할]</td>
-    <td align="center">[역할]</td>
-    <td align="center">[역할]</td>
-    <td align="center">[역할]</td>
+    <td align="center">Back-end</td>
+    <td align="center">PM</td>
+    <td align="center">Front-end</td>
+    <td align="center">Back-end</td>
+    <td align="center">[팀장] Modeling</td>
+    <td align="center">Front-end</td>
   </tr>
   <tr>
     <td align="center"><a href="https://github.com/jaehan9602211-eng" target="_blank">github</a></td>
+    <td align="center"><a href="#">github</a></td>
     <td align="center"><a href="#">github</a></td>
     <td align="center"><a href="#">github</a></td>
     <td align="center"><a href="#">github</a></td>
