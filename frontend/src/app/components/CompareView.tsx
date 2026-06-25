@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { ArrowLeft, BarChart3, Target, Lightbulb, ExternalLink, Loader2, AlertCircle, TrendingUp } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ArrowLeft, BarChart3, Target, Lightbulb, ExternalLink, Loader2, AlertCircle, TrendingUp, FileDown } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
@@ -133,6 +133,41 @@ export function CompareView({ items, onBack, darkMode = false }: CompareViewProp
   const [gptResult, setGptResult] = useState<GptResult | null>(null);
   const [gptLoading, setGptLoading] = useState(false);
   const [gptError, setGptError] = useState('');
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const reportRef = useRef<HTMLDivElement>(null);
+
+  const handleDownloadPdf = async () => {
+    if (!reportRef.current) return;
+    setPdfLoading(true);
+    try {
+      const { toJpeg } = await import('html-to-image');
+      const { jsPDF } = await import('jspdf');
+      const el = reportRef.current;
+      const dataUrl = await toJpeg(el, { quality: 0.92, backgroundColor: darkMode ? '#0A0E1A' : '#FAFBFC' });
+      const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const img = new Image();
+      img.src = dataUrl;
+      await new Promise(r => { img.onload = r; });
+      const ratio = img.naturalHeight / img.naturalWidth;
+      const imgH = pageW * ratio;
+      let y = 0;
+      let remaining = imgH;
+      while (remaining > 0) {
+        pdf.addImage(dataUrl, 'JPEG', 0, -y, pageW, imgH);
+        remaining -= pageH;
+        y += pageH;
+        if (remaining > 0) pdf.addPage();
+      }
+      const today = new Date().toISOString().slice(0, 10);
+      pdf.save(`동아줄_전략비교분석_${today}.pdf`);
+    } catch {
+      alert('PDF 저장 중 오류가 발생했습니다.');
+    } finally {
+      setPdfLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (items.length !== 2) return;
@@ -208,17 +243,27 @@ export function CompareView({ items, onBack, darkMode = false }: CompareViewProp
 
   return (
     <div className={`h-full overflow-y-auto ${darkMode ? 'bg-[#0A0E1A]' : 'bg-[#FAFBFC]'} pb-24`}>
-      <div className="max-w-[1600px] mx-auto px-6 py-6 space-y-8">
+      <div className="max-w-[1600px] mx-auto px-6 py-6 space-y-8" ref={reportRef}>
 
         {/* 헤더 */}
         <div>
-          <button
-            onClick={onBack}
-            className={`flex items-center gap-2 mb-4 px-4 py-2.5 ${darkMode ? 'hover:bg-gray-800/60 text-gray-400 hover:text-white' : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'} rounded-xl transition-all`}
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm font-medium">돌아가기</span>
-          </button>
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={onBack}
+              className={`flex items-center gap-2 px-4 py-2.5 ${darkMode ? 'hover:bg-gray-800/60 text-gray-400 hover:text-white' : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'} rounded-xl transition-all`}
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span className="text-sm font-medium">돌아가기</span>
+            </button>
+            <button
+              onClick={handleDownloadPdf}
+              disabled={pdfLoading}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition-all disabled:opacity-60"
+            >
+              {pdfLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+              PDF 저장
+            </button>
+          </div>
           <h1 className={`text-3xl font-bold tracking-tight ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>전략 비교 분석</h1>
           <p className={`text-base ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>두 사례를 6개 전략 차원으로 비교하고 시장 트렌드 관점의 시사점을 도출합니다.</p>
         </div>
