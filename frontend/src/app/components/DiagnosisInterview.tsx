@@ -162,7 +162,7 @@ export function DiagnosisInterview({ onResultClick, darkMode = false }: Diagnosi
             </div>
             <div>
               <h1 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>전략 리스크 진단</h1>
-              <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>DBR·HBR {articleCount}건 사례 기반 AI 분석</p>
+              <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>DBR·HBR·HBS {articleCount}건 사례 기반 AI 분석</p>
             </div>
           </div>
           {/* Progress bar */}
