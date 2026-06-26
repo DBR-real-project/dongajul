@@ -110,18 +110,16 @@ export function TopNavigation({
       ? [
           { id: 'dashboard', icon: Home, label: '홈' },
           { id: 'risk', icon: Shield, label: '전략 진단' },
-          { id: 'analysis', icon: BarChart2, label: '인사이트' },
-          { id: 'history', icon: History, label: '진단 이력' },
+          { id: 'analysis', icon: BarChart2, label: '인사이트 검색' },
           { id: 'semantic-map', icon: Map, label: '시맨틱 맵' },
-          { id: 'help', icon: HelpCircle, label: '이용 안내' },
+          { id: 'history', icon: History, label: '진단 이력' },
         ]
       : [
           { id: 'dashboard', icon: Home, label: 'Home' },
           { id: 'risk', icon: Shield, label: 'Diagnose' },
           { id: 'analysis', icon: BarChart2, label: 'Insights' },
-          { id: 'history', icon: History, label: 'History' },
           { id: 'semantic-map', icon: Map, label: 'Semantic Map' },
-          { id: 'help', icon: HelpCircle, label: 'Help' },
+          { id: 'history', icon: History, label: 'History' },
         ];
 
   const handleLogoutConfirm = () => {
@@ -168,6 +166,14 @@ export function TopNavigation({
       </nav>
 
       <div className="flex flex-nowrap items-center gap-2">
+        <button
+          onClick={() => onViewChange('help')}
+          className={`p-2 ${currentView === 'help' ? (darkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-900') : darkMode ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-600'} rounded-lg transition-colors`}
+          title={language === 'ko' ? '이용 안내' : 'Help'}
+        >
+          <HelpCircle className="w-5 h-5" />
+        </button>
+
         <button
           onClick={() => { onNotificationClick(); setUnreadCount(0); }}
           className={`p-2 ${darkMode ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-600'} rounded-lg transition-colors relative`}

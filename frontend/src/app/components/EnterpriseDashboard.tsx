@@ -56,7 +56,7 @@ export function EnterpriseDashboard({ darkMode = false, onStartDiagnosis, onView
         </div>
         <div className="relative max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/10 backdrop-blur rounded-full text-xs font-semibold text-[#E5BA73] mb-6 border border-white/10">
-            <Zap className="w-3.5 h-3.5" /> DBR · HBR {totalArticles ?? '...'}건 사례 기반 AI 진단
+            <Zap className="w-3.5 h-3.5" /> DBR · HBR · HBS {totalArticles ?? '...'}건 사례 기반 AI 진단
           </div>
           <h1 className="text-5xl font-extrabold mb-4 leading-tight">
             당신의 전략,<br /><span className="text-[#E5BA73]">실패할 확률</span>을 알고 계신가요?

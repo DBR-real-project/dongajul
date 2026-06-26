@@ -351,7 +351,7 @@ export function DiagnosisResult({ diagnosisId, resultData, onBack, onSemanticMap
                 전략 리스크 진단 결과
               </h1>
               <p className={`text-xs mt-0.5 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-                DBR · HBR {articleCount}건 사례 기반 분석
+                DBR · HBR · HBS {articleCount}건 사례 기반 분석
               </p>
             </div>
           </div>
