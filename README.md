@@ -122,6 +122,7 @@
                           risk_model.pkl (MLP)
                           umap_coords_v3.parquet
 ```
+<img width="1600" height="760" alt="실전프로젝트_시스템아키텍처_동아줄" src="https://github.com/user-attachments/assets/7231547d-6999-4b9f-89ce-c67c6248b6df" />
 
 <br>
 
@@ -138,6 +139,7 @@
       ↓
 ⑤ UMAP 차원 축소 + K-means 12개 클러스터 분류 → DB 저장
 ```
+<img width="960" height="803" alt="NLP파이프라인" src="https://github.com/user-attachments/assets/b0fd964b-aeba-47ed-9094-9ee435959345" />
 
 | 단계 | 모델/방법 | 성능 |
 |------|----------|------|
@@ -169,6 +171,7 @@
         ↓
   진단 결과 저장 → 시맨틱 맵 위치 표시 → PDF 저장
 ```
+<img width="960" height="819" alt="서비스흐름도" src="https://github.com/user-attachments/assets/dc232e83-ed4e-4796-86d2-741956f89042" />
 
 <br>
 
