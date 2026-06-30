@@ -2,6 +2,10 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 const { verifyToken } = require('../middlewares/auth');
+<<<<<<< HEAD
+=======
+const { createNotification } = require('../services/notificationService');
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
 
 // GET /api/strategies — 내 전략 목록
 router.get('/', verifyToken, async (req, res) => {
@@ -63,6 +67,11 @@ router.post('/', verifyToken, async (req, res) => {
       ]
     );
 
+<<<<<<< HEAD
+=======
+    createNotification(userId, '전략', `"${name.trim()}" 전략이 워크스페이스에 저장되었습니다.`);
+
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
     res.status(201).json({
       strategy: {
         id: result.insertId,
@@ -90,6 +99,10 @@ router.put('/:id', verifyToken, async (req, res) => {
   try {
     const userId = req.user.user_id || req.user.id;
     const strategyId = parseInt(req.params.id, 10);
+<<<<<<< HEAD
+=======
+    if (isNaN(strategyId)) return res.status(400).json({ message: '유효하지 않은 전략 ID입니다.' });
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
     const { name, content, keywords, metrics } = req.body;
 
     const [result] = await db.query(
@@ -128,6 +141,10 @@ router.delete('/:id', verifyToken, async (req, res) => {
   try {
     const userId = req.user.user_id || req.user.id;
     const strategyId = parseInt(req.params.id, 10);
+<<<<<<< HEAD
+=======
+    if (isNaN(strategyId)) return res.status(400).json({ message: '유효하지 않은 전략 ID입니다.' });
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
 
     await db.query(
       'DELETE FROM strategies WHERE strategy_id = ? AND user_id = ?',

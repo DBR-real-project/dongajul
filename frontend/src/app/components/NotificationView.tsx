@@ -61,6 +61,13 @@ export function NotificationView({ onBack, onNavigate, darkMode = false }: Notif
             config = { Icon: AlertTriangle, bg: 'bg-red-50 dark:bg-red-900/20', iconColor: 'text-red-500', border: 'red' };
           } else if (noti.notification_type === '업그레이드') {
             config = { Icon: TrendingUp, bg: 'bg-green-50 dark:bg-green-900/20', iconColor: 'text-green-500', border: 'green' };
+<<<<<<< HEAD
+=======
+          } else if (noti.notification_type === '전략') {
+            config = { Icon: TrendingUp, bg: 'bg-indigo-50 dark:bg-indigo-900/20', iconColor: 'text-indigo-500', border: 'blue' };
+          } else if (noti.notification_type === '진단') {
+            config = { Icon: CheckCircle, bg: 'bg-blue-50 dark:bg-blue-900/20', iconColor: 'text-blue-500', border: 'blue' };
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
           }
 
           return {
@@ -73,7 +80,15 @@ export function NotificationView({ onBack, onNavigate, darkMode = false }: Notif
             action: '자세히 보기',
             actionColor: config.iconColor,
             detailContent: noti.message,
+<<<<<<< HEAD
             targetView: 'Dashboard'
+=======
+            targetView: noti.notification_type === '진단' ? 'history'
+              : noti.notification_type === '보안' ? 'risk'
+              : noti.notification_type === '전략' ? 'risk'
+              : noti.notification_type === '업그레이드' ? 'checkout'
+              : 'dashboard'
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
           };
         });
 
@@ -162,7 +177,11 @@ export function NotificationView({ onBack, onNavigate, darkMode = false }: Notif
       <div className="px-6 py-8 max-w-[1440px] mx-auto space-y-6">
         <div className="space-y-4">
           {activeNotifications.map((item) => (
+<<<<<<< HEAD
             <div key={item.id} className={`${darkMode ? 'bg-gray-900/30 border-gray-800/80 shadow-inner' : 'bg-white border-slate-200'} p-5 rounded-2xl border transition-all shadow-sm flex flex-col md:flex-row items-start gap-4 border-l-4 border-l-${item.border === 'red' ? 'red' : item.border === 'green' ? 'green' : 'blue'}-500`}>
+=======
+            <div key={item.id} className={`${darkMode ? 'bg-gray-900/30 border-gray-800/80 shadow-inner' : 'bg-white border-slate-200'} p-5 rounded-2xl border transition-all shadow-sm flex flex-col md:flex-row items-start gap-4 border-l-4 ${item.border === 'red' ? 'border-l-red-500' : item.border === 'green' ? 'border-l-green-500' : 'border-l-blue-500'}`}>
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
               <div className={`w-9 h-9 ${item.bg} flex items-center justify-center flex-shrink-0 rounded-xl`}>
                 <item.Icon className={`w-4 h-4 ${item.iconColor}`} />
               </div>
@@ -247,7 +266,14 @@ export function NotificationView({ onBack, onNavigate, darkMode = false }: Notif
                   onClick={() => handlePageNavigation(selectedNotification.targetView, selectedNotification.targetParams)}
                   className={`px-4 py-2 text-xs font-bold text-white rounded-xl transition-all shadow-md ${selectedNotification.border === 'red' ? 'bg-red-600 hover:bg-red-500' : selectedNotification.border === 'green' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-[#0B2F61] hover:bg-[#C8994B]'}`}
                 >
+<<<<<<< HEAD
                   관련 분석 프레임으로 이동
+=======
+                  {selectedNotification.title === '진단' ? '진단 이력 보기'
+                    : selectedNotification.title === '보안' ? '전략 진단하기'
+                    : selectedNotification.title === '업그레이드' ? '구독 플랜 보기'
+                    : '바로 이동'}
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
                 </button>
               </div>
             </div>

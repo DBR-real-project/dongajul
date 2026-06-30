@@ -17,8 +17,13 @@ app.use(
   })
 );
 
+<<<<<<< HEAD
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+=======
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
 
 // ── 라우터 등록 ───────────────────────────────────────────────────────
 // 인증: 이메일 로그인/회원가입 + 카카오/구글/네이버 OAuth
@@ -57,6 +62,12 @@ const chatRoutes = require('./src/routes/chatRoutes');
 // 전략 관리
 const strategyRoutes = require('./src/routes/strategyRoutes');
 
+<<<<<<< HEAD
+=======
+// 기사 비교 분석
+const compareRoutes = require('./src/routes/compareRoutes');
+
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
 // ── API 라우트 연결 ───────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api/diagnose', diagnoseRoutes);
@@ -70,6 +81,10 @@ app.use('/api/subscriptions', subscriptionRoutes);
 app.use("/api/feedbacks", feedbackRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/strategies', strategyRoutes);
+<<<<<<< HEAD
+=======
+app.use('/api/compare', compareRoutes);
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
 
 
 // ── 기본 라우트 ───────────────────────────────────────────────────────

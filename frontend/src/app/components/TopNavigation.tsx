@@ -1,5 +1,11 @@
+<<<<<<< HEAD
 import { User, Moon, Sun, Bell, Home, Shield, BarChart2, History, LogOut, Map } from 'lucide-react';
 import { useState, useEffect } from 'react';
+=======
+import { User, Moon, Sun, Bell, Home, Shield, BarChart2, History, LogOut, Map, HelpCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { apiFetch } from '../utils/api';
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
 
 interface TopNavigationProps {
   currentView: string;
@@ -24,7 +30,38 @@ export function TopNavigation({
 }: TopNavigationProps) {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
+<<<<<<< HEAD
+=======
+  const fetchUnreadCount = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      const res = await apiFetch('/api/notifications');
+      if (!res.ok) return;
+      const json = await res.json();
+      const count = (json.data || []).filter((n: { is_read: number }) => !n.is_read).length;
+      setUnreadCount(count);
+    } catch {
+      // 알림 카운트 실패는 무시
+    }
+  };
+
+  useEffect(() => {
+    fetchUnreadCount();
+    // 60초마다 갱신
+    const timer = setInterval(fetchUnreadCount, 60000);
+    // 진단 완료 커스텀 이벤트 수신
+    const onNotifUpdate = () => fetchUnreadCount();
+    window.addEventListener('notif-update', onNotifUpdate);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('notif-update', onNotifUpdate);
+    };
+  }, []);
+
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
   const [userName, setUserName] = useState(() => {
     if (typeof window !== 'undefined') {
       const user = localStorage.getItem('user');
@@ -81,16 +118,27 @@ export function TopNavigation({
       ? [
           { id: 'dashboard', icon: Home, label: '홈' },
           { id: 'risk', icon: Shield, label: '전략 진단' },
+<<<<<<< HEAD
           { id: 'analysis', icon: BarChart2, label: '인사이트' },
           { id: 'history', icon: History, label: '진단 이력' },
           { id: 'semantic-map', icon: Map, label: '시맨틱 맵' },
+=======
+          { id: 'analysis', icon: BarChart2, label: '인사이트 검색' },
+          { id: 'semantic-map', icon: Map, label: '시맨틱 맵' },
+          { id: 'history', icon: History, label: '진단 이력' },
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
         ]
       : [
           { id: 'dashboard', icon: Home, label: 'Home' },
           { id: 'risk', icon: Shield, label: 'Diagnose' },
           { id: 'analysis', icon: BarChart2, label: 'Insights' },
+<<<<<<< HEAD
           { id: 'history', icon: History, label: 'History' },
           { id: 'semantic-map', icon: Map, label: 'Semantic Map' },
+=======
+          { id: 'semantic-map', icon: Map, label: 'Semantic Map' },
+          { id: 'history', icon: History, label: 'History' },
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
         ];
 
   const handleLogoutConfirm = () => {
@@ -138,12 +186,24 @@ export function TopNavigation({
 
       <div className="flex flex-nowrap items-center gap-2">
         <button
-          onClick={onNotificationClick}
+          onClick={() => onViewChange('help')}
+          className={`p-2 ${currentView === 'help' ? (darkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-900') : darkMode ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-600'} rounded-lg transition-colors`}
+          title={language === 'ko' ? '이용 안내' : 'Help'}
+        >
+          <HelpCircle className="w-5 h-5" />
+        </button>
+
+        <button
+          onClick={() => { onNotificationClick(); setUnreadCount(0); }}
           className={`p-2 ${darkMode ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-600'} rounded-lg transition-colors relative`}
           title={language === 'ko' ? '알림' : 'Notifications'}
         >
           <Bell className="w-5 h-5" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+          {unreadCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white leading-none">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
         </button>
 
         {/* 💡 강제로 금색이 적용되도록 인라인 스타일(style 속성)을 추가한 버튼입니다. */}
@@ -159,6 +219,22 @@ export function TopNavigation({
           {language === 'ko' ? '구독' : 'Upgrade'}
         </button>
 
+<<<<<<< HEAD
+        {/* 💡 강제로 금색이 적용되도록 인라인 스타일(style 속성)을 추가한 버튼입니다. */}
+        <button
+          onClick={() => onViewChange('subscription')}
+          className="px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-md hover:opacity-90"
+          style={{
+            background: 'linear-gradient(to right, #C9A84B, #B58F31)',
+            border: '1px solid #B58F31',
+            color: '#162238'
+          }}
+        >
+          {language === 'ko' ? '구독' : 'Upgrade'}
+        </button>
+
+=======
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
         <button
           onClick={onToggleDarkMode}
           className={`p-2 ${darkMode ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-600'} rounded-lg transition-colors`}

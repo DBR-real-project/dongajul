@@ -67,9 +67,18 @@ export function RiskAnalysis({ onBack, onArticleClick, onResultClick, onNotifica
         body: JSON.stringify({ text: strategyText, top_k: 5, user_id: JSON.parse(localStorage.getItem('user') || '{}').id || null }),
       });
 
+<<<<<<< HEAD
       const data: DiagnosisData = await response.json();
 
       if (!response.ok) throw new Error((data as any).error || '분석 요청 실패');
+=======
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error((errData as any).error || '분석 요청 실패');
+      }
+
+      const data: DiagnosisData = await response.json();
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
 
       data.input_text = strategyText;
       setResult(data);

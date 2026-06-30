@@ -1,4 +1,8 @@
 ﻿import React, { useState } from 'react';
+<<<<<<< HEAD
+=======
+import { apiFetch, BASE_URL } from '../utils/api';
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
 import { useArticleCount } from '../utils/articleCount';
 
 interface LoginScreenProps {
@@ -6,14 +10,19 @@ interface LoginScreenProps {
   onSocialLogin: (provider: string) => void;
   onSignupClick: () => void;
   onForgotPassword?: () => void;
+  socialLoginError?: string;
 }
 
+<<<<<<< HEAD
 export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPassword }: LoginScreenProps) {
+=======
+export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPassword, socialLoginError }: LoginScreenProps) {
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
   const articleCount = useArticleCount();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [keepLoggedIn, setKeepLoggedIn] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(socialLoginError || '');
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetStatus, setResetStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
@@ -23,11 +32,17 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
     e.preventDefault();
 
     try {
+<<<<<<< HEAD
       const res = await fetch('http://localhost:3001/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+=======
+      const res = await apiFetch('/api/auth/login', {
+        method: 'POST',
+        skipAuth: true,
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
         body: JSON.stringify({ email, password }),
       });
 
@@ -200,7 +215,11 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
             <div className="grid grid-cols-3 gap-3">
               <button
                 type="button"
+<<<<<<< HEAD
                 onClick={() => { window.location.href = 'http://localhost:3001/api/auth/kakao'; }}
+=======
+                onClick={() => { window.location.href = `${BASE_URL}/api/auth/kakao`; }}
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
                 className="flex flex-col items-center justify-center py-2.5 bg-[#FEE500] hover:bg-[#FDD835] rounded-lg transition-all border border-transparent shadow-sm"
               >
                 <span className="text-xl mb-0.5">💬</span>
@@ -208,7 +227,11 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
               </button>
               <button
                 type="button"
+<<<<<<< HEAD
                 onClick={() => { window.location.href = 'http://localhost:3001/api/auth/naver'; }}
+=======
+                onClick={() => { window.location.href = `${BASE_URL}/api/auth/naver`; }}
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
                 className="flex flex-col items-center justify-center py-2.5 bg-[#03C75A] hover:bg-[#02B350] rounded-lg transition-all border border-transparent shadow-sm"
               >
                 <span className="text-lg text-white mb-0.5 font-black leading-none">N</span>
@@ -216,7 +239,11 @@ export function LoginScreen({ onLogin, onSocialLogin, onSignupClick, onForgotPas
               </button>
               <button
                 type="button"
+<<<<<<< HEAD
                 onClick={() => { window.location.href = 'http://localhost:3001/api/auth/google'; }}
+=======
+                onClick={() => { window.location.href = `${BASE_URL}/api/auth/google`; }}
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
                 className="flex flex-col items-center justify-center py-2.5 bg-gray-50 hover:bg-gray-100 rounded-lg transition-all border border-gray-200 shadow-sm"
               >
                 <span className="text-xl mb-0.5 font-bold text-gray-700">G</span>

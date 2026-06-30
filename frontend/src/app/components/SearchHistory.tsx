@@ -29,6 +29,7 @@ interface SearchHistoryProps {
 export function SearchHistory({ onResultByIdClick, darkMode = false }: SearchHistoryProps) {
   const [history, setHistory] = useState<DiagnosisHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
+<<<<<<< HEAD
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -48,6 +49,51 @@ export function SearchHistory({ onResultByIdClick, darkMode = false }: SearchHis
         setLoading(false);
       }
     };
+=======
+  const [fetchError, setFetchError] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  const fetchHistory = async () => {
+    setLoading(true);
+    setFetchError(false);
+    try {
+      if (!localStorage.getItem('token')) { setLoading(false); return; }
+      const res = await apiFetch('/api/history');
+      if (res.ok) {
+        const json = await res.json();
+        const rows = Array.isArray(json) ? json : (json.data ?? []);
+        setHistory(rows);
+      } else {
+        setFetchError(true);
+      }
+    } catch {
+      setFetchError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (e: React.MouseEvent, diagnosisId: number) => {
+    e.stopPropagation(); // 카드 클릭 이벤트 전파 차단
+    if (!window.confirm('이 진단 이력을 삭제하시겠습니까?')) return;
+    setDeletingId(diagnosisId);
+    try {
+      const res = await apiFetch(`/api/diagnose/${diagnosisId}`, { method: 'DELETE' });
+      if (res.ok) {
+        setHistory(prev => prev.filter(h => h.diagnosis_id !== diagnosisId));
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || '삭제에 실패했습니다.');
+      }
+    } catch {
+      alert('삭제 중 오류가 발생했습니다.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  useEffect(() => {
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
     fetchHistory();
   }, []);
 
@@ -75,6 +121,23 @@ export function SearchHistory({ onResultByIdClick, darkMode = false }: SearchHis
           <div className="flex items-center justify-center py-20">
             <div className="w-8 h-8 border-4 border-[#142755] border-t-transparent rounded-full animate-spin" />
           </div>
+<<<<<<< HEAD
+=======
+        ) : fetchError ? (
+          <div className="text-center py-20">
+            <div className={`w-16 h-16 ${darkMode ? 'bg-red-500/10' : 'bg-red-50'} rounded-2xl flex items-center justify-center mx-auto mb-4`}>
+              <AlertTriangle className="w-8 h-8 text-red-400" />
+            </div>
+            <p className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>이력을 불러올 수 없습니다</p>
+            <p className={`text-xs mt-1 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>서버 연결을 확인하고 다시 시도해주세요.</p>
+            <button
+              onClick={fetchHistory}
+              className="mt-4 px-4 py-2 text-sm bg-[#142755] text-white rounded-lg hover:bg-[#1a3470] transition-colors"
+            >
+              다시 시도
+            </button>
+          </div>
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
         ) : history.length === 0 ? (
           <div className="text-center py-20">
             <div className={`w-16 h-16 ${darkMode ? 'bg-gray-800' : 'bg-gray-100'} rounded-2xl flex items-center justify-center mx-auto mb-4`}>
@@ -86,11 +149,20 @@ export function SearchHistory({ onResultByIdClick, darkMode = false }: SearchHis
         ) : (
           history.map((item) => {
             const pct = Math.round(item.risk_score * 100);
+<<<<<<< HEAD
             return (
               <div
                 key={item.diagnosis_id}
                 onClick={() => onResultByIdClick?.(item.diagnosis_id)}
                 className={`group ${darkMode ? 'bg-gray-800/50 border-gray-700/40 hover:bg-gray-800/80' : 'bg-white border-gray-100 hover:shadow-md'} border rounded-2xl p-5 cursor-pointer transition-all`}
+=======
+            const isDeleting = deletingId === item.diagnosis_id;
+            return (
+              <div
+                key={item.diagnosis_id}
+                onClick={() => !isDeleting && onResultByIdClick?.(item.diagnosis_id)}
+                className={`group ${darkMode ? 'bg-gray-800/50 border-gray-700/40 hover:bg-gray-800/80' : 'bg-white border-gray-100 hover:shadow-md'} border rounded-2xl p-5 cursor-pointer transition-all ${isDeleting ? 'opacity-50 pointer-events-none' : ''}`}
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
@@ -110,7 +182,24 @@ export function SearchHistory({ onResultByIdClick, darkMode = false }: SearchHis
                       {item.input_text}
                     </p>
                   </div>
+<<<<<<< HEAD
                   <ChevronRight className={`w-5 h-5 flex-shrink-0 ${darkMode ? 'text-gray-600' : 'text-gray-300'} group-hover:text-[#142755] transition-colors mt-1`} />
+=======
+                  <div className="flex items-center gap-2 flex-shrink-0 mt-1">
+                    <button
+                      onClick={(e) => handleDelete(e, item.diagnosis_id)}
+                      className={`p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all ${
+                        darkMode
+                          ? 'text-gray-500 hover:text-red-400 hover:bg-red-500/10'
+                          : 'text-gray-300 hover:text-red-500 hover:bg-red-50'
+                      }`}
+                      title="이력 삭제"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    <ChevronRight className={`w-5 h-5 ${darkMode ? 'text-gray-600' : 'text-gray-300'} group-hover:text-[#142755] transition-colors`} />
+                  </div>
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
                 </div>
               </div>
             );

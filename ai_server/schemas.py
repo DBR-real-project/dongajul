@@ -34,6 +34,10 @@ class DiagnoseResponse(BaseModel):
 class DiagnosisReport(BaseModel):
     summary: str
     strategy_analysis: Optional[str] = None
+<<<<<<< HEAD
+=======
+    market_context: Optional[str] = None
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
     risk_factors: list[str]
     risk_details: Optional[list[str]] = None
     improvement: list[str]
@@ -53,4 +57,8 @@ class ReportResponse(BaseModel):
 
 class GlobalCasesResponse(BaseModel):
     similar_articles: list[SimilarArticle]
+<<<<<<< HEAD
     total: int
+=======
+    total: int = 0
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7

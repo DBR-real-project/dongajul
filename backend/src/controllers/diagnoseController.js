@@ -1,12 +1,20 @@
 const axios = require('axios');
 const db = require('../config/db');
+<<<<<<< HEAD
+=======
+const { createNotification } = require('../services/notificationService');
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
 
 const AI_SERVER_URL = process.env.AI_SERVER_URL || 'http://127.0.0.1:8000';
 const AI_TIMEOUT = 180000;
 
 // POST /api/diagnose
 exports.diagnose = async (req, res) => {
+<<<<<<< HEAD
   const { text, top_k = 3 } = req.body;
+=======
+  const { text, top_k = 6 } = req.body;
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
   const user_id = req.user?.user_id ?? null;
 
   if (!text || !String(text).trim()) {
@@ -51,6 +59,27 @@ exports.diagnose = async (req, res) => {
     // 중요: DB 저장을 기다려야 diagnosis_id를 프론트에 내려줄 수 있음
     const diagnosisId = await saveToDb(String(text).trim(), data, user_id || null);
 
+<<<<<<< HEAD
+=======
+    // 알림 생성 (비동기, 응답 지연 없음)
+    if (user_id) {
+      const inputSummary = String(text).trim().slice(0, 28);
+      const scorePercent = Math.round((data.risk_score || 0) * 100);
+      createNotification(
+        user_id,
+        '진단',
+        `"${inputSummary}..." 전략 진단 완료 — 리스크 스코어 ${scorePercent}%`
+      );
+      if ((data.risk_score || 0) >= 0.6) {
+        createNotification(
+          user_id,
+          '보안',
+          `⚠️ 고위험 전략 감지: 리스크 스코어 ${scorePercent}%로 즉각적인 전략 점검이 필요합니다.`
+        );
+      }
+    }
+
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
     return res.json({
       diagnosis_id: diagnosisId,
       input_text: String(text).trim(),
@@ -135,15 +164,35 @@ async function saveToDb(inputText, aiData, userId) {
     await connection.execute(
       `
       INSERT INTO analysis_results
+<<<<<<< HEAD
         (diagnosis_id, risk_score, analysis_mode, success_keywords, failure_keywords, created_at)
       VALUES
         (?, ?, 'auto', ?, ?, NOW())
+=======
+        (diagnosis_id, risk_score, query_umap_x, query_umap_y, query_cluster_id,
+         analysis_mode, success_keywords, failure_keywords, report_json, created_at)
+      VALUES
+        (?, ?, ?, ?, ?, 'auto', ?, ?, ?, NOW())
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
       `,
       [
         diagnosisId,
         aiData.risk_score || 0,
+<<<<<<< HEAD
         successKeywords,
         failureKeywords,
+=======
+        aiData.query_umap_x ?? null,
+        aiData.query_umap_y ?? null,
+        aiData.query_cluster_id ?? null,
+        successKeywords,
+        failureKeywords,
+        aiData.report
+          ? JSON.stringify({ ...aiData.report, _similar_articles: aiData.similar_articles || [] })
+          : aiData.similar_articles?.length
+          ? JSON.stringify({ _similar_articles: aiData.similar_articles })
+          : null,
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
       ]
     );
 
@@ -206,6 +255,61 @@ async function saveToDb(inputText, aiData, userId) {
   }
 }
 
+<<<<<<< HEAD
+=======
+// POST /api/diagnose/prompt-helper — AI 프롬프트 작성 도우미
+exports.promptHelper = async (req, res) => {
+  const { industry, strategyType, hint } = req.body;
+  if (!industry || !strategyType) {
+    return res.status(400).json({ error: '산업군과 전략 유형이 필요합니다.' });
+  }
+
+  const hintSection = hint?.trim()
+    ? `\n사용자가 이미 작성한 내용:\n"${hint.trim()}"\n→ 이 내용을 반영하고 부족한 부분을 보완해서 작성하세요.`
+    : '';
+
+  const prompt = `당신은 전략 리스크 진단 AI의 입력 프롬프트 작성 전문가입니다.
+아래 조건을 바탕으로 AI 진단에 최적화된 전략 설명문을 작성하세요.
+
+조건:
+- 산업군: ${industry}
+- 전략 유형: ${strategyType}${hintSection}
+
+작성 기준:
+1. 타깃 고객이 구체적으로 드러나야 함
+2. 경쟁사 대비 핵심 차별점이 포함되어야 함
+3. 실행 방식 또는 수익 모델이 언급되어야 함
+4. 보유 자원(자금·인력·기술) 또는 제약 조건이 포함되면 좋음
+5. 150~250자 내외의 자연스러운 한국어 문장으로 작성
+
+반드시 전략 설명문만 출력하세요. 제목, 번호, 설명 없이 본문만.`;
+
+  try {
+    const response = await axios.post(
+      'https://api.openai.com/v1/chat/completions',
+      {
+        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 400,
+        temperature: 0.7,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 15000,
+      }
+    );
+    const text = response.data.choices[0]?.message?.content?.trim() || '';
+    return res.json({ text });
+  } catch (err) {
+    console.error('[promptHelper]', err.response?.data || err.message);
+    return res.status(500).json({ error: 'AI 프롬프트 생성 실패' });
+  }
+};
+
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
 // POST /api/diagnose/global — HBS 해외 사례 조회 (DB 저장 없음)
 exports.diagnoseGlobal = async (req, res) => {
   const { text, top_k = 5 } = req.body;
@@ -236,10 +340,45 @@ exports.diagnoseGlobal = async (req, res) => {
   }
 };
 
+<<<<<<< HEAD
+=======
+// DELETE /api/diagnose/:id — 진단이력 삭제
+exports.deleteDiagnose = async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user?.user_id;
+
+  if (!id || isNaN(Number(id))) {
+    return res.status(400).json({ error: '유효하지 않은 진단 ID입니다.' });
+  }
+
+  try {
+    // 본인 소유 확인
+    const [rows] = await db.execute(
+      'SELECT diagnosis_id FROM diagnosis_requests WHERE diagnosis_id = ? AND user_id = ?',
+      [id, userId]
+    );
+    if (!rows.length) {
+      return res.status(404).json({ error: '진단 기록을 찾을 수 없습니다.' });
+    }
+
+    // 연관 데이터 삭제 (FK 참조 순서대로)
+    await db.execute('DELETE FROM similar_article_matches WHERE diagnosis_id = ?', [id]);
+    await db.execute('DELETE FROM analysis_results WHERE diagnosis_id = ?', [id]);
+    await db.execute('DELETE FROM diagnosis_requests WHERE diagnosis_id = ?', [id]);
+
+    return res.json({ success: true, message: '진단 이력이 삭제되었습니다.' });
+  } catch (err) {
+    console.error('[deleteDiagnose] 오류:', err.message);
+    return res.status(500).json({ error: '삭제 중 오류가 발생했습니다.' });
+  }
+};
+
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
 // GET /api/diagnose/:id — 저장된 진단 결과 조회
 exports.getDiagnoseById = async (req, res) => {
   const { id } = req.params;
 
+<<<<<<< HEAD
   try {
     const [diagRows] = await db.execute(
       `
@@ -254,17 +393,35 @@ exports.getDiagnoseById = async (req, res) => {
         ON dr.diagnosis_id = ar.diagnosis_id
       WHERE dr.diagnosis_id = ?
       `,
+=======
+  if (!id || isNaN(Number(id))) {
+    return res.status(400).json({ error: '유효하지 않은 진단 ID입니다.' });
+  }
+
+  try {
+    const [diagRows] = await db.execute(
+      `SELECT dr.diagnosis_id, dr.user_id, dr.input_text, dr.status, dr.created_at,
+              ar.risk_score, ar.query_umap_x, ar.query_umap_y, ar.query_cluster_id, ar.report_json
+       FROM diagnosis_requests dr
+       LEFT JOIN analysis_results ar ON dr.diagnosis_id = ar.diagnosis_id
+       WHERE dr.diagnosis_id = ?`,
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
       [id]
     );
 
     if (!diagRows.length) {
+<<<<<<< HEAD
       return res.status(404).json({
         error: '진단 결과를 찾을 수 없습니다.',
       });
+=======
+      return res.status(404).json({ error: '진단 결과를 찾을 수 없습니다.' });
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
     }
 
     const diag = diagRows[0];
 
+<<<<<<< HEAD
     const [matches] = await db.execute(
       `
       SELECT
@@ -288,21 +445,84 @@ exports.getDiagnoseById = async (req, res) => {
 
     const riskScore = parseFloat(diag.risk_score) || 0;
 
+=======
+    // similar_article_matches 쿼리는 실패해도 빈 배열로 대체
+    let matches = [];
+    try {
+      const [rows] = await db.execute(
+        `SELECT sam.recommend_rank AS rank,
+                sam.similarity_score AS similarity,
+                sam.case_type AS label,
+                a.title, a.url, a.summary, a.category, a.source,
+                a.published_at AS published_date
+         FROM similar_article_matches sam
+         JOIN articles a ON sam.article_id = a.article_id
+         WHERE sam.diagnosis_id = ?
+         ORDER BY sam.recommend_rank`,
+        [id]
+      );
+      matches = rows;
+    } catch (matchErr) {
+      console.error('[getDiagnoseById] similar_article_matches 조회 실패 (무시):', matchErr.message);
+    }
+
+    const riskScore = parseFloat(diag.risk_score) || 0;
+
+    let report = null;
+    if (diag.report_json) {
+      try { report = JSON.parse(diag.report_json); } catch {}
+    }
+
+    // URL 매칭 실패로 similar_article_matches가 비어있을 때 report_json 내 백업 사용
+    if (matches.length === 0 && report?._similar_articles?.length > 0) {
+      matches = report._similar_articles;
+    }
+    if (report) delete report._similar_articles;
+
+    // 두 경로 모두 비어있으면 ai_server를 다시 호출해 유사 사례 복원
+    if (matches.length === 0 && diag.input_text) {
+      try {
+        const aiRes = await axios.post(
+          `${AI_SERVER_URL}/diagnose`,
+          { text: diag.input_text, top_k: 5 },
+          { timeout: 30000 }
+        );
+        if (aiRes.data?.similar_articles?.length > 0) {
+          matches = aiRes.data.similar_articles;
+        }
+      } catch (_e) {
+        // ai_server 미응답 시 빈 배열 유지
+      }
+    }
+
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
     return res.json({
       diagnosis_id: diag.diagnosis_id,
       input_text: diag.input_text,
       risk_score: riskScore,
       risk_level: riskScore >= 0.6 ? 'high' : riskScore >= 0.3 ? 'medium' : 'low',
+<<<<<<< HEAD
       improvement: diag.improvement_guides || null,
+=======
+      query_umap_x: diag.query_umap_x ?? null,
+      query_umap_y: diag.query_umap_y ?? null,
+      query_cluster_id: diag.query_cluster_id ?? null,
+      report,
+      improvement: report?.improvement ?? null,
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
       similar_articles: matches,
       created_at: diag.created_at,
     });
   } catch (err) {
     console.error('[getDiagnoseById]', err.message);
+<<<<<<< HEAD
 
     return res.status(500).json({
       error: '진단 결과 조회 실패',
       detail: err.message,
     });
+=======
+    return res.status(500).json({ error: '진단 결과 조회 실패', detail: err.message });
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
   }
 };

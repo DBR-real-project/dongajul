@@ -4,7 +4,11 @@ const AI_SERVER_URL = process.env.AI_SERVER_URL || "http://127.0.0.1:8000";
 
 async function getSemanticMap(req, res) {
   try {
+<<<<<<< HEAD
     const limit = req.query.limit || 2000;
+=======
+    const limit = req.query.limit || 15000;
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
 
     const [mapRes, clustersRes] = await Promise.all([
       axios.get(`${AI_SERVER_URL}/semantic-map`, { params: { limit }, timeout: 30000 }),

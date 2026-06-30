@@ -5,7 +5,13 @@
  * - refresh 실패 시 자동 로그아웃
  */
 
+<<<<<<< HEAD
 const BASE_URL = 'http://localhost:3001';
+=======
+// 프로덕션(vite build)에서는 '' → nginx가 /api/* 프록시 처리
+// 개발에서는 localhost:3001 직접 호출
+export const BASE_URL = import.meta.env.PROD ? '' : 'http://localhost:3001';
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
 
 function getToken(): string | null {
   return localStorage.getItem('token');
@@ -52,6 +58,12 @@ async function tryRefresh(): Promise<boolean> {
     }
 
     localStorage.setItem('token', data.token);
+<<<<<<< HEAD
+=======
+    if (data.refresh_token) {
+      localStorage.setItem('refresh_token', data.refresh_token);
+    }
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
 
     return true;
   } catch (err) {

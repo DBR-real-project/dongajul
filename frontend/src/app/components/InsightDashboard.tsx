@@ -25,6 +25,13 @@ interface Article {
   source?: string;
   published_at?: string;
   label?: string;
+<<<<<<< HEAD
+=======
+  umap_x?: number | null;
+  umap_y?: number | null;
+  cluster_id?: number | null;
+  cluster_name?: string | null;
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
 }
 
 interface Cluster {
@@ -46,17 +53,35 @@ interface StatsData {
 interface InsightDashboardProps {
   darkMode?: boolean;
   onArticleClick?: (id: number) => void;
+<<<<<<< HEAD
   onShowSemanticMap?: (article: Article & { umap_x?: number; umap_y?: number }) => void;
+=======
+  onShowSemanticMap?: (article: Article) => void;
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
   onCompareSelected?: (articles: Array<Article>) => void;
 }
 
 export function InsightDashboard({ darkMode = false, onArticleClick, onShowSemanticMap, onCompareSelected }: InsightDashboardProps) {
   const [articles, setArticles] = useState<Article[]>([]);
   const [clusters, setClusters] = useState<Cluster[]>([]);
+<<<<<<< HEAD
   const [selectedCompareIds, setSelectedCompareIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'success' | 'failure'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+=======
+  const [selectedCompareArticles, setSelectedCompareArticles] = useState<Article[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<'all' | 'success' | 'failure'>('all');
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'DBR' | 'HBR' | 'HBS'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [toast, setToast] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  };
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
 
   const [statsData, setStatsData] = useState<StatsData>({
     total_articles: 0,
@@ -115,13 +140,24 @@ export function InsightDashboard({ darkMode = false, onArticleClick, onShowSeman
 
       try {
         const params = new URLSearchParams({
+<<<<<<< HEAD
           limit: '20',
+=======
+          limit: '30',
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
         });
 
         if (filter !== 'all') {
           params.append('label', filter);
         }
 
+<<<<<<< HEAD
+=======
+        if (sourceFilter !== 'all') {
+          params.append('source', sourceFilter);
+        }
+
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
         if (searchQuery.trim()) {
           params.append('search', searchQuery.trim());
         }
@@ -130,7 +166,11 @@ export function InsightDashboard({ darkMode = false, onArticleClick, onShowSeman
 
         if (artRes.ok) {
           const artData = await artRes.json();
+<<<<<<< HEAD
           setArticles(Array.isArray(artData) ? artData : artData.articles || artData.data || []);
+=======
+          setArticles(Array.isArray(artData) ? artData : artData.data || artData.articles || []);
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
         }
       } catch (e) {
         console.error('아티클 로드 실패:', e);
@@ -142,6 +182,7 @@ export function InsightDashboard({ darkMode = false, onArticleClick, onShowSeman
     const timer = setTimeout(fetchArticles, 300);
 
     return () => clearTimeout(timer);
+<<<<<<< HEAD
   }, [searchQuery, filter]);
 
   const filtered = articles;
@@ -155,10 +196,24 @@ export function InsightDashboard({ darkMode = false, onArticleClick, onShowSeman
         return prev;
       }
       return [...prev, id];
+=======
+  }, [searchQuery, filter, sourceFilter]);
+
+  const filtered = articles;
+
+  const toggleCompareSelection = (article: Article) => {
+    setSelectedCompareArticles((prev) => {
+      if (prev.some((a) => a.article_id === article.article_id)) {
+        return prev.filter((a) => a.article_id !== article.article_id);
+      }
+      if (prev.length >= 2) return prev;
+      return [...prev, article];
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
     });
   };
 
   const handleCompareSubmit = () => {
+<<<<<<< HEAD
     if (!onCompareSelected || selectedCompareIds.length !== 2) return;
     const selectedArticles = articles.filter((article) => selectedCompareIds.includes(article.article_id));
     onCompareSelected(selectedArticles);
@@ -166,6 +221,21 @@ export function InsightDashboard({ darkMode = false, onArticleClick, onShowSeman
 
   const handleShowSemanticMap = (article: Article) => {
     if (!onShowSemanticMap) return;
+=======
+    if (!onCompareSelected || selectedCompareArticles.length !== 2) return;
+    onCompareSelected(selectedCompareArticles);
+  };
+
+  const hasMapData = (article: Article) =>
+    (article.umap_x != null && article.umap_y != null) || article.cluster_id != null;
+
+  const handleShowSemanticMap = (article: Article) => {
+    if (!onShowSemanticMap) return;
+    if (!hasMapData(article)) {
+      showToast('HBS 기사는 시맨틱맵 데이터가 없습니다. (DBR·HBR 기사만 위치 표시 가능)');
+      return;
+    }
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
     onShowSemanticMap(article);
   };
 
@@ -208,6 +278,14 @@ export function InsightDashboard({ darkMode = false, onArticleClick, onShowSeman
 
   return (
     <div className={`h-full overflow-y-auto ${darkMode ? 'bg-[#0A0E1A]' : 'bg-[#F8FAFC]'} pb-20`}>
+<<<<<<< HEAD
+=======
+      {toast && (
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold shadow-xl">
+          {toast}
+        </div>
+      )}
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
       <div
         className={`sticky top-0 z-40 border-b px-6 py-4 ${
           darkMode
@@ -414,12 +492,21 @@ export function InsightDashboard({ darkMode = false, onArticleClick, onShowSeman
           </div>
 
           <div className="flex items-center gap-2">
+<<<<<<< HEAD
             {selectedCompareIds.length > 0 && (
               <span className={`text-xs font-bold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                 {selectedCompareIds.length}개 선택됨
               </span>
             )}
             {selectedCompareIds.length === 2 && (
+=======
+            {selectedCompareArticles.length > 0 && (
+              <span className={`text-xs font-bold ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                {selectedCompareArticles.length}개 선택됨
+              </span>
+            )}
+            {selectedCompareArticles.length === 2 && (
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
               <button
                 onClick={handleCompareSubmit}
                 className="px-4 py-2.5 bg-gradient-to-r from-[#142755] to-[#444655] text-white text-xs font-semibold rounded-xl hover:shadow-lg transition-all"
@@ -448,6 +535,25 @@ export function InsightDashboard({ darkMode = false, onArticleClick, onShowSeman
               {f === 'all' ? '전체' : f === 'success' ? '성공' : '실패'}
             </button>
           ))}
+<<<<<<< HEAD
+=======
+          <div className={`w-px h-6 ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`} />
+          {(['all', 'DBR', 'HBR', 'HBS'] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => setSourceFilter(s)}
+              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                sourceFilter === s
+                  ? 'bg-indigo-600 text-white'
+                  : darkMode
+                    ? 'bg-gray-800 text-gray-400 border border-gray-700'
+                    : 'bg-white text-gray-500 border border-gray-200'
+              }`}
+            >
+              {s === 'all' ? '출처 전체' : s}
+            </button>
+          ))}
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
         </div>
 
         {loading ? (
@@ -455,8 +561,22 @@ export function InsightDashboard({ darkMode = false, onArticleClick, onShowSeman
             <div className="w-8 h-8 border-4 border-[#E1B764] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : filtered.length === 0 ? (
+<<<<<<< HEAD
           <div className={`text-center py-16 ${darkMode ? 'text-gray-500' : 'text-gray-400'} text-sm`}>
             아티클이 없습니다.
+=======
+          <div className={`text-center py-16 ${darkMode ? 'text-gray-500' : 'text-gray-400'} text-sm space-y-2`}>
+            <p>검색 결과가 없습니다.</p>
+            <p className="text-xs">검색어를 바꾸거나 필터를 조정해보세요.</p>
+            {(filter !== 'all' || sourceFilter !== 'all') && (
+              <button
+                onClick={() => { setFilter('all'); setSourceFilter('all'); setSearchQuery(''); }}
+                className={`mt-2 px-4 py-2 rounded-xl text-xs font-semibold ${darkMode ? 'bg-gray-800 text-gray-300 border border-gray-700' : 'bg-white text-gray-600 border border-gray-200'} hover:opacity-80 transition-all`}
+              >
+                필터 초기화
+              </button>
+            )}
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
           </div>
         ) : (
           <div className="space-y-3">
@@ -560,25 +680,49 @@ export function InsightDashboard({ darkMode = false, onArticleClick, onShowSeman
                         e.stopPropagation();
                         handleShowSemanticMap(article);
                       }}
+<<<<<<< HEAD
                       className="px-3 py-2 text-xs font-semibold rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-all"
                     >
                       시맨틱 맵 보기
+=======
+                      title={hasMapData(article) ? '시맨틱 맵에서 위치 보기' : 'HBS 기사는 시맨틱맵 미포함 (DBR·HBR만 지원)'}
+                      className={`px-3 py-2 text-xs font-semibold rounded-xl transition-all ${
+                        hasMapData(article)
+                          ? 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                          : darkMode
+                            ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      }`}
+                    >
+                      {hasMapData(article) ? '시맨틱 맵 보기' : '맵 미지원'}
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
                     </button>
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
+<<<<<<< HEAD
                         toggleCompareSelection(article.article_id);
                       }}
                       className={`px-3 py-2 text-xs font-semibold rounded-xl transition-all ${
                         selectedCompareIds.includes(article.article_id)
+=======
+                        toggleCompareSelection(article);
+                      }}
+                      className={`px-3 py-2 text-xs font-semibold rounded-xl transition-all ${
+                        selectedCompareArticles.some((a) => a.article_id === article.article_id)
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
                           ? 'bg-[#142755] text-white'
                           : darkMode
                             ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                             : 'bg-gray-100 text-[#142755] hover:bg-gray-200'
                       }`}
                     >
+<<<<<<< HEAD
                       {selectedCompareIds.includes(article.article_id) ? '선택됨' : '비교 선택'}
+=======
+                      {selectedCompareArticles.some((a) => a.article_id === article.article_id) ? '선택됨' : '비교 선택'}
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
                     </button>
                   </div>
                 </div>
@@ -587,6 +731,42 @@ export function InsightDashboard({ darkMode = false, onArticleClick, onShowSeman
           </div>
         )}
       </div>
+<<<<<<< HEAD
+=======
+
+      {/* 플로팅 비교 버튼 — 스크롤해도 항상 보임 */}
+      {selectedCompareArticles.length > 0 && (
+        <div
+          className="fixed bottom-[82px] right-6 z-40 flex flex-col items-end gap-2"
+          style={{ pointerEvents: 'auto' }}
+        >
+          {selectedCompareArticles.length === 2 ? (
+            <button
+              onClick={handleCompareSubmit}
+              className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-[#0B2F61] to-[#1E3E7A] text-white text-sm font-bold rounded-2xl shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              비교 분석 보기
+            </button>
+          ) : (
+            <div className="flex items-center gap-2 px-4 py-2.5 bg-[#0B2F61]/90 text-white text-xs font-semibold rounded-2xl shadow-lg backdrop-blur-sm">
+              <span className="w-5 h-5 rounded-full bg-[#C8994B] flex items-center justify-center text-xs font-bold">1</span>
+              사례 1개 더 선택하세요
+            </div>
+          )}
+          <button
+            onClick={() => setSelectedCompareArticles([])}
+            className={`px-3 py-1.5 text-xs rounded-xl shadow-md transition-all ${
+              darkMode ? 'bg-gray-800 text-gray-400 hover:bg-gray-700' : 'bg-white text-gray-500 hover:bg-gray-100'
+            }`}
+          >
+            선택 취소
+          </button>
+        </div>
+      )}
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
     </div>
   );
 }

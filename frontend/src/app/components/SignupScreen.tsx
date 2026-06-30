@@ -1,5 +1,9 @@
 import { ArrowLeft } from 'lucide-react';
 import React, { useState } from 'react';
+<<<<<<< HEAD
+=======
+import { apiFetch } from '../utils/api';
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
 import { useArticleCount } from '../utils/articleCount';
 
 interface SignupScreenProps {
@@ -27,9 +31,15 @@ export function SignupScreen({ onSignup, onBackToLogin }: SignupScreenProps) {
     if (!agreeTerms) { setError('이용약관에 동의해주세요.'); return; }
 
     try {
+<<<<<<< HEAD
       const res = await fetch('http://localhost:3001/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+=======
+      const res = await apiFetch('/api/auth/register', {
+        method: 'POST',
+        skipAuth: true,
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
         body: JSON.stringify({ email, password, name }),
       });
       const data = await res.json();

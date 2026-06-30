@@ -28,7 +28,14 @@ from sentence_transformers import SentenceTransformer
 
 from .frameworks import find_relevant_frameworks, init_frameworks
 from .reporter import generate_report
+<<<<<<< HEAD
 from .schemas import DiagnoseRequest, DiagnoseResponse, GlobalCasesResponse, ReportResponse, SimilarArticle
+=======
+from .risk_rag import init_risk_rag, score_risk_rag
+from .schemas import DiagnoseRequest, DiagnoseResponse, GlobalCasesResponse, ReportResponse, SimilarArticle
+from .trend_context import get_trend_context, init_trend_context
+from .web_trend import search_business_trends
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
 
 
 try:
@@ -47,6 +54,12 @@ _sbert: SentenceTransformer | None = None
 _faiss_index: Any = None
 _faiss_hbs: Any = None
 _risk_model: Any = None
+<<<<<<< HEAD
+=======
+_anomaly_model: Any = None          # Isolation Forest
+_anomaly_mean: float = -0.435       # 학습 데이터 score 평균
+_anomaly_std: float  = 0.02         # 학습 데이터 score 표준편차
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
 _meta: pd.DataFrame | None = None
 _meta_hbs: pd.DataFrame | None = None
 _umap: pd.DataFrame | None = None
@@ -64,11 +77,19 @@ def _risk_level(score: float) -> str:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+<<<<<<< HEAD
     global _sbert, _faiss_index, _faiss_hbs, _risk_model, _meta, _meta_hbs, _umap, _clusters, _cluster_risk_map
+=======
+    global _sbert, _faiss_index, _faiss_hbs, _risk_model, _anomaly_model, _anomaly_mean, _anomaly_std, _meta, _meta_hbs, _umap, _clusters, _cluster_risk_map
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
 
     print("[startup] SentenceTransformer (ko-sroberta, 768차원) 로드 중...")
     _sbert = SentenceTransformer("jhgan/ko-sroberta-multitask")
     init_frameworks(_sbert)
+<<<<<<< HEAD
+=======
+    init_risk_rag(_sbert)
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
 
     # 메인 FAISS: faiss_with_hbs.index (DBR+HBR+HBS) 우선, 없으면 faiss.index fallback
     faiss_with_hbs_path = OUT_DIR / "faiss_with_hbs.index"
@@ -110,6 +131,22 @@ async def lifespan(app: FastAPI):
     else:
         _risk_model = None
         print(f"[startup] WARNING: 리스크 모델 파일 없음: {OUT_DIR / 'risk_model.pkl'}")
+<<<<<<< HEAD
+=======
+
+    print("[startup] 이상감지 모델 로드 중...")
+    anomaly_path = OUT_DIR / "anomaly_model.pkl"
+    if anomaly_path.exists():
+        with open(anomaly_path, "rb") as f:
+            _payload = pickle.load(f)
+        _anomaly_model = _payload["model"]
+        _anomaly_mean  = _payload.get("mean_score", -0.435)
+        _anomaly_std   = _payload.get("std_score",  0.02)
+        print(f"[startup] 이상감지 모델 로드 완료 (mean={_anomaly_mean:.4f}, std={_anomaly_std:.4f})")
+    else:
+        _anomaly_model = None
+        print("[startup] WARNING: anomaly_model.pkl 없음 — python 데이터처리/train_anomaly.py 실행 필요")
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
 
     print("[startup] 메타데이터 로드 중...")
     meta_with_hbs = OUT_DIR / "articles_meta_with_hbs.parquet"
@@ -180,6 +217,12 @@ async def lifespan(app: FastAPI):
             print(f"[startup] WARNING: FAISS 차원({_faiss_index.d}) ≠ SBERT 차원({sbert_dim})")
     else:
         print("[startup] FAISS 인덱스 없음")
+<<<<<<< HEAD
+=======
+
+    # 트렌드 컨텍스트 로드 (NAVER 카테고리별 키워드)
+    init_trend_context(OUT_DIR)
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
 
     import os
     if os.getenv("OPENAI_API_KEY"):
@@ -241,7 +284,13 @@ def diagnose(req: DiagnoseRequest):
             ),
         )
 
+<<<<<<< HEAD
     scores, ids = _faiss_index.search(q_emb, req.top_k)
+=======
+    # 실패 사례 보장을 위해 넓은 풀에서 검색 (실패 비율 ~5%이므로 100건 이상 필요)
+    pool_k = min(max(req.top_k * 20, 100), _faiss_index.ntotal)
+    scores, ids = _faiss_index.search(q_emb, pool_k)
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
 
     # 모델 기반 P(failure)
     _model = _risk_model["model"]
@@ -249,6 +298,7 @@ def diagnose(req: DiagnoseRequest):
     fail_col = classes.index(0)
     model_score = float(_model.predict_proba(q_emb)[0, fail_col])
 
+<<<<<<< HEAD
     similar: list[SimilarArticle] = []
     total_weight = 0.0
     fail_weight = 0.0
@@ -260,6 +310,42 @@ def diagnose(req: DiagnoseRequest):
 
         row = _meta.iloc[int(idx)]
         label = str(row.get("label_name", "") or "")
+=======
+    # 라벨별 분리 수집
+    pool_success: list[dict] = []
+    pool_failure: list[dict] = []
+    pool_other: list[dict] = []
+
+    for sim, idx in zip(scores[0], ids[0]):
+        if int(idx) < 0 or int(idx) >= len(_meta):
+            continue
+        row = _meta.iloc[int(idx)]
+        label = str(row.get("label_name", "") or "")
+        entry = {"sim": float(sim), "idx": int(idx), "label": label, "row": row}
+        if label == "failure":
+            pool_failure.append(entry)
+        elif label == "success":
+            pool_success.append(entry)
+        else:
+            pool_other.append(entry)
+
+    # 실패 최소 3건 보장 후 나머지를 성공으로 채움
+    min_failure = min(3, len(pool_failure))
+    selected = pool_failure[:min_failure] + pool_success[:max(req.top_k - min_failure, 0)]
+    # 유사도 내림차순 재정렬 후 top_k 확정
+    selected.sort(key=lambda e: e["sim"], reverse=True)
+    selected = selected[:req.top_k]
+
+    similar: list[SimilarArticle] = []
+    total_weight = 0.0
+    fail_weight = 0.0
+    max_sim = 0.0
+
+    for rank, entry in enumerate(selected, start=1):
+        sim_f = entry["sim"]
+        row = entry["row"]
+        label = entry["label"]
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
 
         similar.append(
             SimilarArticle(
@@ -267,7 +353,11 @@ def diagnose(req: DiagnoseRequest):
                 title=str(row.get("title", "") or ""),
                 url=str(row.get("url", "") or ""),
                 label=label,
+<<<<<<< HEAD
                 similarity=round(float(sim), 4),
+=======
+                similarity=round(sim_f, 4),
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
                 summary=str(row.get("summary", "") or "") or None,
                 category=str(row.get("category", "") or "") or None,
                 published_date=str(row.get("published_date", "") or "") or None,
@@ -275,9 +365,14 @@ def diagnose(req: DiagnoseRequest):
             )
         )
 
+<<<<<<< HEAD
         # 스코어링용 가중치 누적 (confidence 있으면 활용, 없으면 1.0)
         conf = float(row.get("confidence", 1.0) or 1.0)
         sim_f = float(sim)
+=======
+        # 스코어링용 가중치 누적
+        conf = float(row.get("confidence", 1.0) or 1.0)
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
         w = sim_f * conf
         total_weight += w
         if label == "failure":
@@ -294,6 +389,7 @@ def diagnose(req: DiagnoseRequest):
         try:
             from collections import Counter
             top_idx = [int(i) for i in ids[0].tolist() if int(i) >= 0]
+<<<<<<< HEAD
             cluster_ids = _umap["cluster_id"].iloc[top_idx].tolist()
             if cluster_ids:
                 query_cluster_id = int(Counter(cluster_ids).most_common(1)[0][0])
@@ -302,6 +398,16 @@ def diagnose(req: DiagnoseRequest):
                 if valid_idx:
                     query_umap_x = float(_umap["umap_x"].iloc[valid_idx].mean())
                     query_umap_y = float(_umap["umap_y"].iloc[valid_idx].mean())
+=======
+            # faiss_with_hbs 인덱스(15,451건)는 umap(13,335건)보다 크므로 반드시 bounds 체크
+            umap_valid_idx = [i for i in top_idx if i < len(_umap)]
+            cluster_ids = _umap["cluster_id"].iloc[umap_valid_idx].tolist()
+            if cluster_ids:
+                query_cluster_id = int(Counter(cluster_ids).most_common(1)[0][0])
+            if umap_valid_idx and "umap_x" in _umap.columns:
+                query_umap_x = float(_umap["umap_x"].iloc[umap_valid_idx].mean())
+                query_umap_y = float(_umap["umap_y"].iloc[umap_valid_idx].mean())
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
         except Exception as e:
             print(f"[/diagnose] 쿼리 클러스터/UMAP 계산 실패: {e}")
 
@@ -310,12 +416,22 @@ def diagnose(req: DiagnoseRequest):
     case_score = fail_weight / total_weight if total_weight > 0 else 0.0
 
     # ② 클러스터 기반 기준 리스크 (클러스터 평균 실패율)
+<<<<<<< HEAD
     cluster_risk = _cluster_risk_map.get(query_cluster_id, 0.35) if query_cluster_id is not None else 0.35
 
     # ③ 유사도 신뢰도 보정 (max_sim < 0.65이면 0.5 방향으로 수축)
     reliability = min(max_sim / 0.65, 1.0)
     base_score = 0.35 * model_score + 0.45 * case_score + 0.20 * cluster_risk
     risk_score = round(base_score * reliability + 0.5 * (1 - reliability), 4)
+=======
+    # 클러스터 미식별(코퍼스 외 전략) 시 0.35로 보수적 기본값 적용 (기존 0.10은 너무 낙관적)
+    cluster_risk = _cluster_risk_map.get(query_cluster_id, 0.35) if query_cluster_id is not None else 0.35
+
+    # ③ 유사도 신뢰도 보정 (max_sim < 0.65이면 0.60 방향으로 수축 — 불확실할수록 위험으로 기울기)
+    reliability = min(max_sim / 0.65, 1.0)
+    base_score = 0.35 * model_score + 0.45 * case_score + 0.20 * cluster_risk
+    risk_score = round(base_score * reliability + 0.60 * (1 - reliability), 4)
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
 
     return DiagnoseResponse(
         risk_score=round(risk_score, 4),
@@ -344,6 +460,11 @@ def diagnose_global(req: DiagnoseRequest):
     ).astype(np.float32)
 
     top_k = min(req.top_k, _faiss_hbs.ntotal)
+<<<<<<< HEAD
+=======
+    if top_k < 1:
+        return GlobalCasesResponse(similar_articles=[])
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
     scores, ids = _faiss_hbs.search(q_emb, top_k)
 
     articles: list[SimilarArticle] = []
@@ -385,15 +506,24 @@ def report(req: DiagnoseRequest):
 
         articles_dict = [a.model_dump() for a in diag.similar_articles]
 
+<<<<<<< HEAD
         # 전략 프레임워크 컨텍스트 검색
         framework_context = ""
         if _sbert is not None:
             try:
                 q_emb = _sbert.encode(
+=======
+        # SBERT 임베딩 1회 계산 (프레임워크 + RAG 공유)
+        q_emb_shared: np.ndarray | None = None
+        if _sbert is not None:
+            try:
+                q_emb_shared = _sbert.encode(
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
                     [req.text],
                     normalize_embeddings=True,
                     convert_to_numpy=True,
                 ).astype(np.float32)
+<<<<<<< HEAD
                 framework_context = find_relevant_frameworks(q_emb[0])
                 if framework_context:
                     print(f"[/report] 프레임워크 컨텍스트 주입됨: {framework_context[:60]}...")
@@ -407,14 +537,89 @@ def report(req: DiagnoseRequest):
             risk_level=diag.risk_level,
             similar_articles=articles_dict,
             framework_context=framework_context,
+=======
+            except Exception as enc_err:
+                print(f"[/report] SBERT 인코딩 실패: {enc_err}")
+
+        # 전략 프레임워크 컨텍스트 검색
+        framework_context = ""
+        if q_emb_shared is not None:
+            try:
+                framework_context = find_relevant_frameworks(q_emb_shared[0])
+                if framework_context:
+                    print(f"[/report] 프레임워크 컨텍스트 주입됨: {framework_context[:60]}...")
+            except Exception as fw_err:
+                print(f"[/report] 프레임워크 검색 실패: {fw_err}")
+
+        # 트렌드 컨텍스트 주입 (쿼리 클러스터 이름 기반)
+        cluster_name = None
+        trend_ctx = ""
+        try:
+            if diag.query_cluster_id is not None and _clusters is not None:
+                c_rows = _clusters[_clusters["cluster_id"] == diag.query_cluster_id]
+                if not c_rows.empty:
+                    cluster_name = str(c_rows.iloc[0].get("cluster_name", ""))
+            trend_ctx = get_trend_context(cluster_name=cluster_name, strategy_text=req.text)
+            if trend_ctx:
+                print(f"[/report] 트렌드 컨텍스트 주입됨: {trend_ctx[:60]}...")
+        except Exception as tr_err:
+            print(f"[/report] 트렌드 컨텍스트 실패: {tr_err}")
+
+        # 실시간 웹 검색 (DuckDuckGo) — 최신 시장 동향
+        web_trend_ctx = ""
+        try:
+            web_trend_ctx = search_business_trends(
+                strategy_text=req.text,
+                cluster_name=cluster_name,
+                top_k=4,
+            )
+            if web_trend_ctx:
+                print(f"[/report] 웹 검색 컨텍스트 주입됨: {web_trend_ctx[:60]}...")
+            else:
+                print("[/report] 웹 검색 결과 없음 (DuckDuckGo 연결 실패 또는 결과 없음)")
+        except Exception as wb_err:
+            print(f"[/report] 웹 검색 실패: {wb_err}")
+
+        # ── RAG 리스크 점수 (NAVER 실패 FAISS + 비즈니스 저서 원칙 + GPT) ──
+        q_emb_rag = q_emb_shared[0] if q_emb_shared is not None else _sbert.encode(
+            [req.text], normalize_embeddings=True, convert_to_numpy=True
+        ).astype(np.float32)[0]
+
+        rag_result = score_risk_rag(req.text, q_emb_rag)
+        rag_score  = rag_result["rag_risk_score"]
+
+        # 앙상블: RAG 75% + ML 25%
+        # ML AUC=0.9771을 더 반영해 재현성·일관성 향상
+        if rag_score is not None:
+            final_risk = round(0.75 * rag_score + 0.25 * diag.risk_score, 4)
+            print(f"[/report] RAG={rag_score:.3f} ML={diag.risk_score:.3f} → final={final_risk:.3f}")
+        else:
+            final_risk = diag.risk_score
+            print(f"[/report] RAG 완전 실패 → ML score 사용: {final_risk:.3f}")
+
+        start = time.time()
+        raw = generate_report(
+            strategy_text=req.text,
+            risk_score=final_risk,
+            risk_level=_risk_level(final_risk),
+            similar_articles=articles_dict,
+            framework_context=framework_context,
+            trend_context=trend_ctx,
+            web_trend_context=web_trend_ctx,
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
         )
         print(f"[/report] GPT 리포트 완료: {time.time() - start:.2f}초")
 
         from .schemas import DiagnosisReport
 
         return ReportResponse(
+<<<<<<< HEAD
             risk_score=diag.risk_score,
             risk_level=diag.risk_level,
+=======
+            risk_score=final_risk,
+            risk_level=_risk_level(final_risk),
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
             similar_articles=diag.similar_articles,
             query_cluster_id=diag.query_cluster_id,
             query_umap_x=diag.query_umap_x,

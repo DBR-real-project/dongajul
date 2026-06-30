@@ -1,24 +1,43 @@
 version: '3.9'
 
+networks:
+  dongajul_net:
+    driver: bridge
+
+<<<<<<< HEAD
+=======
 services:
 
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
   # ── AI Server (FastAPI + SBERT + FAISS) ──────────────────────────────────
   ai_server:
     build:
       context: ./ai_server
     container_name: dongajul_ai
     restart: unless-stopped
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     volumes:
       - ./데이터처리/output:/app/데이터처리/output:ro
     env_file: backend/.env
+<<<<<<< HEAD
+=======
+    networks:
+      - dongajul_net
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
 
   # ── Main Backend (Node.js / Express) ─────────────────────────────────────
   backend:
     build: ./backend
     container_name: dongajul_backend
     restart: unless-stopped
+<<<<<<< HEAD
     ports:
       - "3001:3001"
     env_file: backend/.env
@@ -36,3 +55,28 @@ services:
   #     - "3000:3000"
   #   depends_on:
   #     - backend
+=======
+    expose:
+      - "3001"
+    env_file: backend/.env
+    environment:
+      - AI_SERVER_URL=http://ai_server:8000
+    depends_on:
+      ai_server:
+        condition: service_healthy
+    networks:
+      - dongajul_net
+
+  # ── Frontend (React + Vite → nginx) ──────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+    container_name: dongajul_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - dongajul_net
+>>>>>>> 06d5573372fae868d35f2d4b6bfc609d225abbc7
